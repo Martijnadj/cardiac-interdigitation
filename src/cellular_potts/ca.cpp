@@ -182,6 +182,28 @@ void CellularPotts::AllocateSigma(int sx, int sy) {
 
 }
 
+void CellularPotts::AllocateNumberOfEdges(int sx, int sy) {
+  
+  sizex=sx; sizey=sy;
+  
+  numberofedges=(int **)malloc(sizex*sizeof(int *));
+  if (numberofedges==NULL)
+    MemoryWarning();
+  
+  numberofedges[0]=(int *)malloc(sizex*sizey*sizeof(int));
+  if (numberofedges[0]==NULL)  
+    MemoryWarning();
+  
+  
+  {for (int i=1;i<sizex;i++) 
+    numberofedges[i]=numberofedges[i-1]+sizey;}
+  
+  /* Clear CA plane */
+   {for (int i=0;i<sizex*sizey;i++) 
+     numberofedges[0][i]=0; }
+
+}
+
 void CellularPotts::AllocateMask(int sx, int sy) {
   
   sizex=sx; sizey=sy;
@@ -243,6 +265,7 @@ void CellularPotts::IndexShuffle() {
 }
 
 void CellularPotts::InitializeEdgeList(void){
+  AllocateNumberOfEdges(par.sizex, par.sizey);
   edgelist= new int[(par.sizex-2) * (par.sizey-2) * nbh_level[par.neighbours]];
   orderedgelist= new int[(par.sizex-2) * (par.sizey-2) * nbh_level[par.neighbours]];
   sizeedgelist = 0;
@@ -285,6 +308,7 @@ void CellularPotts::InitializeEdgeList(void){
       edgelist [k] = sizeedgelist;  
       orderedgelist[sizeedgelist] = k;
       sizeedgelist ++;
+      numberofedges[x][y]++;
     }
   } 
 }
@@ -1100,10 +1124,14 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal) {
           if (edgelist[edgeadjusting] == -1 && sigma[xn][yn] != sigma[x][y]){ //if we should add the edge to the edgelist, add it
             AddEdgeToEdgelist(edgeadjusting);
             loop += (double)2/n_nb;
+            numberofedges[x][y]++;
+            numberofedges[xn][yn]++;
           }
           if (edgelist[edgeadjusting] != -1 && sigma[xn][yn] == sigma[x][y]){//if the sites have the same celltype and they have an edge, remove it           
             RemoveEdgeFromEdgelist(edgeadjusting); 
-            loop -= (double)2/n_nb;   
+            loop -= (double)2/n_nb;
+            numberofedges[x][y]--;
+            numberofedges[xn][yn]--;   
           }             
         }
       }
@@ -2786,7 +2814,10 @@ bool CellularPotts::plotPos(int x, int y, Graphics * graphics){
   }
   
   else{
-    if (mask[x][y] == true){
+/*    if (numberofedges[x][y])
+      graphics->Rectangle((*cell)[self].Colour()+numberofedges[x][y], x, y);*/ 
+      //uncomment to view edge boundaries clearly
+    else if (mask[x][y] == true){
       graphics->Rectangle((*cell)[self].Colour()+10, x, y);
       return false;
     }

@@ -122,7 +122,9 @@ public:
   // Every time AllocateSigma is called in the base class methods
   // the function belonging the actual type will be called
   virtual void AllocateSigma(int sx, int sy);
+  virtual void AllocateNumberOfEdges(int sx, int sy);
   virtual void AllocateMask(int sx, int sy);
+  virtual void AllocateD(int sx, int sy);
   
   virtual void InitializeMatrix(Dish &beast);
 
@@ -431,6 +433,7 @@ protected:
 
 protected:
   int **sigma;
+  int **numberofedges;
   bool **mask;
   int sizex;
   int sizey;

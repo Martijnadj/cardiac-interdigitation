@@ -32,6 +32,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <sstream>
 
 #include "sticky.hpp"
 #include "random.hpp"
@@ -178,6 +179,29 @@ void CellularPotts::AllocateSigma(int sx, int sy) {
   /* Clear CA plane */
    {for (int i=0;i<sizex*sizey;i++) 
      sigma[0][i]=0; }
+
+}
+
+void CellularPotts::AllocateMask(int sx, int sy) {
+  
+  sizex=sx; sizey=sy;
+  
+  mask=(bool **)malloc(sizex*sizeof(bool *));
+  if (mask==NULL)
+    MemoryWarning();
+  
+  mask[0]=(bool *)malloc(sizex*sizey*sizeof(bool));
+  if (mask[0]==NULL)  
+    MemoryWarning();
+  
+  
+  {for (int i=1;i<sizex;i++)
+    mask[i]=mask[i-1]+sizey;
+    }
+  
+  /* Clear CA plane */
+   {for (int i=0;i<sizex*sizey;i++) 
+     mask[0][i]=false; }
 
 }
 
@@ -543,6 +567,17 @@ int CellularPotts::DeltaH(int x,int y, int xp, int yp, PDE *PDEfield)
     DH += (int)((par.lambda * (2.+  2.  * (double) 
              (  (*cell)[sxyp].Area() - (*cell)[sxyp].TargetArea()
              - (*cell)[sxy].Area() + (*cell)[sxy].TargetArea() )) ));
+
+
+  //Contribution of micropattern
+  if (par.micropatternmask != string("None")){
+    if ( sxyp == MEDIUM && mask[x][y]) {
+      	DH += (int)(par.micropatternstrength);
+    }
+    else if ( sxy == MEDIUM && mask[x][y]) {
+      DH -= (int)(par.micropatternstrength);
+    }
+  }
 
   /* Chemotaxis */
   if (PDEfield && (par.vecadherinknockout || (sxyp==0 || sxy==0))) {
@@ -2168,6 +2203,88 @@ int CellularPotts::ThrowInCells(int n,int cellsize) {
   return cellnum;
 } 
 
+int CellularPotts::GrowInCellsInMicropattern(int n_cells, int cell_size) {
+  
+  // make initial cells using Eden Growth
+  
+  int **new_sigma=(int **)malloc(sizex*sizeof(int *));
+  if (new_sigma==NULL)
+    MemoryWarning();
+  
+  new_sigma[0]=(int *)malloc(sizex*sizey*sizeof(int));
+  if (new_sigma[0]==NULL)  
+    MemoryWarning();
+  
+  for (int i=1;i<sizex;i++) 
+    new_sigma[i]=new_sigma[i-1]+sizey;
+  
+  /* Clear CA plane */
+  { for (int i=0;i<sizex*sizey;i++) 
+     new_sigma[0][i]=0; 
+  }
+
+  
+  // scatter initial points, or place a cell in the middle 
+  // if only one cell is desired
+  int cellnum=cell->size()-1;
+
+    
+    
+  bool placed;
+  int xposition;
+  int yposition;  
+    { for (int i=0;i<n_cells;i++) {
+      placed = false;
+      while(placed == false){
+        xposition = 1+RandomNumber(sizex-2);
+        yposition = 1+RandomNumber(sizey-2);
+        if(mask[xposition][yposition]){ 
+            sigma[xposition][yposition]=++cellnum;
+            placed = true;
+        }
+      }
+    }}
+   
+
+  // Do Eden growth for a number of time steps
+  {for (int i=0;i<cell_size;i++) {
+    for (int x=1;x<sizex-1;x++)
+      for (int y=1;y<sizey-1;y++) {
+	
+	if (sigma[x][y]==0) {
+	  // take a random neighbour
+	  int xyp=(int)(8*RANDOM()+1);
+	  int xp = nx[xyp]+x;
+	  int yp = ny[xyp]+y;
+	  int kp;
+	  //  NB removing this border test yields interesting effects :-)
+	  // You get a ragged border, which you may like!
+	  if ((kp=sigma[xp][yp])!=-1)
+	    if (kp>(cellnum-n_cells))
+	      new_sigma[x][y]=kp;
+	    else
+	      new_sigma[x][y]=0;
+	  else
+	    new_sigma[x][y]=0;
+	  
+	} else {
+	  new_sigma[x][y]=sigma[x][y];
+	}
+      }
+    
+    // copy sigma to new_sigma, but do not touch the border!
+	  {  for (int x=1;x<sizex-1;x++) {
+      for (int y=1;y<sizey-1;y++) {
+	sigma[x][y]=new_sigma[x][y];
+      }
+    }
+  }}}
+  free(new_sigma[0]);
+  free(new_sigma);
+  
+  return cellnum;
+}
+
                     
 int CellularPotts::GrowInCells(int n_cells, int cell_size, double subfield, int posx, int posy) {
   int sx = (int)((sizex-2)/subfield);
@@ -2662,9 +2779,24 @@ void CellularPotts::RandomSigma(int n_cells) {
 
 bool CellularPotts::plotPos(int x, int y, Graphics * graphics){
   int self = sigma[x][y];
-  if (self == 0) return true;
-  graphics->Rectangle((*cell)[self].Colour(), x, y);
-  return false;
+  if (par.micropatternmask == string("None")){
+    if (self == 0) return true;
+    graphics->Rectangle((*cell)[self].Colour(), x, y);
+    return false;
+  }
+  
+  else{
+    if (mask[x][y] == true){
+      graphics->Rectangle((*cell)[self].Colour()+10, x, y);
+      return false;
+    }
+    else if (self == 0)
+      return true;
+    else{
+      graphics->Rectangle((*cell)[self].Colour(), x, y);
+      return false;
+    }
+  }
 }
 
 
@@ -2697,4 +2829,37 @@ int ** CellularPotts::get_annealed_sigma(int steps){
   tmp_b = sigma;
   sigma = tmp_a;
   return tmp_b;
+}
+
+void CellularPotts::StoreMask(string filename){
+	AllocateMask(sizex,sizey);
+	// Create an input filestream
+    std::ifstream myFile(filename);
+
+    
+    // Make sure the file is open
+    if(!myFile.is_open()) throw std::runtime_error("Could not open file");
+    
+    std::string line;
+    int xcoord,ycoord,val;
+    
+    // Read data, line by line
+    while(std::getline(myFile, line))
+    {
+    	std::stringstream ss(line);
+    	int colnr = 0;	
+    	//extract coordinates
+    	while(ss >> val){
+    		// Add the current integer to the 'colIdx' column's values vector
+            
+            if (!colnr) xcoord=val;
+            if (colnr) ycoord=val;
+            colnr++;
+            
+            
+            // If the next token is a comma, ignore it and move on
+            if(ss.peek() == ',') ss.ignore();
+    	}
+    	mask[xcoord][ycoord] = true;
+    }
 }

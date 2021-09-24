@@ -122,6 +122,7 @@ public:
   // Every time AllocateSigma is called in the base class methods
   // the function belonging the actual type will be called
   virtual void AllocateSigma(int sx, int sy);
+  virtual void AllocateMask(int sx, int sy);
   
   virtual void InitializeMatrix(Dish &beast);
 
@@ -173,6 +174,7 @@ public:
   }
     
   void SetBoundingBox(void);
+  void StoreMask(string filename);
 
   /*! Plot the cells according to their cell identity, not their type.
   The black lines are omitted.
@@ -296,6 +298,7 @@ public:
   */
   int GrowInCells(int n_cells, int cellsize, double subfield=1., int posx=-1, int posy=-1);
   int GrowInCells(int n_cells, int cell_size, int sx, int sy, int offset_x, int offset_y);
+  int GrowInCellsInMicropattern(int n_cells, int cellsize);
   void RandomSpins(double prob);
     
   int SquareCell(int sig, int cx, int cy, int size);
@@ -371,12 +374,22 @@ public:
   
   inline void fillCellColArr(int * arr){
     for (int dex = 0; dex < par.sizex*par.sizey; dex++){
+      int x;
+      int y;
       int pos = sigma[0][dex];
       if (pos != 0) {
         arr[dex] = (*cell)[pos].Colour();
       }
       else {
         arr[dex] = 0;
+      }
+      if (par.micropatternmask != string("None")){
+        x = dex / par.sizey;
+        y = dex % par.sizey;
+        if (mask[x][y]){
+          arr[dex] = arr[dex] + 10;
+          if (!pos) arr[dex] ++;
+        }
       }
     }
   };
@@ -418,6 +431,7 @@ protected:
 
 protected:
   int **sigma;
+  bool **mask;
   int sizex;
   int sizey;
 

@@ -2817,7 +2817,7 @@ bool CellularPotts::plotPos(int x, int y, Graphics * graphics){
 /*    if (numberofedges[x][y])
       graphics->Rectangle((*cell)[self].Colour()+numberofedges[x][y], x, y);*/ 
       //uncomment to view edge boundaries clearly
-    else if (mask[x][y] == true){
+    if (mask[x][y] == true){
       graphics->Rectangle((*cell)[self].Colour()+10, x, y);
       return false;
     }

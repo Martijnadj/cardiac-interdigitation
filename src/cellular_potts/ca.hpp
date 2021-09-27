@@ -124,7 +124,6 @@ public:
   virtual void AllocateSigma(int sx, int sy);
   virtual void AllocateNumberOfEdges(int sx, int sy);
   virtual void AllocateMask(int sx, int sy);
-  virtual void AllocateD(int sx, int sy);
   
   virtual void InitializeMatrix(Dish &beast);
 

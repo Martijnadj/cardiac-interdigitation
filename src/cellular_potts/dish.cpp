@@ -221,7 +221,7 @@ void Dish::MeasureChemConcentrations(void) {
     for (int i=0;i<SizeX()*SizeY();i++) {
       int cn=CPM->Sigma(0,i);
       if (cn>=0) 
-	cell[cn].chem[ch]+=PDEfield->Sigma(ch,0,i);
+	cell[cn].chem[ch]+=PDEfield->PDEVARS(ch,0,i);
     }
   }
 

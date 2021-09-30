@@ -603,16 +603,16 @@ int CellularPotts::DeltaH(int x,int y, int xp, int yp, PDE *PDEfield)
     }
   }
 
-  /* Chemotaxis */
+  /* Chemotaxis */ /*
   if (PDEfield && (par.vecadherinknockout || (sxyp==0 || sxy==0))) {
     // copying from (xp, yp) into (x,y)
     // If par.extensiononly == true, apply CompuCell's method, i.e.
     // only chemotactic extensions contribute to energy change
     if (!( par.extensiononly && sxyp==0)) {
-      int DDH=(int)(par.chemotaxis*(sat(PDEfield->Sigma(0,x,y))-sat(PDEfield->Sigma(0,xp,yp))));
+      int DDH=(int)(par.chemotaxis*(sat(PDEfield->PDEVARS(0,x,y))-sat(PDEfield->PDEVARS(0,xp,yp))));
       DH-=DDH;
     }
-  }
+  }*/
 
   const double lambda2=par.lambda2;
   /* Length constraint */
@@ -846,7 +846,7 @@ DH +=DH_perimeter;
     // If par.extensiononly == true, apply CompuCell's method, i.e.
     // only chemotactic extensions contribute to energy change
     if (!( par.extensiononly && sxyp==0)) {
-      DDH=(int)(par.chemotaxis*(sat(PDEfield->Sigma(0,x,y))-sat(PDEfield->Sigma(0,xp,yp))));
+      DDH=(int)(par.chemotaxis*(sat(PDEfield->PDEVARS(0,x,y))-sat(PDEfield->PDEVARS(0,xp,yp))));
 
       DH-=DDH;
     }
@@ -1100,6 +1100,7 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal) {
       H_diss=par.conn_diss;
     
     D_H=DeltaH(x,y,xp,yp,PDEfield);
+
     
     if ((p=CopyvProb(D_H,H_diss, anneal))>0) {
       ConvertSpin ( x,y,xp,yp ); //sigma(x,y) will get the same value as sigma(xp,yp)

@@ -86,6 +86,12 @@ Parameter::Parameter() {
   opencl_core_path = strdup("../src/reaction_diffusion/pdecore.cl");
   opencl_pref_platform = 0;
   colortable = strdup("../data/default.ctb");
+
+  initial_E_m = -70;
+  initial_n = 0.5;
+  initial_m = 0.25;
+  initial_h = 0.08;
+
 }
 
 Parameter::~Parameter() {
@@ -196,6 +202,11 @@ void Parameter::Read(const char *filename) {
   start_level = fgetpar(fp, "start_level", 1, true);
   colortable = sgetpar(fp, "colortable", "../data/default.ctb", true);
 
+  initial_E_m = fgetpar(fp, "initial_E_m", -70, true);
+  initial_n = fgetpar(fp, "initial_n", 0.5, true);
+  initial_m = fgetpar(fp, "initial_m", 0.25, true);
+  initial_h = fgetpar(fp, "initial_h", 0.08, true);
+
   std::cout << std::endl;
 }
 
@@ -286,6 +297,11 @@ void Parameter::Write(ostream &os) const {
   if (datadir)
     os << " datadir = " << datadir << endl;
   os << " colortable = " << colortable << endl;
+
+  os << " initial_E_m = " << initial_E_m << endl;
+  os << " initial_n = " << initial_n << endl;
+  os << " initial_m = " << initial_E_m << endl;
+  os << " initial_h = " << initial_E_m << endl;
 }
 
 ostream &operator<<(ostream &os, Parameter &p) {

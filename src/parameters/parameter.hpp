@@ -97,6 +97,11 @@ class Parameter {
   double threshold;
   double start_level;
   char * colortable;
+
+  double initial_E_m;
+  double initial_n;
+  double initial_m;
+  double initial_h;
  private:
 };
 

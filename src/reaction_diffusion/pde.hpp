@@ -102,8 +102,8 @@ class PDE {
   \param layer: the PDE plane to probe.
   \param x, y: grid point to probe.
   */
-  inline PDEFIELD_TYPE Sigma(const int layer, const int x, const int y) const {
-    return sigma[layer][x][y];
+  inline PDEFIELD_TYPE PDEVARS(const int layer, const int x, const int y) const {
+    return PDEvars[layer][x][y];
   }
   
   /*! \brief Sets grid point x,y of PDE plane "layer" to value "value".
@@ -112,7 +112,7 @@ class PDE {
   \param value: new contents
   */
   inline void setValue(const int layer, const int x, const int y, const PDEFIELD_TYPE value) {
-    sigma[layer][x][y]=value;
+    PDEvars[layer][x][y]=value;
   }
   
   /*! \brief Adds a number to a PDE grid point.
@@ -121,7 +121,7 @@ class PDE {
   \param value: value to add
   */
   inline void addtoValue(const int layer, const int x, const int y, const PDEFIELD_TYPE value) {
-    sigma[layer][x][y]+=value;
+    PDEvars[layer][x][y]+=value;
   }
 
   /*! \brief Gets the maximum value of PDE layer l.
@@ -129,11 +129,11 @@ class PDE {
   \return Maximum value in layer l.
   */
   inline PDEFIELD_TYPE Max(int l) {
-    PDEFIELD_TYPE max=sigma[l][0][0];
+    PDEFIELD_TYPE max=PDEvars[l][0][0];
     int loop=sizex*sizey;
     for (int i=1;i<loop;i++)
-      if (sigma[l][0][i]>max) {
-	max=sigma[l][0][i];
+      if (PDEvars[l][0][i]>max) {
+	max=PDEvars[l][0][i];
       }
     return max;
   }
@@ -142,11 +142,11 @@ class PDE {
   \return Minimum value in layer l.
   */
   inline PDEFIELD_TYPE Min(int l) {
-    PDEFIELD_TYPE min=sigma[l][0][0];
+    PDEFIELD_TYPE min=PDEvars[l][0][0];
     int loop=sizex*sizey;
     for (int i=1;i<loop;i++)
-      if (sigma[l][0][i]<min) {
-	min=sigma[l][0][i];
+      if (PDEvars[l][0][i]<min) {
+	min=PDEvars[l][0][i];
       }
     return min;
   }
@@ -157,6 +157,7 @@ class PDE {
   Function for the Act model. The whole field is initialized, usually with 0
   */
   void InitializeAgeLayer(int l,double value,CellularPotts *cpm);
+  void InitializePDEvars();
 
  /* Function for the Act model. All the lattice sites within cells are "aged"
 	*  by decreasing their values, usually with 1.
@@ -247,8 +248,8 @@ class PDE {
 
   void reset_plot(){ highest = Max(0); lowest = Min(0);}
 
-  inline float *** getSigma(){
-    return sigma;
+  inline PDEFIELD_TYPE *** getPDEvars(){
+    return PDEvars;
   }
 
   double highest;
@@ -256,14 +257,14 @@ class PDE {
 
   protected:
 
-  PDEFIELD_TYPE ***sigma;
+  PDEFIELD_TYPE ***PDEvars;
   
   // Used as temporary memory in the diffusion step
   // (addresses will be swapped for every time step, so
   // never directly use them!!! Access is guaranteed to be correct
   // through user interface)
 
-  PDEFIELD_TYPE ***alt_sigma;
+  PDEFIELD_TYPE ***alt_PDEvars;
  
   int sizex;
   int sizey;
@@ -286,7 +287,8 @@ class PDE {
   For internal use, can be reimplemented in derived class to change
   method of memory allocation.
   */   
-  virtual PDEFIELD_TYPE ***AllocateSigma(const int layers, const int sx, const int sy);
+  virtual PDEFIELD_TYPE ***AllocatePDEvars(const int layers, const int sx, const int sy);
+  
 
  
 private:

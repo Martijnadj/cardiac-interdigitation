@@ -28,6 +28,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <cstdlib>
 #include <algorithm>
 #include <fstream>
+#include <thread>
 #include <math.h>
 #include "dish.hpp"
 #include "random.hpp"
@@ -65,6 +66,7 @@ INIT {
     cerr << "Caught exception\n";
     std::cerr << error << "\n";
     exit(1);
+
   }
 }
 
@@ -72,11 +74,25 @@ TIMESTEP {
   try {
 
     static int i=0;
+    cout << i << endl;
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
+        dish->PDEfield->InitializePDEvars();
     }
-    
+     //uncomment for chemotaxis
+    if (i>=par.relaxation) {
+      if (par.useopencl){
+        PROFILE(opencl_diff, dish->PDEfield->SecreteAndDiffuseCL(dish->CPM, par.pde_its);)
+      }
+      else{
+        for (int r=0;r<par.pde_its;r++) {
+	  dish->PDEfield->Secrete(dish->CPM);
+	  dish->PDEfield->Diffuse(1);
+        }
+      }
+    }
+
     static Info *info=new Info(*dish, *this);
     static Plotter * plotter = new Plotter(dish, this);
     
@@ -116,19 +132,36 @@ TIMESTEP {
   PROFILE_PRINT
 }
 
+void PDE::Secrete(CellularPotts *cpm) {
+  const double dt=par.dt;
+  for (int x=0;x<sizex;x++) {
+    for (int y=0;y<sizey;y++) {
+      // inside cells
+      if (cpm->Sigma(x,y)) {
+	PDEvars[0][x][y]+=par.secr_rate[0]*dt;
+      } else {
+      // outside cells
+	PDEvars[0][x][y]-=par.decay_rate[0]*dt*PDEvars[0][x][y];
+      }
+    }
+  }
+  PROFILE_PRINT
+}
+
 void Plotter::Plot()  {
   graphics->BeginScene();
   graphics->ClearImage(); 
   
   //Somewhere here show mask
+  plotPDEDensity();
   plotCPMCellTypes();
-  plotCPMLines();
- 
+  plotCPMLines(); 
+  plotPDEContourLines();
   graphics->EndScene();
 }
 
 int PDE::MapColour(double val) {
-  return (((int)((val/((val)+1.))*100))%100)+155;
+  return (int(val + 100)/2) +155;
 }
 
 int main(int argc, char *argv[]) {

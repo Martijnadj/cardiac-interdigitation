@@ -13,6 +13,7 @@ class CLManager {
     cl::Context context;
 
     cl::Buffer cpm;
+    cl::Buffer numberofedges;
 
     int pde_AB;
     cl::Buffer pdeA;

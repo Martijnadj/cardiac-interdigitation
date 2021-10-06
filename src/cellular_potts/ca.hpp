@@ -370,6 +370,12 @@ public:
     return sigma;
   }
 
+  //Return numberofedges Array for use on GPU
+  inline int** getNumberofedges(){
+    return numberofedges;
+  }
+
+
   bool plotPos(int x, int y, Graphics * graphics);
   void linePlotPos(int x, int y, Graphics * graphics);
   

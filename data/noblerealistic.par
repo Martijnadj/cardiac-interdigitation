@@ -1,7 +1,7 @@
 # Cellular Potts parameters
 T = 50
-target_area = 100
-target_length = 20
+target_area = 141
+target_length = 25
 lambda = 50
 lambda2 = 10
 Jtable = ../data/J.dat
@@ -17,23 +17,23 @@ periodic_boundaries = false
 
 # PDE parameters
 n_chem = 4
-diff_coeff = 1e-13, 0, 0, 0
+diff_coeff = 0.01, 0, 0, 0
 decay_rate = 0, 0, 0, 0
 secr_rate = 0, 0, 0, 0
 saturation = 0
-dt = 0.1
+dt = 1e-9
 dx = 2.5e-6
 pde_its = 100
 
 # Micropatterns parameters
-micropatternmask = ../data/mask.dat
+micropatternmask = ../data/mask2.dat
 micropatternstrength = 50
 
 # initial conditions (create a "blob" of cells in the middle)
-n_init_cells = 240
-size_init_cells = 10
-sizex = 500
-sizey = 500
+n_init_cells = 26553
+size_init_cells = 5
+sizex = 4000
+sizey = 2500
 divisions = 0
 mcs = 2000
 rseed = -1

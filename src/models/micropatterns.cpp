@@ -80,6 +80,7 @@ TIMESTEP {
         dish=new Dish();
         dish->PDEfield->InitializePDEvars();
     }
+
      //uncomment for chemotaxis
     if (i>=par.relaxation) {
       if (par.useopencl){
@@ -116,7 +117,7 @@ TIMESTEP {
 
     if (par.store && !(i%par.storage_stride)) {
       char fname[200];
-      sprintf(fname,"%s/extend%07d.png",par.datadir,i);
+      sprintf(fname,"%s/image%07d.png",par.datadir,i);
       PROFILE(plotter_2, plotter->Plot();)
       Write(fname);
     }
@@ -154,7 +155,7 @@ void Plotter::Plot()  {
   
   //Somewhere here show mask
   plotPDEDensity();
-  plotCPMCellTypes();
+  //plotCPMCellTypes();
   plotCPMLines(); 
   plotPDEContourLines();
   graphics->EndScene();

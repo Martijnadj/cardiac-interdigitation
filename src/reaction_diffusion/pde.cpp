@@ -44,6 +44,7 @@ extern Parameter par;
 PDE::PDE(const int l, const int sx, const int sy) {
   PDEvars=0;
   thetime=0;
+  PDEsteps=0;
   sizex=sx;
   sizey=sy;
   layers=l;
@@ -112,11 +113,13 @@ void PDE::InitializePDEvars(void){
       PDEvars[1][0][i] = par.initial_n;
       PDEvars[2][0][i] = par.initial_m;
       PDEvars[3][0][i] = par.initial_h;
-
     }
 
 
 }
+
+
+
 
 void PDE::Plot(Graphics *g,const int l) {
   // l=layer: default layer is 0
@@ -237,9 +240,11 @@ void PDE::SetupOpenCL(){
 
   //Allocate memory on the GPU
   clm.cpm = cl::Buffer(clm.context, CL_MEM_READ_WRITE, sizeof(int)*sizex*sizey); 
+  clm.numberofedges = cl::Buffer(clm.context, CL_MEM_READ_WRITE, sizeof(int)*sizex*sizey); 
   clm.pdeA = cl::Buffer(clm.context, CL_MEM_READ_WRITE, sizeof(PDEFIELD_TYPE)*sizex*sizey*layers);
   clm.pdeB = cl::Buffer(clm.context, CL_MEM_READ_WRITE, sizeof(PDEFIELD_TYPE)*sizex*sizey*layers); 
   clm.diffco = cl::Buffer(clm.context, CL_MEM_READ_WRITE, sizeof(PDEFIELD_TYPE)*layers);
+
 
   //Making kernel and setting arguments
   kernel_SecreteAndDiffuse = cl::Kernel(program,"SecreteAndDiffuse");      
@@ -256,6 +261,8 @@ void PDE::SetupOpenCL(){
   kernel_SecreteAndDiffuse.setArg(9, clm.diffco);
   kernel_SecreteAndDiffuse.setArg(10,sizeof(PDEFIELD_TYPE), &secr_rate);
   kernel_SecreteAndDiffuse.setArg(11, sizeof(int),  &btype);
+  kernel_SecreteAndDiffuse.setArg(12, clm.numberofedges);
+
 
   PDEFIELD_TYPE diff_coeff[layers];
 
@@ -277,19 +284,23 @@ void PDE::SecreteAndDiffuseCL(CellularPotts *cpm, int repeat){
     clm.pde_AB = 1;
     int errorcode = 0;
 
+    
     //Write the cellSigma array to GPU for secretion
     clm.queue.enqueueWriteBuffer(clm.cpm,
     CL_TRUE, 0, sizeof(int)*sizex*sizey, cpm->getSigma()[0]);
-    //Writing pdefield PDEvars is only necessary if modified outside of kernel
+    clm.queue.enqueueWriteBuffer(clm.numberofedges,
+    CL_TRUE, 0, sizeof(int)*sizex*sizey, cpm->getNumberofedges()[0]);
+    //Writing pdefield PDEvars is only necessary if modified outside of clm.pdeA)kernel
     if (first_round) {
       clm.queue.enqueueWriteBuffer(clm.pdeA,  CL_TRUE, 0, sizeof(PDEFIELD_TYPE)*sizex*sizey*layers, PDEvars[0][0]);
       first_round = false;
     }
     //Main loop executing kernel and switching between A and B arrays
     for (int index = 0; index < repeat; index ++){
+      kernel_SecreteAndDiffuse.setArg(13, sizeof(int), &PDEsteps);
       if (clm.pde_AB == 1) clm.pde_AB = 0;
       else clm.pde_AB = 1;
-      kernel_SecreteAndDiffuse.setArg(12, sizeof(int),  &clm.pde_AB);
+      kernel_SecreteAndDiffuse.setArg(14, sizeof(int),  &clm.pde_AB);
       if(clm.pde_AB == 0){
         kernel_SecreteAndDiffuse.setArg(1, clm.pdeA);
         kernel_SecreteAndDiffuse.setArg(2, clm.pdeB);
@@ -305,6 +316,7 @@ void PDE::SecreteAndDiffuseCL(CellularPotts *cpm, int repeat){
         printf("Error during OpenCL secretion and diffusion");
         exit(0);
       }
+      PDEsteps += 1;
     }
     //Reading from correct array containing the output
     if (clm.pde_AB == 0) {
@@ -316,7 +328,7 @@ void PDE::SecreteAndDiffuseCL(CellularPotts *cpm, int repeat){
                             sizeof(PDEFIELD_TYPE)*sizex*sizey*layers, PDEvars[0][0]);
     }
     if (errorcode != CL_SUCCESS) cout << "error:" << errorcode << endl;
-    thetime += par.dt;
+    
 }
 
 

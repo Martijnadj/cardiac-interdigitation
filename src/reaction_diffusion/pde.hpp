@@ -295,7 +295,8 @@ private:
   PDEFIELD_TYPE z[10];
   
   static const int nx[9], ny[9];
-  double thetime;
+  int PDEsteps;
+  float thetime;
 
   inline double Z(double k, int steps);
 

@@ -35,7 +35,7 @@ size_init_cells = 10
 sizex = 500
 sizey = 500
 divisions = 0
-mcs = 2000
+mcs = 200000
 rseed = -1
 subfield = 1.0
 relaxation = 0
@@ -47,7 +47,7 @@ initial_h = 0.08
 # output
 storage_stride = 1
 graphics = true
-store = true
-datadir = ../long
+store = false
+datadir = ../images
 
 

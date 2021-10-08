@@ -47,7 +47,7 @@ int GetLocation(int x, int y, int ysize){
   return x*ysize+y;
 }
 
-PDEFIELD_TYPE* RungeKutta(PDEFIELD_TYPE t, PDEFIELD_TYPE* dyoutdt, PDEFIELD_TYPE* y, PDEFIELD_TYPE dt, int id){
+void RungeKutta(PDEFIELD_TYPE t, PDEFIELD_TYPE* dyoutdt, PDEFIELD_TYPE* y, PDEFIELD_TYPE dt, int id){
   
 
   int i;
@@ -89,8 +89,6 @@ PDEFIELD_TYPE* RungeKutta(PDEFIELD_TYPE t, PDEFIELD_TYPE* dyoutdt, PDEFIELD_TYPE
   for (i=0;i<4;i++) //Accumulate increments with proper weights.
     dyoutdt[i]=dt*(c1*dydt[i]+c3*ak3[i]+c4*ak4[i]+c6*ak6[i]);
 
-  PDEFIELD_TYPE* derivs = dyoutdt;
-  return derivs;
 }
 
 

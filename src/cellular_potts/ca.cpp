@@ -2937,7 +2937,7 @@ void CellularPotts::StoreMask(string filename){
 
     
     // Make sure the file is open
-    if(!myFile.is_open()) throw std::runtime_error("Could not open file");
+    if(!myFile.is_open()) throw std::runtime_error("Could not open mask file");
     
     std::string line;
     int xcoord,ycoord,val;

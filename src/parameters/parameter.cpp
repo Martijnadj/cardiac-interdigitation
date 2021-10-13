@@ -62,7 +62,6 @@ Parameter::Parameter() {
   dx = 2.0e-6;
   pde_its = 15;
   micropatternmask = strdup("None");
-  micropatternstrength = 0;
   n_init_cells = 100;
   size_init_cells = 10;
   sizex = 200;
@@ -159,7 +158,6 @@ void Parameter::Read(const char *filename) {
   dx = fgetpar(fp, "dx", 2.0e-6, true);
   pde_its = igetpar(fp, "pde_its", 15, true);
   micropatternmask = sgetpar(fp, "micropatternmask", "None", true);
-  micropatternstrength = igetpar(fp, "micropatternstrength", 0, true);
   n_init_cells = igetpar(fp, "n_init_cells", 100, true);
   size_init_cells = igetpar(fp, "size_init_cells", 10, true);
   sizex = igetpar(fp, "sizex", 200, true);
@@ -257,7 +255,6 @@ void Parameter::Write(ostream &os) const {
   os << " dx = " << dx << endl;
   os << " pde_its = " << pde_its << endl;
   os << " micropatternmask = " << micropatternmask << endl;
-  os << " micropatternstrength = " << micropatternstrength<< endl;
   os << " n_init_cells = " << n_init_cells << endl;
   os << " size_init_cells = " << size_init_cells << endl;
   os << " sizex = " << sizex << endl;

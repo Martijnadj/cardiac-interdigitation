@@ -45,7 +45,6 @@ using namespace std;
 INIT {
   try {
     // Define initial distribution of cells
-    CPM->StoreMask(par.micropatternmask);
     CPM->GrowInCellsInMicropattern(par.n_init_cells,par.size_init_cells);
     CPM->ConstructInitCells(*this);
     

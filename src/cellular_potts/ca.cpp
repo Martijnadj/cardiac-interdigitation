@@ -99,14 +99,26 @@ CellularPotts::CellularPotts(vector<Cell> *cells,
 
   AllocateSigma(sx,sy);
 
-  // fill borders with special border state
-  for (int x=0;x<sizex;x++) {
-    sigma[x][0]=-1;
-    sigma[x][sizey-1]=-1;
+  StoreMask(par.micropatternmask);
+
+  if (par.micropatternmask != string("None")){
+    for(int x=0;x<sizex;x++) {
+      for (int y=0;y<sizey;y++) {
+        if (mask[x][y] == false)
+          sigma[x][y] = -1;
+      }
+    }
   }
-  for (int y=0;y<sizey;y++) {
-    sigma[0][y]=-1;
-    sigma[sizex-1][y]=-1;
+  else{
+    // fill borders with special border state
+    for (int x=0;x<sizex;x++) {
+      sigma[x][0]=-1;
+      sigma[x][sizey-1]=-1;
+    }
+    for (int y=0;y<sizey;y++) {
+      sigma[0][y]=-1;
+      sigma[sizex-1][y]=-1;
+    }
   }
   
   if (par.neighbours>=1 && par.neighbours<=4)
@@ -127,15 +139,26 @@ CellularPotts::CellularPotts(void) {
   orderedgelist = nullptr;
 
   CopyProb(par.T);
-
-  // fill borders with special border state
-  for (int x=0;x<sizex;x++) {
-    sigma[x][0]=-1;
-    sigma[x][sizey-1]=-1;
+  
+  if (par.micropatternmask != string("None")){
+    for(int x=0;x<sizex;x++) {
+      for (int y=0;y<sizey;y++) {
+        if (mask[x][y] == false)
+          sigma[x][y] = -1;
+      }
+    }
   }
-  for (int y=0;y<sizey;y++) {
-    sigma[0][y]=-1;
-    sigma[sizex-1][y]=-1;
+
+  else{
+  // fill borders with special border state
+    for (int x=0;x<sizex;x++) {
+      sigma[x][0]=-1;
+      sigma[x][sizey-1]=-1;
+    }
+    for (int y=0;y<sizey;y++) {
+      sigma[0][y]=-1;
+      sigma[sizex-1][y]=-1;
+    }
   }
   if (par.neighbours>=1 && par.neighbours<=4)
     n_nb=nbh_level[par.neighbours];
@@ -205,7 +228,6 @@ void CellularPotts::AllocateNumberOfEdges(int sx, int sy) {
 }
 
 void CellularPotts::AllocateMask(int sx, int sy) {
-  
   sizex=sx; sizey=sy;
   
   mask=(bool **)malloc(sizex*sizeof(bool *));
@@ -286,25 +308,38 @@ void CellularPotts::InitializeEdgeList(void){
     c = sigma[x][y];      
     xp = nx[neighbour]+x;
     yp = ny[neighbour]+y;
-      
-    if (par.periodic_boundaries) {
-      // since we are asynchronic, we cannot just copy the borders once 
-      // every MCS      
-      if (xp<=0)
-        xp=sizex-2+xp;
-      if (yp<=0)
-        yp=sizey-2+yp;
-      if (xp>=sizex-1)
-        xp=xp-sizex+2;
-      if (yp>=sizey-1)
-        yp=yp-sizey+2;
-      cp=sigma[xp][yp];
-      }
-    else if (xp<=0 || yp<=0 || xp>=sizex-1 || yp>=sizey-1)
-      cp=-1;
-    else
-      cp=sigma[xp][yp];
-    if (cp != c && cp != -1){       
+
+    if (par.micropatternmask != string("None")){
+      if (mask[x][y] == false)
+        c = -1;
+      if (xp<=0 || yp<=0 || xp>=sizex-1 || yp>=sizey-1)
+        cp = -1;
+      else if(mask[xp][yp] == false) 
+        cp = -1;
+      else
+        cp=sigma[xp][yp];
+    }
+
+    else{  
+      if (par.periodic_boundaries) {
+        // since we are asynchronic, we cannot just copy the borders once 
+        // every MCS      
+        if (xp<=0)
+          xp=sizex-2+xp;
+        if (yp<=0)
+          yp=sizey-2+yp;
+        if (xp>=sizex-1)
+          xp=xp-sizex+2;
+        if (yp>=sizey-1)
+          yp=yp-sizey+2;
+        cp=sigma[xp][yp];
+        }
+      else if (xp<=0 || yp<=0 || xp>=sizex-1 || yp>=sizey-1)
+        cp=-1;
+      else
+        cp=sigma[xp][yp];
+    }
+    if (cp != c && cp != -1 && c != -1){       
       edgelist [k] = sizeedgelist;  
       orderedgelist[sizeedgelist] = k;
       sizeedgelist ++;
@@ -551,6 +586,7 @@ int CellularPotts::DeltaH(int x,int y, int xp, int yp, PDE *PDEfield)
   for (i=1;i<=n_nb;i++) {
     int xp2,yp2;
     xp2=x+nx[i]; yp2=y+ny[i];
+
     if (par.periodic_boundaries) {
       // since we are asynchronic, we cannot just copy the borders once 
       // every MCS
@@ -569,6 +605,10 @@ int CellularPotts::DeltaH(int x,int y, int xp, int yp, PDE *PDEfield)
       else
         neighsite=sigma[xp2][yp2];
     }
+    if (par.micropatternmask != string("None")){
+      if (mask[xp2][yp2] == false)
+        neighsite = -1;
+    }
     if (neighsite==-1) { 
       // border 
       DH += (sxyp==0?0:par.border_energy) - (sxy==0?0:par.border_energy);
@@ -576,6 +616,7 @@ int CellularPotts::DeltaH(int x,int y, int xp, int yp, PDE *PDEfield)
       DH += (*cell)[sxyp].EnergyDifference((*cell)[neighsite]) 
             - (*cell)[sxy].EnergyDifference((*cell)[neighsite]);
     }
+    
   }
   // lambda is determined by chemical 0
   //cerr << "[" << lambda << "]";
@@ -593,15 +634,7 @@ int CellularPotts::DeltaH(int x,int y, int xp, int yp, PDE *PDEfield)
              - (*cell)[sxy].Area() + (*cell)[sxy].TargetArea() )) ));
 
 
-  //Contribution of micropattern
-  if (par.micropatternmask != string("None")){
-    if ( sxyp == MEDIUM && mask[x][y]) {
-      	DH += (int)(par.micropatternstrength);
-    }
-    else if ( sxy == MEDIUM && mask[x][y]) {
-      DH -= (int)(par.micropatternstrength);
-    }
-  }
+
 
   /* Chemotaxis */ /*
   if (PDEfield && (par.vecadherinknockout || (sxyp==0 || sxy==0))) {
@@ -1120,20 +1153,40 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal) {
             xn=xn-sizex+2;
           if (yn>=sizey-1)
             yn=yn-sizey+2;
-        } 
-        if (xn>0 && yn>0 && xn<sizex-1 && yn<sizey-1){//if the neighbour site is within the lattice
-          if (edgelist[edgeadjusting] == -1 && sigma[xn][yn] != sigma[x][y]){ //if we should add the edge to the edgelist, add it
-            AddEdgeToEdgelist(edgeadjusting);
-            loop += (double)2/n_nb;
-            numberofedges[x][y]++;
-            numberofedges[xn][yn]++;
+        }
+        if (par.micropatternmask != string("None")){
+          if (xn>0 && yn>0 && xn<sizex-1 && yn<sizey-1){//if the neighbour site is within the lattice
+            if (mask[xn][yn] == true) { //and if it is within the micropattern
+              if (edgelist[edgeadjusting] == -1 && sigma[xn][yn] != sigma[x][y]){ //if we should add the edge to the edgelist, add it
+                AddEdgeToEdgelist(edgeadjusting);
+                loop += (double)2/n_nb;
+                numberofedges[x][y]++;
+                numberofedges[xn][yn]++;
+              }
+              if (edgelist[edgeadjusting] != -1 && sigma[xn][yn] == sigma[x][y]){//if the sites have the same celltype and they have an edge, remove it           
+                RemoveEdgeFromEdgelist(edgeadjusting); 
+                loop -= (double)2/n_nb;
+                numberofedges[x][y]--;
+                numberofedges[xn][yn]--;   
+              } 
+            }
           }
-          if (edgelist[edgeadjusting] != -1 && sigma[xn][yn] == sigma[x][y]){//if the sites have the same celltype and they have an edge, remove it           
-            RemoveEdgeFromEdgelist(edgeadjusting); 
-            loop -= (double)2/n_nb;
-            numberofedges[x][y]--;
-            numberofedges[xn][yn]--;   
-          }             
+        }
+        else{
+          if (xn>0 && yn>0 && xn<sizex-1 && yn<sizey-1){//if the neighbour site is within the lattice
+            if (edgelist[edgeadjusting] == -1 && sigma[xn][yn] != sigma[x][y]){ //if we should add the edge to the edgelist, add it
+              AddEdgeToEdgelist(edgeadjusting);
+              loop += (double)2/n_nb;
+              numberofedges[x][y]++;
+              numberofedges[xn][yn]++;
+            }
+            if (edgelist[edgeadjusting] != -1 && sigma[xn][yn] == sigma[x][y]){//if the sites have the same celltype and they have an edge, remove it           
+              RemoveEdgeFromEdgelist(edgeadjusting); 
+              loop -= (double)2/n_nb;
+              numberofedges[x][y]--;
+              numberofedges[xn][yn]--;   
+            }             
+          }
         }
       }
       SumDH+=D_H;     
@@ -2211,23 +2264,37 @@ int CellularPotts::ThrowInCells(int n,int cellsize) {
   }
   cerr << "[ cellnum = " << cellnum << "]";
 
+
+  if (par.micropatternmask != string("None")){
+    for (int x=0;x<sizex;x++) {
+      for (int y=0;y<sizey;y++) {
+        if(mask[x][y] == false)
+          sigma[x][y] = -1;
+        else
+          sigma[x][y] = 0;
+      }
+    }
+  }
+  
+  else{
   // repair borders
   // fill borders with special border state
-  for (int x=0;x<sizex-1;x++) {
-    sigma[x][0]=-1;
-    sigma[x][sizey-1]=-1;
-  }
-  for (int y=0;y<sizey-1;y++) {
-    sigma[0][y]=-1;
-    sigma[sizex-1][y]=-1;
-  }
-  for (int x=1;x<sizex-2;x++) {
-      sigma[x][1]=0;
-      sigma[x][sizey-2]=0;
+    for (int x=0;x<sizex-1;x++) {
+      sigma[x][0]=-1;
+      sigma[x][sizey-1]=-1;
     }
-  for (int y=1;y<sizey-2;y++) {
-      sigma[1][y]=0;
-      sigma[sizex-2][y]=0;
+    for (int y=0;y<sizey-1;y++) {
+      sigma[0][y]=-1;
+      sigma[sizex-1][y]=-1;
+    }
+    for (int x=1;x<sizex-2;x++) {
+        sigma[x][1]=0;
+        sigma[x][sizey-2]=0;
+      }
+    for (int y=1;y<sizey-2;y++) {
+        sigma[1][y]=0;
+        sigma[sizex-2][y]=0;
+    }   
   }
   return cellnum;
 } 
@@ -2818,8 +2885,8 @@ bool CellularPotts::plotPos(int x, int y, Graphics * graphics){
 /*    if (numberofedges[x][y])
       graphics->Rectangle((*cell)[self].Colour()+numberofedges[x][y], x, y);*/ 
       //uncomment to view edge boundaries clearly
-    if (mask[x][y] == true){
-      graphics->Rectangle((*cell)[self].Colour()+10, x, y);
+    if (mask[x][y] == false){
+      graphics->Rectangle(11, x, y);
       return false;
     }
     else if (self == 0)

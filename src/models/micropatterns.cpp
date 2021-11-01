@@ -156,12 +156,12 @@ void Plotter::Plot()  {
   plotPDEDensity();
   //plotCPMCellTypes();
   plotCPMLines(); 
-  plotPDEContourLines();
+  //plotPDEContourLines();
   graphics->EndScene();
 }
 
 int PDE::MapColour(double val) {
-  return (int(val + 100)/2) +155;
+  return (int(val*1000 + 100)/2) +155;
 }
 
 int main(int argc, char *argv[]) {

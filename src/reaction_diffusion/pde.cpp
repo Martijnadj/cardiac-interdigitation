@@ -109,10 +109,29 @@ PDEFIELD_TYPE ***PDE::AllocatePDEvars(const int layers, const int sx, const int 
 void PDE::InitializePDEvars(void){
     for (int i = 0; i< sizex* sizey;i++){
 
-      PDEvars[0][0][i] = par.initial_E_m;
-      PDEvars[1][0][i] = par.initial_n;
-      PDEvars[2][0][i] = par.initial_m;
-      PDEvars[3][0][i] = par.initial_h;
+      PDEvars[0][0][i] = -0.050;
+      PDEvars[1][0][i] = 0.32;
+      PDEvars[2][0][i] = 0.0002;
+      PDEvars[3][0][i] = 0;
+      PDEvars[4][0][i] = 0;
+      PDEvars[5][0][i] = 1;
+      PDEvars[6][0][i] = 1;
+      PDEvars[7][0][i] = 1;
+      PDEvars[8][0][i] = 0;
+      PDEvars[9][0][i] = 1;
+      PDEvars[10][0][i] = 0;
+      PDEvars[11][0][i] = 0.75;
+      PDEvars[12][0][i] = 0.75; 
+      PDEvars[13][0][i] = 0;
+      PDEvars[14][0][i] = 0.1;
+      PDEvars[15][0][i] = 1;
+      PDEvars[16][0][i] = 0;
+      PDEvars[17][0][i] = 9.2;
+      PDEvars[18][0][i] = 0;
+      PDEvars[19][0][i] = 0.75;
+      PDEvars[20][0][i] = 0.3;
+      PDEvars[21][0][i] = 0.9;
+      PDEvars[22][0][i] = 0.1;
     }
 
 
@@ -278,12 +297,14 @@ void PDE::SetupOpenCL(){
 
 
 void PDE::SecreteAndDiffuseCL(CellularPotts *cpm, int repeat){
+    cout << PDEvars[0][250][250] << endl;
     extern CLManager clm; 
     if (!openclsetup ){this->SetupOpenCL();}
     //A B scheme used to keep arrays on GPU
     clm.pde_AB = 1;
     int errorcode = 0;
 
+    
     
     //Write the cellSigma array to GPU for secretion
     clm.queue.enqueueWriteBuffer(clm.cpm,

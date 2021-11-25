@@ -227,6 +227,28 @@ void CellularPotts::AllocateNumberOfEdges(int sx, int sy) {
 
 }
 
+void CellularPotts::AllocateCouplingCoefficient(int sx, int sy) {
+  
+  sizex=sx; sizey=sy;
+  
+  couplingcoefficient=(PDEFIELD_TYPE **)malloc(sizex*sizeof(PDEFIELD_TYPE*));
+  if (couplingcoefficient==NULL)
+    MemoryWarning();
+  
+  couplingcoefficient[0]=(PDEFIELD_TYPE *)malloc(sizex*sizey*sizeof(PDEFIELD_TYPE));
+  if (couplingcoefficient[0]==NULL)  
+    MemoryWarning();
+  
+  
+  {for (int i=1;i<sizex;i++) 
+    couplingcoefficient[i]=couplingcoefficient[i-1]+sizey;}
+  
+  /* Clear coupling coeff plane */
+   {for (int i=0;i<sizex*sizey;i++) 
+     couplingcoefficient[0][i]=0; }
+
+}
+
 void CellularPotts::AllocateMask(int sx, int sy) {
   sizex=sx; sizey=sy;
   
@@ -346,6 +368,26 @@ void CellularPotts::InitializeEdgeList(void){
       numberofedges[x][y]++;
     }
   } 
+}
+
+void CellularPotts::InitializeCouplingCoefficient(void){
+  AllocateCouplingCoefficient(par.sizex, par.sizey);
+  for (int x = 0; x < par.sizex; x++){
+    for (int y = 0; y < par.sizey; y++){
+      if (sigma[x][y]==-1)
+        couplingcoefficient[x][y] = par.couplingoffmask; 
+      else if (sigma[x][y] == 0)
+        couplingcoefficient[x][y] = par.couplingmedium;
+      else if (sigma[x][y] > 0)
+        couplingcoefficient[x][y] = par.couplingcell;
+      if (numberofedges[x][y] > 0)
+        couplingcoefficient[x][y] = par.couplingboundary;
+      if (couplingcoefficient[x][y] > 0.00000001)
+        cout << couplingcoefficient[x][y] << endl;
+
+        
+    }
+  }
 }
 
 
@@ -1162,12 +1204,28 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal) {
                 loop += (double)2/n_nb;
                 numberofedges[x][y]++;
                 numberofedges[xn][yn]++;
+                if (numberofedges[x][y] == 1)
+                  couplingcoefficient[x][y] = par.couplingboundary;
+                if (numberofedges[xn][yn] == 1)
+                  couplingcoefficient[xn][yn] = par.couplingboundary;
               }
               if (edgelist[edgeadjusting] != -1 && sigma[xn][yn] == sigma[x][y]){//if the sites have the same celltype and they have an edge, remove it           
                 RemoveEdgeFromEdgelist(edgeadjusting); 
                 loop -= (double)2/n_nb;
                 numberofedges[x][y]--;
-                numberofedges[xn][yn]--;   
+                numberofedges[xn][yn]--;
+                if (numberofedges[x][y] == 0){
+                  if(sigma[x][y] == 0)
+                    couplingcoefficient[x][y] = par.couplingmedium;
+                  else if (sigma[x][y] == 0)
+                    couplingcoefficient[x][y] = par.couplingcell;
+                }
+                if (numberofedges[xn][yn] == 0){
+                  if(sigma[x][y] == 0)
+                    couplingcoefficient[xn][yn] = par.couplingmedium;
+                  else if (sigma[xn][yn] == 0)
+                    couplingcoefficient[xn][yn] = par.couplingcell;
+                }  
               } 
             }
           }
@@ -1179,12 +1237,28 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal) {
               loop += (double)2/n_nb;
               numberofedges[x][y]++;
               numberofedges[xn][yn]++;
+              if (numberofedges[x][y] == 1)
+                couplingcoefficient[x][y] = par.couplingboundary;
+              if (numberofedges[xn][yn] == 1)
+                couplingcoefficient[xn][yn] = par.couplingboundary;
             }
             if (edgelist[edgeadjusting] != -1 && sigma[xn][yn] == sigma[x][y]){//if the sites have the same celltype and they have an edge, remove it           
               RemoveEdgeFromEdgelist(edgeadjusting); 
               loop -= (double)2/n_nb;
               numberofedges[x][y]--;
-              numberofedges[xn][yn]--;   
+              numberofedges[xn][yn]--;
+              if (numberofedges[x][y] == 0){
+                if(sigma[x][y] == 0)
+                  couplingcoefficient[x][y] = par.couplingmedium;
+                else if (sigma[x][y] == 0)
+                  couplingcoefficient[x][y] = par.couplingcell;
+              }
+              if (numberofedges[xn][yn] == 0){
+                if(sigma[x][y] == 0)
+                  couplingcoefficient[xn][yn] = par.couplingmedium;
+                else if (sigma[xn][yn] == 0)
+                  couplingcoefficient[xn][yn] = par.couplingcell;   
+              }    
             }             
           }
         }

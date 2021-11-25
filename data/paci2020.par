@@ -1,0 +1,57 @@
+# Cellular Potts parameters
+T = 50
+target_area = 100
+target_length = 20
+lambda = 50
+lambda2 = 0
+Jtable = ../data/J.dat
+conn_diss = 2000
+vecadherinknockout = true
+chemotaxis = 0
+extensiononly = false
+border_energy = 50000
+
+# note: do not change the following parameters for "long" cells (lambda2>0)
+neighbours = 2
+periodic_boundaries = false
+
+# PDE parameters
+n_chem = 23
+diff_coeff = 1e-14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+decay_rate = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+secr_rate = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+saturation = 0
+dt = 1e-6
+dx = 2.5e-6
+pde_its = 20
+
+# Micropatterns parameters
+micropatternmask = ../data/mask.dat
+
+# initial conditions (create a "blob" of cells in the middle)
+n_init_cells = 250
+size_init_cells = 10
+sizex = 500
+sizey = 500
+divisions = 0
+mcs = 5000
+rseed = -1
+subfield = 1.0
+relaxation = 0
+initial_E_m = -90
+initial_n = 0.5
+initial_m = 0.25
+initial_h = 0.08
+
+couplingmedium = 1e-14
+couplingcell = 1e-14
+couplingboundary = 1e-14
+couplingoffmask = 0
+
+# output
+storage_stride = 1
+graphics = true
+store = false
+datadir = ../images4
+
+

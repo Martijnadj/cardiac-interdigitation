@@ -260,6 +260,7 @@ void PDE::SetupOpenCL(){
   //Allocate memory on the GPU
   clm.cpm = cl::Buffer(clm.context, CL_MEM_READ_WRITE, sizeof(int)*sizex*sizey); 
   clm.numberofedges = cl::Buffer(clm.context, CL_MEM_READ_WRITE, sizeof(int)*sizex*sizey); 
+  clm.couplingcoefficient = cl::Buffer(clm.context, CL_MEM_READ_WRITE, sizeof(PDEFIELD_TYPE)*sizex*sizey); 
   clm.pdeA = cl::Buffer(clm.context, CL_MEM_READ_WRITE, sizeof(PDEFIELD_TYPE)*sizex*sizey*layers);
   clm.pdeB = cl::Buffer(clm.context, CL_MEM_READ_WRITE, sizeof(PDEFIELD_TYPE)*sizex*sizey*layers); 
   clm.diffco = cl::Buffer(clm.context, CL_MEM_READ_WRITE, sizeof(PDEFIELD_TYPE)*layers);
@@ -281,6 +282,7 @@ void PDE::SetupOpenCL(){
   kernel_SecreteAndDiffuse.setArg(10,sizeof(PDEFIELD_TYPE), &secr_rate);
   kernel_SecreteAndDiffuse.setArg(11, sizeof(int),  &btype);
   kernel_SecreteAndDiffuse.setArg(12, clm.numberofedges);
+  kernel_SecreteAndDiffuse.setArg(13, clm.couplingcoefficient);
 
 
   PDEFIELD_TYPE diff_coeff[layers];
@@ -297,7 +299,6 @@ void PDE::SetupOpenCL(){
 
 
 void PDE::SecreteAndDiffuseCL(CellularPotts *cpm, int repeat){
-    cout << PDEvars[0][250][250] << endl;
     extern CLManager clm; 
     if (!openclsetup ){this->SetupOpenCL();}
     //A B scheme used to keep arrays on GPU
@@ -311,6 +312,8 @@ void PDE::SecreteAndDiffuseCL(CellularPotts *cpm, int repeat){
     CL_TRUE, 0, sizeof(int)*sizex*sizey, cpm->getSigma()[0]);
     clm.queue.enqueueWriteBuffer(clm.numberofedges,
     CL_TRUE, 0, sizeof(int)*sizex*sizey, cpm->getNumberofedges()[0]);
+    clm.queue.enqueueWriteBuffer(clm.couplingcoefficient,
+    CL_TRUE, 0, sizeof(PDEFIELD_TYPE)*sizex*sizey, cpm->getCouplingCoefficient()[0]);
     //Writing pdefield PDEvars is only necessary if modified outside of clm.pdeA)kernel
     if (first_round) {
       clm.queue.enqueueWriteBuffer(clm.pdeA,  CL_TRUE, 0, sizeof(PDEFIELD_TYPE)*sizex*sizey*layers, PDEvars[0][0]);
@@ -318,10 +321,10 @@ void PDE::SecreteAndDiffuseCL(CellularPotts *cpm, int repeat){
     }
     //Main loop executing kernel and switching between A and B arrays
     for (int index = 0; index < repeat; index ++){
-      kernel_SecreteAndDiffuse.setArg(13, sizeof(int), &PDEsteps);
+      kernel_SecreteAndDiffuse.setArg(14, sizeof(int), &PDEsteps);
       if (clm.pde_AB == 1) clm.pde_AB = 0;
       else clm.pde_AB = 1;
-      kernel_SecreteAndDiffuse.setArg(14, sizeof(int),  &clm.pde_AB);
+      kernel_SecreteAndDiffuse.setArg(15, sizeof(int),  &clm.pde_AB);
       if(clm.pde_AB == 0){
         kernel_SecreteAndDiffuse.setArg(1, clm.pdeA);
         kernel_SecreteAndDiffuse.setArg(2, clm.pdeB);

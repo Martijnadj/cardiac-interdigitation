@@ -101,6 +101,11 @@ class Parameter {
   double initial_n;
   double initial_m;
   double initial_h;
+
+  double couplingmedium;
+  double couplingcell;
+  double couplingboundary;
+  double couplingoffmask;
  private:
 };
 

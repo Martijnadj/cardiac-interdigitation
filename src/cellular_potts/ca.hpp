@@ -116,6 +116,7 @@ public:
   CellularPotts(void);
 
   void InitializeEdgeList(void); //Set the initial edgelist which are eligible to change
+  void InitializeCouplingCoefficient(void); //Set the initial coupling coefficients
 
   // Keyword virtual means, that derived classed (cppvmCellularPotts) can override
   // this function and carry out the memory allocation in their preferred way
@@ -123,6 +124,7 @@ public:
   // the function belonging the actual type will be called
   virtual void AllocateSigma(int sx, int sy);
   virtual void AllocateNumberOfEdges(int sx, int sy);
+  virtual void AllocateCouplingCoefficient(int sx, int sy);
   virtual void AllocateMask(int sx, int sy);
   
   virtual void InitializeMatrix(Dish &beast);
@@ -375,6 +377,10 @@ public:
     return numberofedges;
   }
 
+  inline PDEFIELD_TYPE** getCouplingCoefficient(){
+    return couplingcoefficient;
+  }
+
 
   bool plotPos(int x, int y, Graphics * graphics);
   void linePlotPos(int x, int y, Graphics * graphics);
@@ -439,6 +445,7 @@ protected:
 protected:
   int **sigma;
   int **numberofedges;
+  PDEFIELD_TYPE **couplingcoefficient;
   bool **mask;
   int sizex;
   int sizey;

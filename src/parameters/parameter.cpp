@@ -91,6 +91,11 @@ Parameter::Parameter() {
   initial_m = 0.25;
   initial_h = 0.08;
 
+  couplingmedium = 1e-5;
+  couplingcell = 1e-5;
+  couplingboundary = 1e-8;
+  couplingoffmask = 0;
+
 }
 
 Parameter::~Parameter() {
@@ -205,6 +210,11 @@ void Parameter::Read(const char *filename) {
   initial_m = fgetpar(fp, "initial_m", 0.25, true);
   initial_h = fgetpar(fp, "initial_h", 0.08, true);
 
+  couplingmedium = fgetpar(fp, "couplingmedium", 1e-5, true);
+  couplingcell = fgetpar(fp, "couplingcell", 1e-5, true);
+  couplingboundary = fgetpar(fp, "couplingboundary", 1e-8, true);
+  couplingoffmask = fgetpar(fp, "couplingoffmask", 0, true);
+
   std::cout << std::endl;
 }
 
@@ -297,8 +307,13 @@ void Parameter::Write(ostream &os) const {
 
   os << " initial_E_m = " << initial_E_m << endl;
   os << " initial_n = " << initial_n << endl;
-  os << " initial_m = " << initial_E_m << endl;
-  os << " initial_h = " << initial_E_m << endl;
+  os << " initial_m = " << initial_m << endl;
+  os << " initial_h = " << initial_h<< endl;
+
+  os << " couplingmedium = " << couplingmedium << endl;
+  os << " couplingcell = " << couplingcell << endl;
+  os << " couplingboundary = " << couplingboundary << endl;
+  os << " couplingoffmask = " << couplingoffmask << endl;
 }
 
 ostream &operator<<(ostream &os, Parameter &p) {

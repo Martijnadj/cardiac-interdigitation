@@ -264,18 +264,18 @@ void ComputeDerivs(PDEFIELD_TYPE t, PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int i
   PDEFIELD_TYPE RyRoinfss   = (1 - 1/(1 +  exp((1000*y[2]-(y[20]+ RyRohalf))/0.003)));
   PDEFIELD_TYPE RyRtauact;
   if (RyRoinfss>= y[21])
-      RyRtauact = 18.75e-3;       //s
+    RyRtauact = 18.75e-3;       //s
   else
-      RyRtauact = 0.1*18.75e-3;   //s
+    RyRtauact = 0.1*18.75e-3;   //s
 
   dydt[21]    = (RyRoinfss- y[21])/(RyRtauact);
 
   PDEFIELD_TYPE RyRcinfss   = (1/(1 + exp((1000*y[2]-(y[20]+RyRchalf))/0.001)));
   PDEFIELD_TYPE RyRtauinact;
   if (RyRcinfss>= y[22])
-      RyRtauinact = 2*87.5e-3;    //s
+    RyRtauinact = 2*87.5e-3;    //s
   else
-      RyRtauinact = 87.5e-3;      //s
+    RyRtauinact = 87.5e-3;      //s
 
   dydt[22]    = (RyRcinfss- y[22])/(RyRtauinact);
 
@@ -387,7 +387,7 @@ void ComputeDerivs(PDEFIELD_TYPE t, PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int i
   dydt[3] = alpha_h*(1-y[3]) - beta_h*y[3];                       //eq 14 
   */
 
-
+}
 
 int GetLocation(int x, int y, int ysize){
   return x*ysize+y;
@@ -483,6 +483,7 @@ global const PDEFIELD_TYPE* diff_coeff,
 PDEFIELD_TYPE secr_rate,
 int btype,
 global const int* numberofedges,
+global const PDEFIELD_TYPE* couplingcoefficient,
 int PDEsteps) {
   PDEFIELD_TYPE thetime = PDEsteps * dt;
 
@@ -531,33 +532,35 @@ int PDEsteps) {
     for (i = 0; i<nvar; i++)
       currentvalues[i] = sigmaA[id + i*layersize];
 
-    sum += sigmaA[id-1];
-    sum += sigmaA[id+1];
-    sum += sigmaA[id-ysize];
-    sum += sigmaA[id+ysize];
-    sum-=4*currentvalues[0];
-
+    sum += couplingcoefficient[id-1]*sigmaA[id-1];
+    sum += couplingcoefficient[id+1]*sigmaA[id+1];
+    sum += couplingcoefficient[id-ysize] * sigmaA[id-ysize];
+    sum += couplingcoefficient[id+ysize] * sigmaA[id+ysize];
+    sum-=(couplingcoefficient[id-1] + couplingcoefficient[id+1] + couplingcoefficient[id-ysize] + couplingcoefficient[id+ysize])*sigmaA[id];
     PDEFIELD_TYPE derivs[23];
-    if (numberofedges[id] > -1){
+    if (sigmacells[id] > 0){
       ComputeDerivs(thetime, currentvalues, derivs, id);
       RungeKutta(thetime, derivs, currentvalues, dt, id);
-
-    
+  
         //Diffusion
 
-      sigmaB[id] = currentvalues[0]+derivs[0] + sum*dt*diff_coeff[0]/dx2;
+      sigmaB[id] = currentvalues[0]+derivs[0] + sum*dt/dx2;
       for (i = 1; i<nvar; i++)
         sigmaB[id + i*layersize] = currentvalues[i] + derivs[i];
       
     }
     else{
 
-      sigmaB[id] = currentvalues[0]+ sum*dt*diff_coeff[0]/dx2;
+      sigmaB[id] = currentvalues[0]+ sum*dt/dx2;
+
       for (i = 1; i<nvar; i++)
         sigmaB[id + i*layersize] = currentvalues[i];
 
     }
     //sigmaB[id] = sigmaB[id]+0.1;
+
+
+
     if(fmod(thetime, 750) < -50 && xpos > 120 && xpos < 126 && ypos > 175 && ypos < 326){
       sigmaB[id] = 0;
     }
@@ -600,6 +603,14 @@ int PDEsteps) {
       sigmaB[id] = 0;
     }
   */
+
+
+    if (id == 189734)
+      printf("Time = %.5f, V = %.5f \n", thetime, sigmaB[id]);
+    if (!((sigmaB[id] > -1) && (sigmaB[id] < 1)) && thetime == 0.03206){
+      printf("id = %i \n", id);
+    }  
+
   }
 }
 

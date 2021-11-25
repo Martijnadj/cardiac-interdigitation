@@ -1,10 +1,7 @@
 #define CL_HPP_TARGET_OPENCL_VERSION 300
 
-#ifdef __APPLE__
 #include "cl.hpp" 
-#else
-#include <CL/opencl.hpp>
-#endif
+
 
 class CLManager {
   public:
@@ -14,6 +11,7 @@ class CLManager {
 
     cl::Buffer cpm;
     cl::Buffer numberofedges;
+    cl::Buffer couplingcoefficient;
 
     int pde_AB;
     cl::Buffer pdeA;

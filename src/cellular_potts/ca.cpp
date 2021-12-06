@@ -225,7 +225,7 @@ void CellularPotts::AllocateNumberOfEdges(int sx, int sy) {
    {for (int i=0;i<sizex*sizey;i++) 
      numberofedges[0][i]=0; }
 
-}
+} 
 
 void CellularPotts::AllocateCouplingCoefficient(int sx, int sy) {
   
@@ -382,8 +382,6 @@ void CellularPotts::InitializeCouplingCoefficient(void){
         couplingcoefficient[x][y] = par.couplingcell;
       if (numberofedges[x][y] > 0)
         couplingcoefficient[x][y] = par.couplingboundary;
-      if (couplingcoefficient[x][y] > 0.00000001)
-        cout << couplingcoefficient[x][y] << endl;
 
         
     }

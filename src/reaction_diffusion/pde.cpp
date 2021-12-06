@@ -25,6 +25,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <chrono>
 
 #include "crash.hpp"
 #include "parameter.hpp"
@@ -242,6 +243,8 @@ void PDE::PlotInCells (Graphics *g, CellularPotts *cpm, const int l) {
   }
 }
 
+
+
 void PDE::SetupOpenCL(){
   extern CLManager clm;
 
@@ -267,22 +270,22 @@ void PDE::SetupOpenCL(){
 
 
   //Making kernel and setting arguments
-  kernel_SecreteAndDiffuse = cl::Kernel(program,"SecreteAndDiffuse");      
+  kernel_ODEstep = cl::Kernel(program,"ODEstep");      
 
-  kernel_SecreteAndDiffuse.setArg(0, clm.cpm);
-  kernel_SecreteAndDiffuse.setArg(1, clm.pdeA);
-  kernel_SecreteAndDiffuse.setArg(2, clm.pdeB);
-  kernel_SecreteAndDiffuse.setArg(3, sizeof(int), &sizex);
-  kernel_SecreteAndDiffuse.setArg(4, sizeof(int), &sizey);
-  kernel_SecreteAndDiffuse.setArg(5, sizeof(int), &layers);
-  kernel_SecreteAndDiffuse.setArg(6, sizeof(PDEFIELD_TYPE), &decay_rate);
-  kernel_SecreteAndDiffuse.setArg(7, sizeof(PDEFIELD_TYPE), &dt);
-  kernel_SecreteAndDiffuse.setArg(8, sizeof(PDEFIELD_TYPE), &dx2);
-  kernel_SecreteAndDiffuse.setArg(9, clm.diffco);
-  kernel_SecreteAndDiffuse.setArg(10,sizeof(PDEFIELD_TYPE), &secr_rate);
-  kernel_SecreteAndDiffuse.setArg(11, sizeof(int),  &btype);
-  kernel_SecreteAndDiffuse.setArg(12, clm.numberofedges);
-  kernel_SecreteAndDiffuse.setArg(13, clm.couplingcoefficient);
+  kernel_ODEstep.setArg(0, clm.cpm);
+  kernel_ODEstep.setArg(1, clm.pdeA);
+  kernel_ODEstep.setArg(2, clm.pdeB);
+  kernel_ODEstep.setArg(3, sizeof(int), &sizex);
+  kernel_ODEstep.setArg(4, sizeof(int), &sizey);
+  kernel_ODEstep.setArg(5, sizeof(int), &layers);
+  kernel_ODEstep.setArg(6, sizeof(PDEFIELD_TYPE), &decay_rate);
+  kernel_ODEstep.setArg(7, sizeof(PDEFIELD_TYPE), &dt);
+  kernel_ODEstep.setArg(8, sizeof(PDEFIELD_TYPE), &dx2);
+  kernel_ODEstep.setArg(9, clm.diffco);
+  kernel_ODEstep.setArg(10,sizeof(PDEFIELD_TYPE), &secr_rate);
+  kernel_ODEstep.setArg(11, sizeof(int),  &btype);
+  kernel_ODEstep.setArg(12, clm.numberofedges);
+  kernel_ODEstep.setArg(13, clm.couplingcoefficient);
 
 
   PDEFIELD_TYPE diff_coeff[layers];
@@ -298,11 +301,10 @@ void PDE::SetupOpenCL(){
 } 
 
 
-void PDE::SecreteAndDiffuseCL(CellularPotts *cpm, int repeat){
+void PDE::ODEstepCL(CellularPotts *cpm, int repeat){
     extern CLManager clm; 
     if (!openclsetup ){this->SetupOpenCL();}
     //A B scheme used to keep arrays on GPU
-    clm.pde_AB = 1;
     int errorcode = 0;
 
     
@@ -321,26 +323,45 @@ void PDE::SecreteAndDiffuseCL(CellularPotts *cpm, int repeat){
     }
     //Main loop executing kernel and switching between A and B arrays
     for (int index = 0; index < repeat; index ++){
-      kernel_SecreteAndDiffuse.setArg(14, sizeof(int), &PDEsteps);
-      if (clm.pde_AB == 1) clm.pde_AB = 0;
-      else clm.pde_AB = 1;
-      kernel_SecreteAndDiffuse.setArg(15, sizeof(int),  &clm.pde_AB);
-      if(clm.pde_AB == 0){
-        kernel_SecreteAndDiffuse.setArg(1, clm.pdeA);
-        kernel_SecreteAndDiffuse.setArg(2, clm.pdeB);
+      for (int innerloop = 0; innerloop < 4; innerloop++){
+
+          using std::chrono::high_resolution_clock;
+          using std::chrono::duration_cast;
+          using std::chrono::duration;
+          using std::chrono::milliseconds;
+
+          auto t1 = high_resolution_clock::now();
+
+        kernel_ODEstep.setArg(14, sizeof(int), &PDEsteps);
+        if(innerloop == 0 || innerloop == 1){
+          kernel_ODEstep.setArg(1, clm.pdeA);
+          kernel_ODEstep.setArg(2, clm.pdeB);
+        }
+        else{
+          kernel_ODEstep.setArg(1, clm.pdeB);
+          kernel_ODEstep.setArg(2, clm.pdeA);
+        }
+        if(innerloop == 0 || innerloop == 2){
+          errorcode = clm.queue.enqueueNDRangeKernel(kernel_ODEstep,
+                      cl::NullRange, cl::NDRange(sizex*sizey), cl::NullRange);
+          errorcode = clm.queue.finish();
+        }
+        else{
+          errorcode = clm.queue.enqueueNDRangeKernel(kernel_ODEstep,
+                      cl::NullRange, cl::NDRange(1), cl::NullRange);
+          errorcode = clm.queue.finish();
+        }
+        if (errorcode != 0){
+          printf("Error during OpenCL secretion and diffusion");
+          exit(0);
+        }
+
+        auto t2 = high_resolution_clock::now();
+        duration<double, std::milli> ms_double = t2 - t1;
+        cout << "For PDEsteps = " << PDEsteps << ", " << ms_double.count() << " ms has elapsed" << endl;
+        PDEsteps += 1;
+
       }
-      else{
-        kernel_SecreteAndDiffuse.setArg(1, clm.pdeB);
-        kernel_SecreteAndDiffuse.setArg(2, clm.pdeA);
-      }
-      errorcode = clm.queue.enqueueNDRangeKernel(kernel_SecreteAndDiffuse,
-                  cl::NullRange, cl::NDRange(sizex*sizey), cl::NullRange);
-      errorcode = clm.queue.finish();
-      if (errorcode != 0){
-        printf("Error during OpenCL secretion and diffusion");
-        exit(0);
-      }
-      PDEsteps += 1;
     }
     //Reading from correct array containing the output
     if (clm.pde_AB == 0) {

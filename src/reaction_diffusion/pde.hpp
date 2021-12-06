@@ -205,7 +205,7 @@ class PDE {
   void Secrete(CellularPotts *cpm);
 
   //Secrete and diffuse functions accelerated using OpenCL
-  void SecreteAndDiffuseCL(CellularPotts *cpm, int repeat);
+  void ODEstepCL(CellularPotts *cpm, int repeat);
 
   /*! \brief Returns cumulative "simulated" time,
     i.e. number of time steps * dt. */
@@ -288,6 +288,9 @@ class PDE {
   method of memory allocation.
   */   
   virtual PDEFIELD_TYPE ***AllocatePDEvars(const int layers, const int sx, const int sy);
+
+  void Tri_diag_inv(PDEFIELD_TYPE *du, PDEFIELD_TYPE *d, PDEFIELD_TYPE *dl, PDEFIELD_TYPE *B, PDEFIELD_TYPE *X, int size); 
+  void Diffusionstep(PDEFIELD_TYPE ***PDEvars, CellularPotts *cpm);
   
 
  
@@ -304,10 +307,15 @@ private:
   std::vector<std::string> species_names;
  
   void SetupOpenCL(); 
+
+   
+
+
+
   //OpenCL variables
   bool openclsetup = false;
   cl::Program program;
-  cl::Kernel kernel_SecreteAndDiffuse;
+  cl::Kernel kernel_ODEstep;
   bool first_round = true;
 };
 

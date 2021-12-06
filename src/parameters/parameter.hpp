@@ -79,6 +79,7 @@ class Parameter {
   int mcds_denoise_steps;
   bool pause_on_start; 
   bool useopencl;
+  bool usecuda;
   char * opencl_core_path;
   int opencl_pref_platform;
   int adhesion_storage_stride;

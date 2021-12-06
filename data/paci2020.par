@@ -43,9 +43,9 @@ initial_n = 0.5
 initial_m = 0.25
 initial_h = 0.08
 
-couplingmedium = 1e-14
-couplingcell = 1e-14
-couplingboundary = 1e-14
+couplingmedium = 1e-5
+couplingcell = 1e-5
+couplingboundary = 1e-7
 couplingoffmask = 0
 
 # output
@@ -53,5 +53,5 @@ storage_stride = 1
 graphics = true
 store = false
 datadir = ../images4
-
+usecuda = false
 

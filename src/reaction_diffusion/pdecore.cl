@@ -468,8 +468,107 @@ void RungeKutta(PDEFIELD_TYPE t, PDEFIELD_TYPE* dyoutdt, PDEFIELD_TYPE* y, PDEFI
 }
 
 
+void Tri_diag_inv(PDEFIELD_TYPE *du, PDEFIELD_TYPE *d, PDEFIELD_TYPE *dl, PDEFIELD_TYPE *B, PDEFIELD_TYPE *X, int size){  
+  //Solve AX = B where A is a tridiagonal matrix with upper diag du, diag d and lower diag dl and X and B are vectors
+    
+    PDEFIELD_TYPE w;
+    
+    for(int i = 1; i<size; i++){
+        w = dl[i] / d[i-1];
+        d[i] = d[i] - w*du[i-1];
+        B[i] = B[i] - w*B[i-1];   
+    }
+    
+    X[size-1] = B[size-1]/d[size-1];
+    
+    for(int i = size-2; i >=0; i--){
+        X[i] = (B[i] - du[i]*X[i+1])/d[i];
+    }
 
-void kernel SecreteAndDiffuse(
+}
+
+void ADIstepRows(global PDEFIELD_TYPE* sigmaB, global const PDEFIELD_TYPE* couplingcoeff, PDEFIELD_TYPE dt, PDEFIELD_TYPE dx2, int xsize, int ysize){
+  //Do a diffusion step following the ADI / Crank-Nicholson method
+  //Ideally this should use a better method, such as PCR, or even just use a better Tridiagonal solver (such as in Enda Caroll's paper)
+
+  PDEFIELD_TYPE upperY[500];
+  PDEFIELD_TYPE diagY[500];
+  PDEFIELD_TYPE lowerY[500];
+  PDEFIELD_TYPE constantsY[500];
+  PDEFIELD_TYPE solutionY[500];
+
+
+  //iterate over rows
+  for (int y = 0; y < ysize; y++){
+    lowerY[0] = 0;
+    diagY[0] = couplingcoeff[1*ysize+y]/dx2 + 2/dt;
+    upperY[0] = -couplingcoeff[1*ysize+y]/dx2;
+
+
+    lowerY[xsize-1] = -couplingcoeff[(xsize-2)*ysize+y]/dx2;
+    diagY[xsize-1] = couplingcoeff[(xsize-2)*ysize+y]/dx2 + 2/dt;
+    upperY[xsize-1] = 0;
+    for (int x = 1; x < xsize-1; x++){
+      diagY[x] = (couplingcoeff[(x-1)*ysize+y] + couplingcoeff[(x+1)*ysize+y])/dx2 + 2/dt;   
+      upperY[x] = -couplingcoeff[(x+1)*ysize+y]/dx2; 
+      lowerY[x] = -couplingcoeff[(x-1)*ysize+y]/dx2;
+      if (y == 0)
+        constantsY[x] = 2/dt*sigmaB[(x)*ysize+y] + (couplingcoeff[x*ysize+y+1]*(sigmaB[(x)*ysize+y+1] - sigmaB[(x)*ysize+y]))/dx2; 
+      else if (y == ysize-1)
+        constantsY[x] = 2/dt*sigmaB[(x)*ysize+y] + (couplingcoeff[x*ysize+y-1]*(sigmaB[(x)*ysize+y-1] - sigmaB[(x)*ysize+y]))/dx2; 
+      else 
+        constantsY[x] = 2/dt*sigmaB[(x)*ysize+y] + (couplingcoeff[x*ysize+y+1]*(sigmaB[(x)*ysize+y+1] - sigmaB[(x)*ysize+y]) + couplingcoeff[x*ysize+y-1]*(sigmaB[(x)*ysize+y-1] - sigmaB[(x)*ysize+y]))/dx2; 
+    }
+    Tri_diag_inv(upperY, diagY, lowerY, constantsY, solutionY, xsize);
+
+    for (int x = 0; x < xsize; x++)
+     sigmaB[(x)*ysize+y]= solutionY[x];
+
+  }
+}
+
+
+void ADIstepColumns(global PDEFIELD_TYPE* sigmaB, global const PDEFIELD_TYPE* couplingcoeff, PDEFIELD_TYPE dt, PDEFIELD_TYPE dx2, int xsize, int ysize){
+  //Do a diffusion step following the ADI / Crank-Nicholson method
+  //Ideally this should use a better method, such as PCR, or even just use a better Tridiagonal solver (such as in Enda Caroll's paper)
+
+  PDEFIELD_TYPE upperX[500];
+  PDEFIELD_TYPE diagX[500];
+  PDEFIELD_TYPE lowerX[500];
+  PDEFIELD_TYPE constantsX[500];
+  PDEFIELD_TYPE solutionX[500];
+
+  //iterate over columns
+  for (int x = 0; x < xsize; x++){
+    lowerX[0] = 0;
+    diagX[0] = couplingcoeff[x*ysize+1]/dx2 + 2/dt;
+    upperX[0] = -couplingcoeff[x*ysize+1]/dx2;
+
+
+    lowerX[ysize-1] = -couplingcoeff[x*ysize+ysize-2]/dx2;
+    diagX[ysize-1] = couplingcoeff[x*ysize+ysize-2]/dx2 + 2/dt;
+    upperX[ysize-1] = 0;
+    for (int y = 1; y < ysize-1; y++){
+      diagX[y] = (couplingcoeff[x*ysize+y-1] + couplingcoeff[x*ysize+y+1])/dx2 + 2/dt;   
+      upperX[x] = -couplingcoeff[x*ysize+y+1]/dx2; 
+      lowerX[x] = -couplingcoeff[x*ysize+y-1]/dx2;
+      if (x == 0){
+        constantsX[y] = 2/dt*sigmaB[(x)*ysize+y] + (couplingcoeff[(x+1)*ysize+y]*(sigmaB[(x+1)*ysize+y] - sigmaB[(x)*ysize+y]))/dx2; 
+        constantsX[y] = 2/dt*sigmaB[(x)*ysize+y] + (couplingcoeff[(x-1)*ysize+y]*(sigmaB[(x-1)*ysize+y] - sigmaB[(x)*ysize+y]))/dx2; 
+      }
+      else 
+        constantsX[y] = 2/dt*sigmaB[(x)*ysize+y] + (couplingcoeff[(x+1)*ysize+y]*(sigmaB[(x+1)*ysize+y] - sigmaB[(x)*ysize+y]) + couplingcoeff[(x-1)*ysize+y]*(sigmaB[(x-1)*ysize+y] - sigmaB[(x)*ysize+y]))/dx2; 
+    }
+    Tri_diag_inv(upperX, diagX, lowerX, constantsX, solutionX, ysize);
+
+    for (int y = 0; y < ysize; y++)
+      sigmaB[(x)*ysize+y] = solutionX[y];
+  } 
+
+}
+
+
+void kernel ODEstep(
 global const int* sigmacells,  
 global const PDEFIELD_TYPE* sigmaA,  
 global PDEFIELD_TYPE* sigmaB, 
@@ -485,8 +584,8 @@ int btype,
 global const int* numberofedges,
 global const PDEFIELD_TYPE* couplingcoefficient,
 int PDEsteps) {
-  PDEFIELD_TYPE thetime = PDEsteps * dt;
-
+  PDEFIELD_TYPE thetime = PDEsteps * dt/4;
+  
   //ID is used for position in array
   int id = get_global_id(0); 
   //Calculate position in aray
@@ -496,121 +595,127 @@ int PDEsteps) {
   int ypos = id - xpos * ysize - zpos * layersize; 
   //printf("id: %i x: %i y: %i\n", id, xpos, ypos);  
     
-  
-  //Boundaries
-  PDEFIELD_TYPE sum = 0;
-  if (xpos == 0 || ypos == 0 || xpos == xsize-1 || ypos == ysize-1){
-    switch(btype){
-    case 1:
-    //Noflux gradient
-    if (ypos == ysize-1) sigmaB[id] = sigmaA[id-1]; 
-    if (ypos == 0) sigmaB[id] = sigmaA[id+1];
-    if (xpos == xsize-1) sigmaB[id] = sigmaA[id-ysize];
-    if (xpos == 0) sigmaB[id] = sigmaA[id+ysize];
-    break;
-    //Periodic
-    case 2:
-    if (xpos == xsize-1) sigmaB[id] = sigmaA[id-layersize+ysize];
-    if (xpos == 0) sigmaB[id] = sigmaA[id+layersize-ysize];
-    if (ypos == ysize-1) sigmaB[id] = sigmaA[id-ysize+1];
-    if (ysize == 0) sigmaB[id] = sigmaB[id+ysize-1]; 
-    break;
-    //Absorbing
-    case 3:
-    sigmaB[id] = 0;
-    break;
-    } 
-  }
+  if(PDEsteps%2 == 0){
+    //Boundaries
+    PDEFIELD_TYPE sum = 0;
+    if (xpos == 0 || ypos == 0 || xpos == xsize-1 || ypos == ysize-1){
+      switch(btype){
+      case 1:
+      //Noflux gradient
+      if (ypos == ysize-1) sigmaB[id] = sigmaA[id-1]; 
+      if (ypos == 0) sigmaB[id] = sigmaA[id+1];
+      if (xpos == xsize-1) sigmaB[id] = sigmaA[id-ysize];
+      if (xpos == 0) sigmaB[id] = sigmaA[id+ysize];
+      break;
+      //Periodic
+      case 2:
+      if (xpos == xsize-1) sigmaB[id] = sigmaA[id-layersize+ysize];
+      if (xpos == 0) sigmaB[id] = sigmaA[id+layersize-ysize];
+      if (ypos == ysize-1) sigmaB[id] = sigmaA[id-ysize+1];
+      if (ysize == 0) sigmaB[id] = sigmaB[id+ysize-1]; 
+      break;
+      //Absorbing
+      case 3:
+      sigmaB[id] = 0;
+      break;
+      } 
+    }
+      
+    else {
+      //Paci2020
+      int nvar = 23;
+
+      int i;
+      PDEFIELD_TYPE currentvalues[23];
+
+      for (i = 0; i<nvar; i++)
+        currentvalues[i] = sigmaA[id + i*layersize];
+
+      PDEFIELD_TYPE derivs[23];
+      if (sigmacells[id] > 0){
+        ComputeDerivs(thetime, currentvalues, derivs, id);
+        RungeKutta(thetime, derivs, currentvalues, dt/2, id);
     
-  else {
-    //Paci2020
-    int nvar = 23;
+          //Diffusion
 
-    int i;
-    PDEFIELD_TYPE currentvalues[23];
+        sigmaB[id] = currentvalues[0]+derivs[0] + sum*dt/dx2;
+        for (i = 1; i<nvar; i++)
+          sigmaB[id + i*layersize] = currentvalues[i] + derivs[i];
+        
+      }
+      else{
 
-    for (i = 0; i<nvar; i++)
-      currentvalues[i] = sigmaA[id + i*layersize];
+        for (i = 0; i<nvar; i++)
+          sigmaB[id + i*layersize] = currentvalues[i];
 
-    sum += couplingcoefficient[id-1]*sigmaA[id-1];
-    sum += couplingcoefficient[id+1]*sigmaA[id+1];
-    sum += couplingcoefficient[id-ysize] * sigmaA[id-ysize];
-    sum += couplingcoefficient[id+ysize] * sigmaA[id+ysize];
-    sum-=(couplingcoefficient[id-1] + couplingcoefficient[id+1] + couplingcoefficient[id-ysize] + couplingcoefficient[id+ysize])*sigmaA[id];
-    PDEFIELD_TYPE derivs[23];
-    if (sigmacells[id] > 0){
-      ComputeDerivs(thetime, currentvalues, derivs, id);
-      RungeKutta(thetime, derivs, currentvalues, dt, id);
-  
+      }
+      //sigmaB[id] = sigmaB[id]+0.1;
+
+
+
+      if(fmod(thetime, 750) < -50 && xpos > 120 && xpos < 126 && ypos > 175 && ypos < 326){
+        sigmaB[id] = 0;
+      }
+      /*Noble1962 
+      PDEFIELD_TYPE currentvalues[4];
+      currentvalues[0] = sigmaA[id];
+      currentvalues[1] = sigmaA[id + layersize];
+      currentvalues[2] = sigmaA[id + 2*layersize];
+      currentvalues[3] = sigmaA[id + 3*layersize];
+
+      sum += sigmaA[id-1];
+      sum += sigmaA[id+1];
+      sum += sigmaA[id-ysize];
+      sum += sigmaA[id+ysize];
+      sum-=4*currentvalues[0];
+
+      PDEFIELD_TYPE derivs[4];
+      if (numberofedges[id] > 0){
+        ComputeDerivs(thetime, currentvalues, derivs, id);
+        RungeKutta(thetime, derivs, currentvalues, dt, id);
+
+
         //Diffusion
 
-      sigmaB[id] = currentvalues[0]+derivs[0] + sum*dt/dx2;
-      for (i = 1; i<nvar; i++)
-        sigmaB[id + i*layersize] = currentvalues[i] + derivs[i];
-      
-    }
-    else{
+        sigmaB[id] = currentvalues[0]+derivs[0] + sum*dt*diff_coeff[0]/dx2;  
+        sigmaB[id + 1*layersize] = currentvalues[1] + derivs[1];
+        sigmaB[id + 2*layersize] = currentvalues[2] + derivs[2];
+        sigmaB[id + 3*layersize] = currentvalues[3] + derivs[3];
+      }
+      else{
 
-      sigmaB[id] = currentvalues[0]+ sum*dt/dx2;
+        sigmaB[id] = currentvalues[0]+ sum*dt*diff_coeff[0]/dx2;
+        sigmaB[id + 1*layersize] = currentvalues[1];
+        sigmaB[id + 2*layersize] = currentvalues[2];
+        sigmaB[id + 3*layersize] = currentvalues[3];
 
-      for (i = 1; i<nvar; i++)
-        sigmaB[id + i*layersize] = currentvalues[i];
-
-    }
-    //sigmaB[id] = sigmaB[id]+0.1;
-
-
-
-    if(fmod(thetime, 750) < -50 && xpos > 120 && xpos < 126 && ypos > 175 && ypos < 326){
-      sigmaB[id] = 0;
-    }
-    /*Noble1962 
-    PDEFIELD_TYPE currentvalues[4];
-    currentvalues[0] = sigmaA[id];
-    currentvalues[1] = sigmaA[id + layersize];
-    currentvalues[2] = sigmaA[id + 2*layersize];
-    currentvalues[3] = sigmaA[id + 3*layersize];
-
-    sum += sigmaA[id-1];
-    sum += sigmaA[id+1];
-    sum += sigmaA[id-ysize];
-    sum += sigmaA[id+ysize];
-    sum-=4*currentvalues[0];
-
-    PDEFIELD_TYPE derivs[4];
-    if (numberofedges[id] > 0){
-      ComputeDerivs(thetime, currentvalues, derivs, id);
-      RungeKutta(thetime, derivs, currentvalues, dt, id);
+      }
+      int location;
+      if(fmod(thetime, 750) < -50 && xpos > 120 && xpos < 126 && ypos > 175 && ypos < 326){
+        sigmaB[id] = 0;
+      }
+    */
 
 
-      //Diffusion
-
-      sigmaB[id] = currentvalues[0]+derivs[0] + sum*dt*diff_coeff[0]/dx2;  
-      sigmaB[id + 1*layersize] = currentvalues[1] + derivs[1];
-      sigmaB[id + 2*layersize] = currentvalues[2] + derivs[2];
-      sigmaB[id + 3*layersize] = currentvalues[3] + derivs[3];
-    }
-    else{
-
-      sigmaB[id] = currentvalues[0]+ sum*dt*diff_coeff[0]/dx2;
-      sigmaB[id + 1*layersize] = currentvalues[1];
-      sigmaB[id + 2*layersize] = currentvalues[2];
-      sigmaB[id + 3*layersize] = currentvalues[3];
+      if (id == 125250)
+        printf("Time = %.5f, V = %.5f \n", thetime, sigmaB[id]);
+      if (!((sigmaB[id] > -1) && (sigmaB[id] < 1)) && thetime == 0.03206){
+        printf("id = %i \n", id);
+      }  
 
     }
-    int location;
-    if(fmod(thetime, 750) < -50 && xpos > 120 && xpos < 126 && ypos > 175 && ypos < 326){
-      sigmaB[id] = 0;
-    }
-  */
-
-
-    if (id == 189734)
-      printf("Time = %.5f, V = %.5f \n", thetime, sigmaB[id]);
-    if (!((sigmaB[id] > -1) && (sigmaB[id] < 1)) && thetime == 0.03206){
-      printf("id = %i \n", id);
-    }  
-
   }
+  else if (PDEsteps%4 == 1){
+    //row ADI step
+    ADIstepRows(sigmaB, couplingcoefficient, dt, dx2, xsize, ysize);
+    printf("id = %i", id);
+  }
+
+  else{
+    //column ADI step
+    ADIstepColumns(sigmaB, couplingcoefficient, dt, dx2, xsize, ysize);
+  }
+
+
 }
 

@@ -84,8 +84,14 @@ TIMESTEP {
      //uncomment for chemotaxis
     if (i>=par.relaxation) {
       if (par.useopencl){
-        PROFILE(opencl_diff, dish->PDEfield->SecreteAndDiffuseCL(dish->CPM, par.pde_its);)
+        if(par.usecuda == true)
+          cout << "Do cuda stuff, because we have par.usecuda = " << par.usecuda << endl;
+        else{
+          PROFILE(opencl_diff, dish->PDEfield->ODEstepCL(dish->CPM, par.pde_its);)
+          cout << "Do opencl stuff, because we have par.usecuda = " << par.usecuda << endl;
+        }
       }
+
       else{
         for (int r=0;r<par.pde_its;r++) {
 	  dish->PDEfield->Secrete(dish->CPM);

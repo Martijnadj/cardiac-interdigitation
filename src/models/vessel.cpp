@@ -73,7 +73,7 @@ TIMESTEP {
     static Plotter plotter = Plotter(dish, this);
     if (i>=par.relaxation) {
       if (par.useopencl){
-        PROFILE(opencl_diff, dish->PDEfield->SecreteAndDiffuseCL(dish->CPM, par.pde_its);)
+        PROFILE(opencl_diff, dish->PDEfield->ODEstepCL(dish->CPM, par.pde_its);)
       }
       else{
         for (int r=0;r<par.pde_its;r++) {

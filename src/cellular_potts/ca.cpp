@@ -3028,7 +3028,7 @@ void CellularPotts::StoreMask(string filename){
             colnr++;
             
             
-            // If the next token is a comma, ignore it and move on
+            // If the next token is a comma, ignore it and move on 
             if(ss.peek() == ',') ss.ignore();
     	}
     	mask[xcoord][ycoord] = true;

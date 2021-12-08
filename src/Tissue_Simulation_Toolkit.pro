@@ -5,6 +5,9 @@ CONFIG -= app_bundle
 #CONFIG += release
 CONFIG += debug
 
+
+
+
 # Select the graphics backend by uncommenting it.
 # - GL graphics requires the GLUT and GLEW libraries.
 #     It should be the fastest but does not 
@@ -29,11 +32,14 @@ MODEL = micropatterns
 #MODEL = qPotts
 #MODEL = sorting
 #MODEL = Act_model
-
 # Enable or disable the profiling macros 
 # defined in util/profiler.h.
 #PROFILING = enabled
 PROFILING = disabled
+
+USECUDA = enabled
+#USECUDA = disabled
+
 
 
 LIBDIR = ../lib
@@ -64,6 +70,35 @@ QMAKE_CXXFLAGS += -I$$XSDE_DIR
 QMAKE_LFLAGS += -m64 -std=c++11 -O3
 QMAKE_CXXFLAGS += -Wno-unused-parameter  
 
+contains( USECUDA, enabled ){
+
+   # File(s) containing my CUDA code
+   CUDA_SOURCES = reaction_diffusion/pde.cu
+
+   # Location of CUDA on my system
+   CUDA_DIR = $$system(which nvcc | sed 's,/bin/nvcc$,,')
+
+   INCLUDEPATH += ${CUDA_DIR/include}/ \
+                  cellular_potts/ \
+                  graphics/ \
+                  models/ \
+                  parameters/ \
+                  plotting/ \
+                  reaction_diffusion/ \
+                  util/ \
+                  xpm/ \
+            compute/
+   QMAKE_LIBDIR += $$CUDA_DIR/lib
+   LIBS += -L$$CUDA_DIR/lib64 -lcuda -lcudart -lcusparse
+
+
+   cuda.input = CUDA_SOURCES
+   cuda.output = ${OBJECTS_DIR}${QMAKE_FILE_BASE}.o
+   cuda.commands = nvcc -c -Xcompiler $$join(QMAKE_CXXFLAGS,",") $$join(INCLUDEPATH,'" -I "','-I "','"') ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}
+   cuda.dependcy_type = TYPE_C
+   cuda.depend_command = nvcc -M -Xcompiler $$join(QMAKE_CXXFLAGS,",") $$join(INCLUDEPATH,'" -I "','-I "','"') ${QMAKE_FILE_NAME} | sed "s,^.*: ,," | sed "s,^ *,," | tr -d '\\n'
+   QMAKE_EXTRA_COMPILERS += cuda
+}
 
 
 message("Building model:" $$MODEL )
@@ -80,22 +115,29 @@ HEADERS += cellular_potts/*.hpp \
 SOURCES += cellular_potts/*.cpp \
            parameters/*.cpp \
            plotting/*.cpp \
-           reaction_diffusion/*.cpp \
            util/*.cpp \
 	   compute/*.cpp \
 	   graphics/graph.cpp 
 
+contains( USECUDA, disabled ){
+   SOURCES += reaction_diffusion/*.cpp
+}
+
 SOURCES += $$MAINFILE
 
-INCLUDEPATH += cellular_potts/ \
-               graphics/ \
-               models/ \
-               parameters/ \
-               plotting/ \
-               reaction_diffusion/ \
-               util/ \
-               xpm/ \
-	       compute/
+contains( USECUDA, disabled ){
+
+   INCLUDEPATH += cellular_potts/ \
+                  graphics/ \
+                  models/ \
+                  parameters/ \
+                  plotting/ \
+                  reaction_diffusion/ \
+                  util/ \
+                  xpm/ \
+            compute/
+}
+
        
 contains( GRAPHICS, qt ) {
    message("Using QT graphics")

@@ -53,5 +53,5 @@ storage_stride = 1
 graphics = true
 store = false
 datadir = ../images4
-usecuda = false
+usecuda = true
 

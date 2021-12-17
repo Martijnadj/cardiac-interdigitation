@@ -29,6 +29,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <string>
 #include <stdio.h>
 #include <iostream>
+#include <cusparse.h>
 
 #include <MultiCellDS.hpp>
 #include <MultiCellDS-pimpl.hpp>
@@ -45,6 +46,14 @@ class PDE {
  friend class Info;
 
  public:
+
+  int sizex;
+  int sizey;
+  int layers;
+  int btype;
+  PDEFIELD_TYPE dt;
+  PDEFIELD_TYPE dx2;
+  bool usePDEorAltPDE;
 
   /*! \brief Constructor for PDE object containing arbitrary number of planes.
   \param layers: Number of PDE planes
@@ -157,6 +166,8 @@ class PDE {
   Function for the Act model. The whole field is initialized, usually with 0
   */
   void InitializeAgeLayer(int l,double value,CellularPotts *cpm);
+  void InitializePDEs(CellularPotts * cpm);
+  void InitializeCuda(CellularPotts * cpm);
   void InitializePDEvars();
 
  /* Function for the Act model. All the lattice sites within cells are "aged"
@@ -206,6 +217,7 @@ class PDE {
 
   //Secrete and diffuse functions accelerated using OpenCL
   void ODEstepCL(CellularPotts *cpm, int repeat);
+  void cuPDEsteps(CellularPotts *cpm, int repeats);
 
   /*! \brief Returns cumulative "simulated" time,
     i.e. number of time steps * dt. */
@@ -258,6 +270,7 @@ class PDE {
   protected:
 
   PDEFIELD_TYPE ***PDEvars;
+  PDEFIELD_TYPE **couplingcoefficient;
   
   // Used as temporary memory in the diffusion step
   // (addresses will be swapped for every time step, so
@@ -265,10 +278,10 @@ class PDE {
   // through user interface)
 
   PDEFIELD_TYPE ***alt_PDEvars;
- 
-  int sizex;
-  int sizey;
-  int layers;
+
+  //2d arrays containing the upperdiagonals, lower diagonals and diagonals and vectors B for all rows and columns to solve AX=B equations
+  PDEFIELD_TYPE **lowerH, **upperH, **diagH, **BH, **lowerV, **upperV, **diagV, **BV, **XH; 
+
  
  
   // Protected member functions
@@ -288,9 +301,11 @@ class PDE {
   method of memory allocation.
   */   
   virtual PDEFIELD_TYPE ***AllocatePDEvars(const int layers, const int sx, const int sy);
-
-  void Tri_diag_inv(PDEFIELD_TYPE *du, PDEFIELD_TYPE *d, PDEFIELD_TYPE *dl, PDEFIELD_TYPE *B, PDEFIELD_TYPE *X, int size); 
+  virtual void AllocateTridiagonalvars(int sx, int sy);
+  
+  //void Tri_diag_inv(PDEFIELD_TYPE *du, PDEFIELD_TYPE *d, PDEFIELD_TYPE *dl, PDEFIELD_TYPE *B, PDEFIELD_TYPE *X, int size); 
   void Diffusionstep(PDEFIELD_TYPE ***PDEvars, CellularPotts *cpm);
+
   
 
  
@@ -308,7 +323,20 @@ private:
  
   void SetupOpenCL(); 
 
-   
+  
+  //Store buffersize for horizontal / vertical ADI sweep
+
+
+  size_t pbuffersizeH; 
+  void *pbufferH;
+  //Needed for cuSparse horizontal and vertical sweeps of ADI
+  cusparseStatus_t statusH; 
+  cusparseHandle_t handleH;
+  size_t pbuffersizeV; 
+  void *pbufferV;
+  //Needed for cuSparse horizontal and vertical sweeps of ADI
+  cusparseStatus_t statusV; 
+  cusparseHandle_t handleV;
 
 
 

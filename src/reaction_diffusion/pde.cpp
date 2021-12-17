@@ -51,6 +51,7 @@ PDE::PDE(const int l, const int sx, const int sy) {
   layers=l;
   PDEvars=AllocatePDEvars(l,sx,sy);
   alt_PDEvars=AllocatePDEvars(l,sx,sy);
+  btype=1; //boundary type
 }
 
 

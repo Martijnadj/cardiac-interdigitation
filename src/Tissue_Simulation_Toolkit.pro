@@ -2,8 +2,8 @@ TEMPLATE = app
 CONFIG += console 
 CONFIG -= app_bundle
 
-#CONFIG += release
-CONFIG += debug
+CONFIG += release
+#CONFIG += debug
 
 
 
@@ -102,7 +102,7 @@ contains( USECUDA, enabled ){
 
 
 message("Building model:" $$MODEL )
-
+contains( USECUDA, disabled )
 HEADERS += cellular_potts/*.hpp \
            parameters/*.hpp \
            plotting/*.hpp \
@@ -110,6 +110,7 @@ HEADERS += cellular_potts/*.hpp \
 	   reaction_diffusion/*.h \
            util/*.hpp \
 	   compute/*.hpp
+
 
  
 SOURCES += cellular_potts/*.cpp \

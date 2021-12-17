@@ -21,12 +21,18 @@ diff_coeff = 1e-14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 decay_rate = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 secr_rate = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 saturation = 0
-dt = 1e-6
+dt = 2e-6
 dx = 2.5e-6
 pde_its = 20
 
 # Micropatterns parameters
 micropatternmask = ../data/mask.dat
+
+# Cuda parameters
+usecuda = true
+number_of_cores = 2
+threads_per_core = 1024
+
 
 # initial conditions (create a "blob" of cells in the middle)
 n_init_cells = 250
@@ -53,5 +59,4 @@ storage_stride = 1
 graphics = true
 store = false
 datadir = ../images4
-usecuda = true
 

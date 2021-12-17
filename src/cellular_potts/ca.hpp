@@ -23,7 +23,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 
 // mainpage.hpp contains no C++ code, it is for the main page of the
 // documentation
-#include "mainpage.hpp"
+#include "../mainpage.hpp"
 
 /*! Implementation of the Glazier & Graner cellular Potts model **/
 #ifndef _CA_HH_

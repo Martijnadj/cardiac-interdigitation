@@ -80,6 +80,8 @@ class Parameter {
   bool pause_on_start; 
   bool useopencl;
   bool usecuda;
+  int number_of_cores;
+  int threads_per_core;
   char * opencl_core_path;
   int opencl_pref_platform;
   int adhesion_storage_stride;

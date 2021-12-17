@@ -83,6 +83,9 @@ Parameter::Parameter() {
   pause_on_start = false;
   useopencl = true;
   usecuda = true;
+  number_of_cores = 1;
+  threads_per_core = 1;
+
   opencl_core_path = strdup("../src/reaction_diffusion/pdecore.cl");
   opencl_pref_platform = 0;
   colortable = strdup("../data/default.ctb");
@@ -186,6 +189,8 @@ void Parameter::Read(const char *filename) {
   pause_on_start = bgetpar(fp, "pause_on_start", true);
   useopencl = bgetpar(fp, "useopencl", true, true);
   usecuda = bgetpar(fp, "usecuda", true, true);
+  number_of_cores = igetpar(fp, "number_of_cores", true);
+  threads_per_core = igetpar(fp, "threads_per_core", true);
   opencl_core_path = sgetpar(fp, "opencl_core_path", "../src/reaction_diffusion/pdecore.cl", true);
   opencl_pref_platform = igetpar(fp, "opencl_pref_platform", 0, true);
   adhesion_storage_stride = igetpar(fp, "adhesion_storage_stride", mcs+1, true);
@@ -287,6 +292,8 @@ void Parameter::Write(ostream &os) const {
   os << " pause_on_start = " << pause_on_start << endl; 
   os << " useopencl = " << useopencl << endl;
   os << " usecuda = " << usecuda << endl;
+  os << " number_of_cores = " << number_of_cores << endl;
+  os << " threads_per_core = " << threads_per_core << endl;
   os << " opencl_pref_platform" << opencl_pref_platform << endl;
   os << " opencl_core_path = " << opencl_core_path << endl;
   if (datadir) 

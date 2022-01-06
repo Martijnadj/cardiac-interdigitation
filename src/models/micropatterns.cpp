@@ -62,7 +62,6 @@ INIT {
     CPM->SetRandomTypes();
     CPM->InitializeEdgeList();
     CPM->InitializeCouplingCoefficient();
-    
   } catch(const char* error) {
     cerr << "Caught exception\n";
     std::cerr << error << "\n";
@@ -75,7 +74,7 @@ TIMESTEP {
   try {
 
     static int i=0;
-    cout << i << endl;
+    cout <<"MCS: " << i << endl;
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
@@ -86,23 +85,8 @@ TIMESTEP {
     if (i>=par.relaxation) {
       if (par.useopencl){
         if(par.usecuda == true){
-            using std::chrono::high_resolution_clock;
-  using std::chrono::duration_cast;
-  using std::chrono::duration;
-  using std::chrono::milliseconds;
 
-  auto t1 = high_resolution_clock::now(); 
           dish->PDEfield->cuPDEsteps(dish->CPM, par.pde_its);
-          auto t2 = high_resolution_clock::now();
-
-    /* Getting number of milliseconds as an integer. */
-    auto ms_int = duration_cast<milliseconds>(t2 - t1);
-
-    /* Getting number of milliseconds as a double. */
-    duration<double, std::milli> ms_double = t2 - t1;
-
-    std::cout << ms_int.count() << "ms\n";
-    std::cout << ms_double.count() << "ms";
         }
         else{
           PROFILE(opencl_diff, dish->PDEfield->ODEstepCL(dish->CPM, par.pde_its);)
@@ -162,10 +146,10 @@ void PDE::Secrete(CellularPotts *cpm) {
     for (int y=0;y<sizey;y++) {
       // inside cells
       if (cpm->Sigma(x,y)) {
-	PDEvars[0][x][y]+=par.secr_rate[0]*dt;
+	PDEvars[x*sizey+y]+=par.secr_rate[0]*dt;
       } else {
       // outside cells
-	PDEvars[0][x][y]-=par.decay_rate[0]*dt*PDEvars[0][x][y];
+	PDEvars[x*sizey+y]-=par.decay_rate[0]*dt*PDEvars[x*sizey+y];
       }
     }
   }

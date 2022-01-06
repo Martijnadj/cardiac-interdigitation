@@ -87,6 +87,19 @@ int conrec(PDEFIELD_TYPE **d,
 	   double *z,
 	   Graphics *g,
 	   int colour=1);
+
+
+int conrec(PDEFIELD_TYPE *d,
+	   int ilb,
+	   int iub,
+	   int jlb,
+	   int jub,
+	   double *x,
+	   double *y,
+	   int nc,
+	   double *z,
+	   Graphics *g,
+	   int colour=1);	   
 // d               ! matrix of data to contour
 // ilb,iub,jlb,jub ! index bounds of data matrix
 // x               ! data matrix column coordinates

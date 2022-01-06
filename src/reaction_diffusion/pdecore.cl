@@ -708,7 +708,6 @@ int PDEsteps) {
   else if (PDEsteps%4 == 1){
     //row ADI step
     ADIstepRows(sigmaB, couplingcoefficient, dt, dx2, xsize, ysize);
-    printf("id = %i", id);
   }
 
   else{

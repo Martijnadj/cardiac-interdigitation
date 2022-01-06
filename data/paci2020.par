@@ -23,24 +23,24 @@ secr_rate = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 saturation = 0
 dt = 2e-6
 dx = 2.5e-6
-pde_its = 20
+pde_its = 10
 
 # Micropatterns parameters
 micropatternmask = ../data/mask.dat
 
 # Cuda parameters
 usecuda = true
-number_of_cores = 2
+number_of_cores = 1
 threads_per_core = 1024
 
 
 # initial conditions (create a "blob" of cells in the middle)
 n_init_cells = 250
 size_init_cells = 10
-sizex = 500
-sizey = 500
+sizex = 280
+sizey = 280
 divisions = 0
-mcs = 5000
+mcs = 5
 rseed = -1
 subfield = 1.0
 relaxation = 0
@@ -51,12 +51,12 @@ initial_h = 0.08
 
 couplingmedium = 1e-5
 couplingcell = 1e-5
-couplingboundary = 1e-7
+couplingboundary = 1e-8
 couplingoffmask = 0
 
 # output
 storage_stride = 1
 graphics = true
-store = false
-datadir = ../images4
+store = true
+datadir = ../images
 

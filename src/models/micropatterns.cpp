@@ -169,7 +169,12 @@ void Plotter::Plot()  {
 }
 
 int PDE::MapColour(double val) {
-  return (int(val*1000 + 100)/2) +155;
+  if ((int(val*1000 + 100)/2) +155>255)
+    return 255;
+  else if ((int(val*1000 + 100)/2) +155<156)
+    return 156;
+  else  
+    return (int(val*1000 + 100)/2) +155;
 }
 
 int main(int argc, char *argv[]) {

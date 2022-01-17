@@ -67,6 +67,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 
 
 #include <stdio.h>
+#include <unistd.h>
 #include <math.h>
 #include <cstdlib>
 #include <fstream>
@@ -346,7 +347,8 @@ void PDE::AllocateTridiagonalvars(int sx, int sy){
 
 void PDE::InitializePDEvars(void){
   PDEFIELD_TYPE PDEinit[23];
-  PDEinit[0] = -0.050;
+  PDEinit[0] = -0.030;
+  //PDEinit[0] = -1;
   PDEinit[1] = 0.32;
   PDEinit[2] = 0.0002;
   PDEinit[3] = 0;
@@ -372,6 +374,8 @@ void PDE::InitializePDEvars(void){
   for (int layer = 0; layer<layers; layer++){
     for (int i = layer*sizex*sizey; i<(layer+1)*sizex*sizey; i++){
       PDEvars[i] = PDEinit[layer];
+      //if (layer == 0 && (i%(sizey+1) == 130))
+      //  PDEvars[i] = 100;
     }
   }
 
@@ -617,18 +621,14 @@ void PDE::ODEstepCL(CellularPotts *cpm, int repeat){
 
 void PDE::InitializeCuda(CellularPotts *cpm){
   //AllocateTridiagonalvars(sizex, sizey);
-  couplingcoefficient = cpm->getCouplingCoefficient(); //May give an error
+
+  cudaMalloc((void**) &d_couplingcoefficient, sizex*sizey*sizeof(PDEFIELD_TYPE));
+  cudaMalloc((void**) &d_cellnumber, sizex*sizey*sizeof(int));
 
   cudaMalloc((void**) &d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE));
   cudaMemcpy(d_PDEvars, PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
   cudaMalloc((void**) &d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE));
   cudaMemcpy(d_alt_PDEvars, alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
-  //gpuErrchk(cudaMallocManaged(&PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE))); //Problematic?
-  //gpuErrchk(cudaMallocManaged(&alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE))); //Problematic?
-
-
-
-  gpuErrchk(cudaMallocManaged(&couplingcoefficient[0], sizex*sizey*sizeof(PDEFIELD_TYPE))); //Problematic?
 
 
   //Needed for ADI steps
@@ -646,7 +646,7 @@ void PDE::InitializeCuda(CellularPotts *cpm){
   pbuffersizeH = 0;
   pbufferH = NULL;
   statusH=cusparseCreate(&handleH);
-  cusparseSgtsvInterleavedBatch_bufferSizeExt(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, &pbuffersizeH); //Compute required buffersize for horizontal sweep
+  cusparseDgtsvInterleavedBatch_bufferSizeExt(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, &pbuffersizeH); //Compute required buffersize for horizontal sweep
 
   gpuErrchk(cudaMalloc( &pbufferH, sizeof(char)* pbuffersizeH));
   
@@ -655,7 +655,7 @@ void PDE::InitializeCuda(CellularPotts *cpm){
   pbuffersizeV = 0;
   pbufferV = NULL;
   statusV=cusparseCreate(&handleV);
-  cusparseSgtsvInterleavedBatch_bufferSizeExt(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, &pbuffersizeV); //Compute required buffersize for vertical sweep
+  cusparseDgtsvInterleavedBatch_bufferSizeExt(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, &pbuffersizeV); //Compute required buffersize for vertical sweep
   gpuErrchk(cudaMalloc( &pbufferV, sizeof(char)* pbuffersizeV));
 
   
@@ -682,10 +682,10 @@ __global__ void InitializeDiagonals(int sizex, int sizey, PDEFIELD_TYPE twooverd
     if(xloc == 0){
       lowerH[id] = 0;
       diagH[id] = couplingcoefficient[idcc+sizey]/dx2 + twooverdt;
-      upperH[id] = -couplingcoefficient[idcc+sizey]/dx2;
+      upperH[id] = -couplingcoefficient[idcc+sizey]/dx2;  
     }
     else if(xloc == sizex -1){
-      lowerH[id] = -couplingcoefficient[idcc-sizey]/dx2;;
+      lowerH[id] = -couplingcoefficient[idcc-sizey]/dx2;
       diagH[id] = couplingcoefficient[idcc-sizey]/dx2 + twooverdt;
       upperH[id] = 0;
     }
@@ -694,30 +694,27 @@ __global__ void InitializeDiagonals(int sizex, int sizey, PDEFIELD_TYPE twooverd
       diagH[id] = (couplingcoefficient[idcc+sizey]+couplingcoefficient[idcc-sizey])/dx2 + twooverdt;
       upperH[id] = -couplingcoefficient[idcc+sizey]/dx2;
     }
+
     xloc = id%sizex; //needed to obtain interleaved format
     yloc = id/sizex;
     idcc = xloc*sizey + yloc;
-
     if(yloc == 0){
-      lowerH[id] = 0;
-      diagH[id] = couplingcoefficient[idcc+1]/dx2 + twooverdt;
-      upperH[id] = -couplingcoefficient[idcc+1]/dx2;
+      lowerV[id] = 0;
+      diagV[id] = couplingcoefficient[idcc+1]/dx2 + twooverdt;
+      upperV[id] = -couplingcoefficient[idcc+1]/dx2;
     }
     else if(yloc == sizey -1){
-      lowerH[id] = -couplingcoefficient[idcc-1]/dx2;;
-      diagH[id] = couplingcoefficient[idcc-1]/dx2 + twooverdt;
-      upperH[id] = 0;
+      lowerV[id] = -couplingcoefficient[idcc-1]/dx2;
+      diagV[id] = couplingcoefficient[idcc-1]/dx2 + twooverdt;
+      upperV[id] = 0;
     }
     else{
-      lowerH[id] = -couplingcoefficient[idcc-1]/dx2;
-      diagH[id] = (couplingcoefficient[idcc+1]+couplingcoefficient[idcc-1])/dx2 + twooverdt;
-      upperH[id] = -couplingcoefficient[idcc+1]/dx2;
+      lowerV[id] = -couplingcoefficient[idcc-1]/dx2;
+      diagV[id] = (couplingcoefficient[idcc+1]+couplingcoefficient[idcc-1])/dx2 + twooverdt;
+      upperV[id] = -couplingcoefficient[idcc+1]/dx2;
       
-    }  
-
-  
+    }
   }
-
 }
 
 __global__ void InitializeHorizontalVectors(int sizex, int sizey, PDEFIELD_TYPE twooverdt, PDEFIELD_TYPE dx2, PDEFIELD_TYPE* BH, PDEFIELD_TYPE* couplingcoefficient, PDEFIELD_TYPE* alt_PDEvars){
@@ -733,14 +730,12 @@ __global__ void InitializeHorizontalVectors(int sizex, int sizey, PDEFIELD_TYPE 
     idcc = xloc*sizey + yloc;
 
     if (yloc == 0)
-      BH[idcc] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc+1]*(alt_PDEvars[idcc+1] - alt_PDEvars[idcc]))/dx2; 
+      BH[id] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc+1]*(alt_PDEvars[idcc+1] - alt_PDEvars[idcc]))/dx2; 
     else if (yloc == sizey-1)
-      BH[idcc] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc-1]*(alt_PDEvars[idcc-1] - alt_PDEvars[idcc]))/dx2;  
+      BH[id] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc-1]*(alt_PDEvars[idcc-1] - alt_PDEvars[idcc]))/dx2;  
     else 
-      BH[idcc] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc+1]*(alt_PDEvars[idcc+1] - alt_PDEvars[idcc]) + couplingcoefficient[idcc-1]*(alt_PDEvars[idcc-1] - alt_PDEvars[idcc]))/dx2;
-  
+      BH[id] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc+1]*(alt_PDEvars[idcc+1] - alt_PDEvars[idcc]) + couplingcoefficient[idcc-1]*(alt_PDEvars[idcc-1] - alt_PDEvars[idcc]))/dx2;
   }
-
 }
 
 __global__ void InitializeVerticalVectors(int sizex, int sizey, PDEFIELD_TYPE twooverdt, PDEFIELD_TYPE dx2, PDEFIELD_TYPE* BV, PDEFIELD_TYPE* couplingcoefficient, PDEFIELD_TYPE* alt_PDEvars){
@@ -758,38 +753,50 @@ __global__ void InitializeVerticalVectors(int sizex, int sizey, PDEFIELD_TYPE tw
     idcc = xloc*sizey + yloc;
 
     if (xloc == 0)
-      BV[idcc] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc+sizey]*(alt_PDEvars[idcc+sizey] - alt_PDEvars[idcc]))/dx2; 
+      BV[id] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc+sizey]*(alt_PDEvars[idcc+sizey] - alt_PDEvars[idcc]))/dx2; 
     else if (xloc == sizex-1)
-      BV[idcc] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc-sizey]*(alt_PDEvars[idcc-sizey] - alt_PDEvars[idcc]))/dx2;  
+      BV[id] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc-sizey]*(alt_PDEvars[idcc-sizey] - alt_PDEvars[idcc]))/dx2;  
     else 
-      BV[idcc] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc+sizey]*(alt_PDEvars[idcc+sizey] - alt_PDEvars[idcc]) + couplingcoefficient[idcc-sizey]*(alt_PDEvars[idcc-sizey] - alt_PDEvars[idcc]))/dx2;
-  
+      BV[id] = twooverdt*alt_PDEvars[idcc] + (couplingcoefficient[idcc+sizey]*(alt_PDEvars[idcc+sizey] - alt_PDEvars[idcc]) + couplingcoefficient[idcc-sizey]*(alt_PDEvars[idcc-sizey] - alt_PDEvars[idcc]))/dx2;
   }
 
 }
-__global__ void NewPDEfieldH(int sizex, int sizey, PDEFIELD_TYPE* BH, PDEFIELD_TYPE* PDEvars){
+
+
+
+__global__ void NewPDEfieldH0(int sizex, int sizey, PDEFIELD_TYPE* BH, PDEFIELD_TYPE* PDEvars){ //Take the values from BH and assign the new values of the first layers of PDEvars
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int stride = blockDim.x * gridDim.x;
+  for (int id = index; id < sizex*sizey; id += stride)
+    PDEvars[id] = BH[id];      
+}
+
+
+__global__ void NewPDEfieldV0(int sizex, int sizey, PDEFIELD_TYPE* BV, PDEFIELD_TYPE* PDEvars){ //Take the values from BV and assign the new values of the first layers of PDEvars
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int stride = blockDim.x * gridDim.x;
   for (int id = index; id < sizex*sizey; id += stride){
-    PDEvars[(id%sizex)*sizey + id/sizex] = BH[id]; //Conversion is needed because PDEvars iterates over rowas first and then columns, while BH does the opposite
+    PDEvars[sizey*(id%sizex)+id/sizex] = BV[id]; //Conversion is needed because PDEvars iterates over columns first and then rows, while BV does the opposite 
   }
 }
 
-__global__ void NewPDEfieldV(int sizex, int sizey, PDEFIELD_TYPE* BV, PDEFIELD_TYPE* PDEvars){
+
+__global__ void NewPDEfieldOthers(int sizex, int sizey, int layers, PDEFIELD_TYPE* BH, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars){ //copy the other values from alt_PDEvars to PDEvars
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int stride = blockDim.x * gridDim.x;
-  for (int id = index; id < sizex*sizey; id += stride){
-    PDEvars[id] = BV[id];
-  }
+  for (int id = index+sizex*sizey; id < layers*sizex*sizey; id += stride)
+    PDEvars[id] = alt_PDEvars[id]; 
 }
 
-__global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars){
+
+
+
+__global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* cellnumber){
   
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int stride = blockDim.x * gridDim.x;
   int i;
 
-  
 
 
   
@@ -1039,226 +1046,230 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
   PDEFIELD_TYPE i_stim = 0;
   
   for (int id = index; id < sizex*sizey; id += stride){
-    for (int l = 0; l < layers; l++) //fill with current PDE values
-      y[l] = PDEvars[l*sizex*sizey + id];
+    if (cellnumber[id] < 1)
+      for (int l = 0; l < layers; l++) //fill with current PDE values
+        alt_PDEvars[l*sizex*sizey + id]= PDEvars[l*sizex*sizey + id];
+    else{    
+      for (int l = 0; l < layers; l++) //fill with current PDE values
+        y[l] = PDEvars[l*sizex*sizey + id];
 
-  //-----FIRST STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+    //-----FIRST STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+      
+        //// Nernst potential
+      E_Na = R*T/F*log(Nao/y[17]);
+      E_Ca = 0.5*R*T/F*log(Cao/y[2]);
+      E_K  = R*T/F*log(Ko/Ki);
+      E_Ks = R*T/F*log((Ko+PkNa*Nao)/(Ki+PkNa*y[17]));
     
-      //// Nernst potential
-    E_Na = R*T/F*log(Nao/y[17]);
-    E_Ca = 0.5*R*T/F*log(Cao/y[2]);
-    E_K  = R*T/F*log(Ko/Ki);
-    E_Ks = R*T/F*log((Ko+PkNa*Nao)/(Ki+PkNa*y[17]));
-  
-    //// INa adapted from DOI:10.3389/fphys.2018.00080
-    i_Na        =  g_Na*pow((float)y[13],3.0f)*y[11]*y[12]*(y[0] - E_Na);
-  
-    m_inf       = 1 / (1 + exp((y[0]*1000 + 39)/-11.2));
-    tau_m       = (0.00001 + 0.00013*exp(-pow((float)((y[0]*1000 + 48)/15),2.0f)) + 0.000045 / (1 + exp((y[0]*1000 + 42)/-5)));
-    dydt[13]   = (m_inf-y[13])/tau_m;
-  
-    h_inf       = 1 / (1 + exp((y[0]*1000 + 66.5)/6.8));
-    tau_h       = (0.00007 + 0.034 / (1 + exp((y[0]*1000 + 41)/5.5) + exp(-(y[0]*1000 + 41)/14)) + 0.0002 / (1 + exp(-(y[0]*1000 + 79)/14)));
-    dydt[11]   = (h_inf-y[11])/tau_h;
-  
-    j_inf       = h_inf;
-    tau_j       = 10*(0.0007 + 0.15 / (1 + exp((y[0]*1000 + 41)/5.5) + exp(-(y[0]*1000 + 41)/14)) + 0.002 / (1 + exp(-(y[0]*1000 + 79)/14)));
-    dydt[12]   = (j_inf-y[12])/tau_j;
-  
-  
-    //// INaL
-    tauINaL     = 200; //ms
-    GNaLmax     = 17.25;//((time<tDrugApplication)*1+(time >= tDrugApplication)*INaLRedMed)* 2.3*7.5; //(S/F)
-    Vh_hLate    = 87.61;
-    i_NaL       = GNaLmax* pow((float)y[18],3.0f)*y[19]*(y[0]-E_Na);
-  
-    m_inf_L     = 1/(1+exp(-(y[0]*1000+42.85)/(5.264)));
-    alpha_m_L   = 1/(1+exp((-60-y[0]*1000)/5));
-    beta_m_L    = 0.1/(1+exp((y[0]*1000+35)/5))+0.1/(1+exp((y[0]*1000-50)/200));
-    tau_m_L     = 1 * myCoefTauM*alpha_m_L*beta_m_L;
-    dydt[18]   = (m_inf_L-y[18])/tau_m_L*1000;
-  
-    h_inf_L     = 1/(1+exp((y[0]*1000+Vh_hLate)/(7.488)));
-    tau_h_L     = 1 * tauINaL;
-    dydt[19]   = (h_inf_L-y[19])/tau_h_L*1000;
-  
-    //// If adapted from DOI:10.3389/fphys.2018.00080
-    i_fK        = fK*g_f*y[14]*(y[0] - E_K);
-    i_fNa       = fNa*g_f*y[14]*(y[0] - E_Na);
-    i_f         = i_fK + i_fNa;
-  
-    Xf_infinity = 1.0/(1.0 + exp((y[0]*1000 + 69)/8));
-    tau_Xf      = 5600 / (1 + exp((y[0]*1000 + 65)/7) + exp(-(y[0]*1000 + 65)/19));
-    dydt[14]   = 1000*(Xf_infinity-y[14])/tau_Xf;
+      //// INa adapted from DOI:10.3389/fphys.2018.00080
+      i_Na        =  g_Na*pow((float)y[13],3.0f)*y[11]*y[12]*(y[0] - E_Na);
     
-  
-    //// ICaL
-    if(y[0]< precision && y[0] > -precision) //hopital
-      i_CaL =  g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T) *y[4]*y[5]*y[6]*y[7] / (2.0*F/(R*T)) * (y[2] - 0.341*Cao);
-    else
-      i_CaL = g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T)*(y[2]*exp(2.0*y[0]*F/(R*T))-0.341*Cao)/(exp(2.0*y[0]*F/(R*T))-1.0)*y[4]*y[5]*y[6]*y[7]; //((time<tDrugApplication)*1+(time >= tDrugApplication)*ICaLRedMed)*g_CaL*4.0*y[0]*pow(F,2.0)/(R*T)*(y[2]*exp(2.0*y[0]*F/(R*T))-0.341*Cao)/(exp(2.0*y[0]*F/(R*T))-1.0)*y[4]*y[5]*y[6]*y[7];
-  
-    d_infinity  = 1.0/(1.0+exp(-(y[0]*1000.0+9.1)/7.0));
-    alpha_d     = 0.25+1.4/(1.0+exp((-y[0]*1000.0-35.0)/13.0));
-    beta_d      = 1.4/(1.0+exp((y[0]*1000.0+5.0)/5.0));
-    gamma_d     = 1.0/(1.0+exp((-y[0]*1000.0+50.0)/20.0));
-    tau_d       = (alpha_d*beta_d+gamma_d)*1.0/1000.0;
-    dydt[4]    = (d_infinity-y[4])/tau_d;
-  
-    f1_inf      = 1.0/(1.0+exp((y[0]*1000.0+26.0)/3.0));
-    if (f1_inf-y[5] > 0.0)
-        constf1 = 1.0+1433.0*(y[2]-50.0*1.0e-6);
-    else
-        constf1 = 1.0;
-  
-    tau_f1      = (20.0+1102.5*exp(-pow((float)((y[0]*1000.0+27.0)/15.0),2.0f))+200.0/(1.0+exp((13.0-y[0]*1000.0)/10.0))+180.0/(1.0+exp((30.0+y[0]*1000.0)/10.0)))*constf1/1000.0;
-    dydt[5]    = (f1_inf-y[5])/tau_f1;
-  
-    f2_inf      = 0.33+0.67/(1.0+exp((y[0]*1000.0+32.0)/4.0));
-    tau_f2      = (600.0*exp(-pow((float)(y[0]*1000.0+25.0),2.0f)/170.0)+31.0/(1.0+exp((25.0-y[0]*1000.0)/10.0))+16.0/(1.0+exp((30.0+y[0]*1000.0)/10.0)))*constf2/1000.0;
-    dydt[6]    = (f2_inf-y[6])/tau_f2;
-  
-    alpha_fCa   = 1.0/(1.0+pow((float)(y[2]/0.0006),8.0f));
-    beta_fCa    = 0.1/(1.0+exp((y[2]-0.0009)/0.0001));
-    gamma_fCa   = 0.3/(1.0+exp((y[2]-0.00075)/0.0008));
-    fCa_inf     = (alpha_fCa+beta_fCa+gamma_fCa)/1.3156;
-  
-    if ((y[0] > -0.06) && (fCa_inf > y[7]))
-        constfCa = 0.0;
-    else
-        constfCa = 1.0;
-  
-    dydt[7]    = constfCa*(fCa_inf-y[7])/tau_fCa;
-  
-    //// Ito
-    i_to        = g_to*(y[0]-E_K)*y[15]*y[16];
-  
-    q_inf       = 1.0/(1.0+exp((y[0]*1000.0+53.0)/13.0));
-    tau_q       = (6.06+39.102/(0.57*exp(-0.08*(y[0]*1000.0+44.0))+0.065*exp(0.1*(y[0]*1000.0+45.93))))/1000.0;
-    dydt[15]   = (q_inf-y[15])/tau_q;
-  
-  
-    r_inf       = 1.0/(1.0+exp(-(y[0]*1000.0-22.3)/18.75));
-    tau_r       = (2.75352+14.40516/(1.037*exp(0.09*(y[0]*1000.0+30.61))+0.369*exp(-0.12*(y[0]*1000.0+23.84))))/1000.0;
-    dydt[16]   = (r_inf-y[16])/tau_r;
-  
-    //// IKs
-    i_Ks        = g_Ks*(y[0]-E_Ks)*pow((float)y[10],2.0f)*(1.0+0.6/(1.0+pow((float)(3.8*0.00001/y[2]),1.4f))); // ((time<tDrugApplication)*1+(time >= tDrugApplication)*IKsRedMed)*g_Ks*(y[0]-E_Ks)*pow((float)y[10],2.0)*(1.0+0.6/(1.0+pow((float)(3.8*0.00001/y[2]),1.4f)));
-  
-    Xs_infinity = 1.0/(1.0+exp((-y[0]*1000.0-20.0)/16.0));
-    alpha_Xs    = 1100.0/sqrt(1.0+exp((-10.0-y[0]*1000.0)/6.0));
-    beta_Xs     = 1.0/(1.0+exp((-60.0+y[0]*1000.0)/20.0));
-    tau_Xs      = 1.0*alpha_Xs*beta_Xs/1000.0;
-    dydt[10]   = (Xs_infinity-y[10])/tau_Xs;
-  
-    //// IKr
-    i_Kr         = g_Kr*(y[0]-E_K)*y[8]*y[9]*sqrt(Ko/5.4); //((time<tDrugApplication)*1+(time >= tDrugApplication)*IKrRedMed)*g_Kr*(y[0]-E_K)*y[8]*y[9]*sqrt(Ko/5.4);
-  
-    V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(L0*pow((float)(1.0+Cao/0.58),4.0f)))-0.019);
-  
-    Xr1_inf      = 1.0/(1.0+exp((V_half-y[0]*1000.0)/4.9));
-    alpha_Xr1    = 450.0/(1.0+exp((-45.0-y[0]*1000.0)/10.0));
-    beta_Xr1     = 6.0/(1.0+exp((30.0+y[0]*1000.0)/11.5));
-    tau_Xr1      = 1.0*alpha_Xr1*beta_Xr1/1000.0;
-    dydt[8]     = (Xr1_inf-y[8])/tau_Xr1;
-  
-    Xr2_infinity = 1.0/(1.0+exp((y[0]*1000.0+88.0)/50.0));
-    alpha_Xr2    = 3.0/(1.0+exp((-60.0-y[0]*1000.0)/20.0));
-    beta_Xr2     = 1.12/(1.0+exp((-60.0+y[0]*1000.0)/20.0));
-   tau_Xr2      = 1.0*alpha_Xr2*beta_Xr2/1000.0;
-    dydt[9]    = (Xr2_infinity-y[9])/tau_Xr2;
-  
-    //// IK1
-    alpha_K1    = 3.91/(1.0+exp(0.5942*(y[0]*1000.0-E_K*1000.0-200.0)));
-    beta_K1     = (-1.509*exp(0.0002*(y[0]*1000.0-E_K*1000.0+100.0))+exp(0.5886*(y[0]*1000.0-E_K*1000.0-10.0)))/(1.0+exp(0.4547*(y[0]*1000.0-E_K*1000.0)));
-    XK1_inf     = alpha_K1/(alpha_K1+beta_K1);
-    i_K1        = g_K1*XK1_inf*(y[0]-E_K)*sqrt(Ko/5.4);
-  
-    //// INaCa
-    i_NaCa      = kNaCa*(exp(gamma*y[0]*F/(R*T))*pow((float)y[17],3.0f)*Cao-exp((gamma-1.0)*y[0]*F/(R*T))*pow((float)Nao,3.0f)*y[2]*alpha)/((pow((float)KmNai,3.0f)+pow((float)Nao,3.0f))*(KmCa+Cao)*(1.0+Ksat*exp((gamma-1.0)*y[0]*F/(R*T))));
-  
-    //// INaK
-    i_NaK       = PNaK*Ko/(Ko+Km_K)*y[17]/(y[17]+Km_Na)/(1.0+0.1245*exp(-0.1*y[0]*F/(R*T))+0.0353*exp(-y[0]*F/(R*T)));
-  
-    //// IpCa
-    i_PCa       = g_PCa*y[2]/(y[2]+KPCa);
-  
-    //// Background currents
-    i_b_Na      = g_b_Na*(y[0]-E_Na);
-  
-    i_b_Ca      = g_b_Ca*(y[0]-E_Ca);
-  
-    //// Sarcoplasmic reticulum
-    i_up        = VmaxUp/(1.0+pow((float)Kup,2.0f)/pow((float)y[2],2.0f));
-  
-    i_leak      = (y[1]-y[2])*V_leak;
-  
-    dydt[3]    = 0;
-  
-    // RyR
-  
-    RyRSRCass   = (1 - 1/(1 +  exp((y[1]-0.3)/0.1)));
-    i_rel       = g_irel_max*RyRSRCass*y[21]*y[22]*(y[1]-y[2]);
-  
-    RyRainfss   = RyRa1-RyRa2/(1 + exp((1000*y[2]-(RyRahalf))/0.0082));
-    dydt[20]   = (RyRainfss- y[20])/RyRtauadapt;
-  
-    RyRoinfss   = (1 - 1/(1 +  exp((1000*y[2]-(y[20]+ RyRohalf))/0.003)));
-    if (RyRoinfss>= y[21])
-      RyRtauact = 18.75e-3;       //s
-    else
-      RyRtauact = 0.1*18.75e-3;   //s
-  
-    dydt[21]    = (RyRoinfss- y[21])/(RyRtauact);
-  
-    RyRcinfss   = (1/(1 + exp((1000*y[2]-(y[20]+RyRchalf))/0.001)));
-    if (RyRcinfss>= y[22])
-      RyRtauinact = 2*87.5e-3;    //s
-    else
-      RyRtauinact = 87.5e-3;      //s
-  
-    dydt[22]    = (RyRcinfss- y[22])/(RyRtauinact);
-  
-  
-  
-  
-    //// Ca2+ buffering
-    Cai_bufc    = 1.0/(1.0+Buf_C*Kbuf_C/pow((float)(y[2]+Kbuf_C), 2.0f));
-    Ca_SR_bufSR = 1.0/(1.0+Buf_SR*Kbuf_SR/pow((float)(y[1]+Kbuf_SR), 2.0f));
-  
-    //// Ionic concentrations
-    //Nai
-    dydt[17]   = -Cm*(i_Na+i_NaL+i_b_Na+3.0*i_NaK+3.0*i_NaCa+i_fNa)/(F*Vc*1.0e-18);
-    //Cai
-    dydt[2]    = Cai_bufc*(i_leak-i_up+i_rel-(i_CaL+i_b_Ca+i_PCa-2.0*i_NaCa)*Cm/(2.0*Vc*F*1.0e-18));
-     //caSR
-    dydt[1]    = Ca_SR_bufSR*Vc/V_SR*(i_up-(i_rel+i_leak));
-  
-    //// Stimulation
-  //  PDEFIELD_TYPE i_stim_Amplitude 		= 5.5e-10;//7.5e-10;   // ampere (in stim_mode)
-  //  PDEFIELD_TYPE i_stim_End 				= 1000.0;   // second (in stim_mode)
-  //  PDEFIELD_TYPE i_stim_PulseDuration	= 0.005;   // second (in stim_mode)
-  //  PDEFIELD_TYPE i_stim_Start 			= 0.0;   // second (in stim_mode)
-  //  PDEFIELD_TYPE i_stim_frequency        = 60.0;   // per_second (in stim_mode)
-    //PDEFIELD_TYPE stim_flag 				= stimFlag;   // dimensionless (in stim_mode)
-  //  PDEFIELD_TYPE i_stim_Period 			= 60.0/i_stim_frequency;
-  
-    //if stim_flag~=0 && stim_flag~=1
-    //error('Paci2020: wrong pacing! stimFlag can be only 0 (spontaneous) or 1 (paced)');
-    //end
-  
-    /*
-    if ((time >= i_stim_Start) && (time <= i_stim_End) && (time-i_stim_Start-floor((time-i_stim_Start)/i_stim_Period)*i_stim_Period <= i_stim_PulseDuration))
-        i_stim = stim_flag*i_stim_Amplitude/Cm;
-    else
-        i_stim = 0.0;
-    */
-  
-    //// Membrane potential
-    dydt[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
+      m_inf       = 1 / (1 + exp((y[0]*1000 + 39)/-11.2));
+      tau_m       = (0.00001 + 0.00013*exp(-pow((float)((y[0]*1000 + 48)/15),2.0f)) + 0.000045 / (1 + exp((y[0]*1000 + 42)/-5)));
+      dydt[13]   = (m_inf-y[13])/tau_m;
+    
+      h_inf       = 1 / (1 + exp((y[0]*1000 + 66.5)/6.8));
+      tau_h       = (0.00007 + 0.034 / (1 + exp((y[0]*1000 + 41)/5.5) + exp(-(y[0]*1000 + 41)/14)) + 0.0002 / (1 + exp(-(y[0]*1000 + 79)/14)));
+      dydt[11]   = (h_inf-y[11])/tau_h;
+    
+      j_inf       = h_inf;
+      tau_j       = 10*(0.0007 + 0.15 / (1 + exp((y[0]*1000 + 41)/5.5) + exp(-(y[0]*1000 + 41)/14)) + 0.002 / (1 + exp(-(y[0]*1000 + 79)/14)));
+      dydt[12]   = (j_inf-y[12])/tau_j;
+    
+    
+      //// INaL
+      tauINaL     = 200; //ms
+      GNaLmax     = 17.25;//((time<tDrugApplication)*1+(time >= tDrugApplication)*INaLRedMed)* 2.3*7.5; //(S/F)
+      Vh_hLate    = 87.61;
+      i_NaL       = GNaLmax* pow((float)y[18],3.0f)*y[19]*(y[0]-E_Na);
+    
+      m_inf_L     = 1/(1+exp(-(y[0]*1000+42.85)/(5.264)));
+      alpha_m_L   = 1/(1+exp((-60-y[0]*1000)/5));
+      beta_m_L    = 0.1/(1+exp((y[0]*1000+35)/5))+0.1/(1+exp((y[0]*1000-50)/200));
+      tau_m_L     = 1 * myCoefTauM*alpha_m_L*beta_m_L;
+      dydt[18]   = (m_inf_L-y[18])/tau_m_L*1000;
+    
+      h_inf_L     = 1/(1+exp((y[0]*1000+Vh_hLate)/(7.488)));
+      tau_h_L     = 1 * tauINaL;
+      dydt[19]   = (h_inf_L-y[19])/tau_h_L*1000;
+    
+      //// If adapted from DOI:10.3389/fphys.2018.00080
+      i_fK        = fK*g_f*y[14]*(y[0] - E_K);
+      i_fNa       = fNa*g_f*y[14]*(y[0] - E_Na);
+      i_f         = i_fK + i_fNa;
+    
+      Xf_infinity = 1.0/(1.0 + exp((y[0]*1000 + 69)/8));
+      tau_Xf      = 5600 / (1 + exp((y[0]*1000 + 65)/7) + exp(-(y[0]*1000 + 65)/19));
+      dydt[14]   = 1000*(Xf_infinity-y[14])/tau_Xf;
+      
+    
+      //// ICaL
+      if(y[0]< precision && y[0] > -precision) //hopital
+        i_CaL =  g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T) *y[4]*y[5]*y[6]*y[7] / (2.0*F/(R*T)) * (y[2] - 0.341*Cao);
+      else
+        i_CaL = g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T)*(y[2]*exp(2.0*y[0]*F/(R*T))-0.341*Cao)/(exp(2.0*y[0]*F/(R*T))-1.0)*y[4]*y[5]*y[6]*y[7]; //((time<tDrugApplication)*1+(time >= tDrugApplication)*ICaLRedMed)*g_CaL*4.0*y[0]*pow(F,2.0)/(R*T)*(y[2]*exp(2.0*y[0]*F/(R*T))-0.341*Cao)/(exp(2.0*y[0]*F/(R*T))-1.0)*y[4]*y[5]*y[6]*y[7];
+    
+      d_infinity  = 1.0/(1.0+exp(-(y[0]*1000.0+9.1)/7.0));
+      alpha_d     = 0.25+1.4/(1.0+exp((-y[0]*1000.0-35.0)/13.0));
+      beta_d      = 1.4/(1.0+exp((y[0]*1000.0+5.0)/5.0));
+      gamma_d     = 1.0/(1.0+exp((-y[0]*1000.0+50.0)/20.0));
+      tau_d       = (alpha_d*beta_d+gamma_d)*1.0/1000.0;
+      dydt[4]    = (d_infinity-y[4])/tau_d;
+    
+      f1_inf      = 1.0/(1.0+exp((y[0]*1000.0+26.0)/3.0));
+      if (f1_inf-y[5] > 0.0)
+          constf1 = 1.0+1433.0*(y[2]-50.0*1.0e-6);
+      else
+          constf1 = 1.0;
+    
+      tau_f1      = (20.0+1102.5*exp(-pow((float)((y[0]*1000.0+27.0)/15.0),2.0f))+200.0/(1.0+exp((13.0-y[0]*1000.0)/10.0))+180.0/(1.0+exp((30.0+y[0]*1000.0)/10.0)))*constf1/1000.0;
+      dydt[5]    = (f1_inf-y[5])/tau_f1;
+    
+      f2_inf      = 0.33+0.67/(1.0+exp((y[0]*1000.0+32.0)/4.0));
+      tau_f2      = (600.0*exp(-pow((float)(y[0]*1000.0+25.0),2.0f)/170.0)+31.0/(1.0+exp((25.0-y[0]*1000.0)/10.0))+16.0/(1.0+exp((30.0+y[0]*1000.0)/10.0)))*constf2/1000.0;
+      dydt[6]    = (f2_inf-y[6])/tau_f2;
+    
+      alpha_fCa   = 1.0/(1.0+pow((float)(y[2]/0.0006),8.0f));
+      beta_fCa    = 0.1/(1.0+exp((y[2]-0.0009)/0.0001));
+      gamma_fCa   = 0.3/(1.0+exp((y[2]-0.00075)/0.0008));
+      fCa_inf     = (alpha_fCa+beta_fCa+gamma_fCa)/1.3156;
+    
+      if ((y[0] > -0.06) && (fCa_inf > y[7]))
+          constfCa = 0.0;
+      else
+          constfCa = 1.0;
+    
+      dydt[7]    = constfCa*(fCa_inf-y[7])/tau_fCa;
+    
+      //// Ito
+      i_to        = g_to*(y[0]-E_K)*y[15]*y[16];
+    
+      q_inf       = 1.0/(1.0+exp((y[0]*1000.0+53.0)/13.0));
+      tau_q       = (6.06+39.102/(0.57*exp(-0.08*(y[0]*1000.0+44.0))+0.065*exp(0.1*(y[0]*1000.0+45.93))))/1000.0;
+      dydt[15]   = (q_inf-y[15])/tau_q;
+    
+    
+      r_inf       = 1.0/(1.0+exp(-(y[0]*1000.0-22.3)/18.75));
+      tau_r       = (2.75352+14.40516/(1.037*exp(0.09*(y[0]*1000.0+30.61))+0.369*exp(-0.12*(y[0]*1000.0+23.84))))/1000.0;
+      dydt[16]   = (r_inf-y[16])/tau_r;
+    
+      //// IKs
+      i_Ks        = g_Ks*(y[0]-E_Ks)*pow((float)y[10],2.0f)*(1.0+0.6/(1.0+pow((float)(3.8*0.00001/y[2]),1.4f))); // ((time<tDrugApplication)*1+(time >= tDrugApplication)*IKsRedMed)*g_Ks*(y[0]-E_Ks)*pow((float)y[10],2.0)*(1.0+0.6/(1.0+pow((float)(3.8*0.00001/y[2]),1.4f)));
+    
+      Xs_infinity = 1.0/(1.0+exp((-y[0]*1000.0-20.0)/16.0));
+      alpha_Xs    = 1100.0/sqrt(1.0+exp((-10.0-y[0]*1000.0)/6.0));
+      beta_Xs     = 1.0/(1.0+exp((-60.0+y[0]*1000.0)/20.0));
+      tau_Xs      = 1.0*alpha_Xs*beta_Xs/1000.0;
+      dydt[10]   = (Xs_infinity-y[10])/tau_Xs;
+    
+      //// IKr
+      i_Kr         = g_Kr*(y[0]-E_K)*y[8]*y[9]*sqrt(Ko/5.4); //((time<tDrugApplication)*1+(time >= tDrugApplication)*IKrRedMed)*g_Kr*(y[0]-E_K)*y[8]*y[9]*sqrt(Ko/5.4);
+    
+      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(pow((float)(1.0+Cao/0.58),4.0f)*L0))-0.019);
+    
+      Xr1_inf      = 1.0/(1.0+exp((V_half-y[0]*1000.0)/4.9));
+      alpha_Xr1    = 450.0/(1.0+exp((-45.0-y[0]*1000.0)/10.0));
+      beta_Xr1     = 6.0/(1.0+exp((30.0+y[0]*1000.0)/11.5));
+      tau_Xr1      = 1.0*alpha_Xr1*beta_Xr1/1000.0;
+      dydt[8]     = (Xr1_inf-y[8])/tau_Xr1;
+    
+      Xr2_infinity = 1.0/(1.0+exp((y[0]*1000.0+88.0)/50.0));
+      alpha_Xr2    = 3.0/(1.0+exp((-60.0-y[0]*1000.0)/20.0));
+      beta_Xr2     = 1.12/(1.0+exp((-60.0+y[0]*1000.0)/20.0));
+      tau_Xr2      = 1.0*alpha_Xr2*beta_Xr2/1000.0;
+      dydt[9]    = (Xr2_infinity-y[9])/tau_Xr2;
+    
+      //// IK1
+      alpha_K1    = 3.91/(1.0+exp(0.5942*(y[0]*1000.0-E_K*1000.0-200.0)));
+      beta_K1     = (-1.509*exp(0.0002*(y[0]*1000.0-E_K*1000.0+100.0))+exp(0.5886*(y[0]*1000.0-E_K*1000.0-10.0)))/(1.0+exp(0.4547*(y[0]*1000.0-E_K*1000.0)));
+      XK1_inf     = alpha_K1/(alpha_K1+beta_K1);
+      i_K1        = g_K1*XK1_inf*(y[0]-E_K)*sqrt(Ko/5.4);
+    
+      //// INaCa
+      i_NaCa      = kNaCa*(exp(gamma*y[0]*F/(R*T))*pow((float)y[17],3.0f)*Cao-exp((gamma-1.0)*y[0]*F/(R*T))*pow((float)Nao,3.0f)*y[2]*alpha)/((pow((float)KmNai,3.0f)+pow((float)Nao,3.0f))*(KmCa+Cao)*(1.0+Ksat*exp((gamma-1.0)*y[0]*F/(R*T))));
+    
+      //// INaK
+      i_NaK       = PNaK*Ko/(Ko+Km_K)*y[17]/(y[17]+Km_Na)/(1.0+0.1245*exp(-0.1*y[0]*F/(R*T))+0.0353*exp(-y[0]*F/(R*T)));
+    
+      //// IpCa
+      i_PCa       = g_PCa*y[2]/(y[2]+KPCa);
+    
+      //// Background currents
+      i_b_Na      = g_b_Na*(y[0]-E_Na);
+    
+      i_b_Ca      = g_b_Ca*(y[0]-E_Ca);
+    
+      //// Sarcoplasmic reticulum
+      i_up        = VmaxUp/(1.0+pow((float)Kup,2.0f)/pow((float)y[2],2.0f));
+    
+      i_leak      = (y[1]-y[2])*V_leak;
+    
+      dydt[3]    = 0;
+    
+      // RyR
+    
+      RyRSRCass   = (1 - 1/(1 +  exp((y[1]-0.3)/0.1)));
+      i_rel       = g_irel_max*RyRSRCass*y[21]*y[22]*(y[1]-y[2]);
+    
+      RyRainfss   = RyRa1-RyRa2/(1 + exp((1000*y[2]-(RyRahalf))/0.0082));
+      dydt[20]   = (RyRainfss- y[20])/RyRtauadapt;
+    
+      RyRoinfss   = (1 - 1/(1 +  exp((1000*y[2]-(y[20]+ RyRohalf))/0.003)));
+      if (RyRoinfss>= y[21])
+        RyRtauact = 18.75e-3;       //s
+      else
+        RyRtauact = 0.1*18.75e-3;   //s
+    
+      dydt[21]    = (RyRoinfss- y[21])/(RyRtauact);
+    
+      RyRcinfss   = (1/(1 + exp((1000*y[2]-(y[20]+RyRchalf))/0.001)));
+      if (RyRcinfss>= y[22])
+        RyRtauinact = 2*87.5e-3;    //s
+      else
+        RyRtauinact = 87.5e-3;      //s
+    
+      dydt[22]    = (RyRcinfss- y[22])/(RyRtauinact);
+    
+    
+    
+    
+      //// Ca2+ buffering
+      Cai_bufc    = 1.0/(1.0+Buf_C*Kbuf_C/pow((float)(y[2]+Kbuf_C), 2.0f));
+      Ca_SR_bufSR = 1.0/(1.0+Buf_SR*Kbuf_SR/pow((float)(y[1]+Kbuf_SR), 2.0f));
+    
+      //// Ionic concentrations
+      //Nai
+      dydt[17]   = -Cm*(i_Na+i_NaL+i_b_Na+3.0*i_NaK+3.0*i_NaCa+i_fNa)/(F*Vc*1.0e-18);
+      //Cai
+      dydt[2]    = Cai_bufc*(i_leak-i_up+i_rel-(i_CaL+i_b_Ca+i_PCa-2.0*i_NaCa)*Cm/(2.0*Vc*F*1.0e-18));
+      //caSR
+      dydt[1]    = Ca_SR_bufSR*Vc/V_SR*(i_up-(i_rel+i_leak));
+    
+      //// Stimulation
+    //  PDEFIELD_TYPE i_stim_Amplitude 		= 5.5e-10;//7.5e-10;   // ampere (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_End 				= 1000.0;   // second (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_PulseDuration	= 0.005;   // second (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_Start 			= 0.0;   // second (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_frequency        = 60.0;   // per_second (in stim_mode)
+      //PDEFIELD_TYPE stim_flag 				= stimFlag;   // dimensionless (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_Period 			= 60.0/i_stim_frequency;
+    
+      //if stim_flag~=0 && stim_flag~=1
+      //error('Paci2020: wrong pacing! stimFlag can be only 0 (spontaneous) or 1 (paced)');
+      //end
+    
+      /*
+      if ((time >= i_stim_Start) && (time <= i_stim_End) && (time-i_stim_Start-floor((time-i_stim_Start)/i_stim_Period)*i_stim_Period <= i_stim_PulseDuration))
+          i_stim = stim_flag*i_stim_Amplitude/Cm;
+      else
+          i_stim = 0.0;
+      */
+    
+      //// Membrane potential
+      dydt[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
 
 
-  //-----SECOND STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+    //-----SECOND STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
     
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+b21*dt*dydt[i];
@@ -1368,7 +1379,7 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       //// IKr
       i_Kr         = g_Kr*(ytemp[0]-E_K)*ytemp[8]*ytemp[9]*sqrt(Ko/5.4); //((time<tDrugApplication)*1+(time >= tDrugApplication)*IKrRedMed)*g_Kr*(ytemp[0]-E_K)*ytemp[8]*ytemp[9]*sqrt(Ko/5.4);
     
-      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(L0*pow((float)(1.0+Cao/0.58),4.0f)))-0.019);
+      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(pow((float)(1.0+Cao/0.58),4.0f)*L0))-0.019);
     
       Xr1_inf      = 1.0/(1.0+exp((V_half-ytemp[0]*1000.0)/4.9));
       alpha_Xr1    = 450.0/(1.0+exp((-45.0-ytemp[0]*1000.0)/10.0));
@@ -1580,7 +1591,7 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       //// IKr
       i_Kr         = g_Kr*(ytemp[0]-E_K)*ytemp[8]*ytemp[9]*sqrt(Ko/5.4); //((time<tDrugApplication)*1+(time >= tDrugApplication)*IKrRedMed)*g_Kr*(ytemp[0]-E_K)*ytemp[8]*ytemp[9]*sqrt(Ko/5.4);
     
-      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(L0*pow((float)(1.0+Cao/0.58),4.0f)))-0.019);
+      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(pow((float)(1.0+Cao/0.58),4.0f)*L0))-0.019);
     
       Xr1_inf      = 1.0/(1.0+exp((V_half-ytemp[0]*1000.0)/4.9));
       alpha_Xr1    = 450.0/(1.0+exp((-45.0-ytemp[0]*1000.0)/10.0));
@@ -1792,7 +1803,7 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       //// IKr
       i_Kr         = g_Kr*(ytemp[0]-E_K)*ytemp[8]*ytemp[9]*sqrt(Ko/5.4); //((time<tDrugApplication)*1+(time >= tDrugApplication)*IKrRedMed)*g_Kr*(ytemp[0]-E_K)*ytemp[8]*ytemp[9]*sqrt(Ko/5.4);
     
-      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(L0*pow((float)(1.0+Cao/0.58),4.0f)))-0.019);
+      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(pow((float)(1.0+Cao/0.58),4.0f)*L0))-0.019);
     
       Xr1_inf      = 1.0/(1.0+exp((V_half-ytemp[0]*1000.0)/4.9));
       alpha_Xr1    = 450.0/(1.0+exp((-45.0-ytemp[0]*1000.0)/10.0));
@@ -2002,7 +2013,7 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       //// IKr
       i_Kr         = g_Kr*(ytemp[0]-E_K)*ytemp[8]*ytemp[9]*sqrt(Ko/5.4); //((time<tDrugApplication)*1+(time >= tDrugApplication)*IKrRedMed)*g_Kr*(ytemp[0]-E_K)*ytemp[8]*ytemp[9]*sqrt(Ko/5.4);
     
-      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(L0*pow((float)(1.0+Cao/0.58),4.0f)))-0.019);
+      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(pow((float)(1.0+Cao/0.58),4.0f)*L0))-0.019);
     
       Xr1_inf      = 1.0/(1.0+exp((V_half-ytemp[0]*1000.0)/4.9));
       alpha_Xr1    = 450.0/(1.0+exp((-45.0-ytemp[0]*1000.0)/10.0));
@@ -2214,7 +2225,7 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       //// IKr
       i_Kr         = g_Kr*(ytemp[0]-E_K)*ytemp[8]*ytemp[9]*sqrt(Ko/5.4); //((time<tDrugApplication)*1+(time >= tDrugApplication)*IKrRedMed)*g_Kr*(ytemp[0]-E_K)*ytemp[8]*ytemp[9]*sqrt(Ko/5.4);
     
-      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(L0*pow((float)(1.0+Cao/0.58),4.0f)))-0.019);
+      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(pow((float)(1.0+Cao/0.58),4.0f)*L0))-0.019);
     
       Xr1_inf      = 1.0/(1.0+exp((V_half-ytemp[0]*1000.0)/4.9));
       alpha_Xr1    = 450.0/(1.0+exp((-45.0-ytemp[0]*1000.0)/10.0));
@@ -2294,16 +2305,16 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       ak6[1]    = Ca_SR_bufSR*Vc/V_SR*(i_up-(i_rel+i_leak));
     
       //// Stimulation
-    //  i_stim_Amplitude 		= 5.5e-10;//7.5e-10;   // ampere (in stim_mode)
-    //  i_stim_End 				= 1000.0;   // second (in stim_mode)
-    //  i_stim_PulseDuration	= 0.005;   // second (in stim_mode)
-    //  i_stim_Start 			= 0.0;   // second (in stim_mode)
-    //  i_stim_frequency        = 60.0;   // per_second (in stim_mode)
+      //  i_stim_Amplitude 		= 5.5e-10;//7.5e-10;   // ampere (in stim_mode)
+      //  i_stim_End 				= 1000.0;   // second (in stim_mode)
+      //  i_stim_PulseDuration	= 0.005;   // second (in stim_mode)
+      //  i_stim_Start 			= 0.0;   // second (in stim_mode)
+      //  i_stim_frequency        = 60.0;   // per_second (in stim_mode)
       //stim_flag 				= stimFlag;   // dimensionless (in stim_mode)
-    //  i_stim_Period 			= 60.0/i_stim_frequency;
+      //  i_stim_Period 			= 60.0/i_stim_frequency;
     
       //if stim_flag~=0 && stim_flag~=1_mode)
-    //  i_stim_Period 			= 60.0/i_stim_frequency;
+      //  i_stim_Period 			= 60.0/i_stim_frequency;
     
       //if stim_flag~=0 && stim_flag~=1
       //error('Paci2020: wrong pacing! stimFlag can be only 0 (spontaneous) or 1 (paced)');
@@ -2319,16 +2330,17 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       //// Membrane potential
       ak6[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
   
-  //-----WRITE NEW VALUES ------------------------------------------------------------------------------------------------------------------------------------------------------------------      
-    #pragma unroll
-    for (i=0;i<layers;i++) //Accumulate increments with proper weights.
-      alt_PDEvars[i*sizex*sizey + id]=y[i]+(c1*dydt[i]+c3*ak3[i]+c4*ak4[i]+c6*ak6[i])*dt;
+      //-----WRITE NEW VALUES ------------------------------------------------------------------------------------------------------------------------------------------------------------------      
+      #pragma unroll
+      for (i=0;i<layers;i++) //Accumulate increments with proper weights.
+        alt_PDEvars[i*sizex*sizey + id]=y[i]+(c1*dydt[i]+c3*ak3[i]+c4*ak4[i]+c6*ak6[i])*dt;
+    }  
   
   }
 }
 
 
-__global__ void ForwardEulerStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars){
+__global__ void ForwardEulerStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* cellnumber){
   
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int stride = blockDim.x * gridDim.x;
@@ -2571,235 +2583,276 @@ __global__ void ForwardEulerStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int la
   PDEFIELD_TYPE i_stim = 0;
   
   for (int id = index; id < sizex*sizey; id += stride){
-    for (int l = 0; l < layers; l++) //fill with current PDE values
-      y[l] = PDEvars[l*sizex*sizey + id];
+    if (cellnumber[id] < 1){
+      for (int l = 0; l < layers; l++) //fill with current PDE values
+        alt_PDEvars[l*sizex*sizey + id]= PDEvars[l*sizex*sizey + id];
+    }
+    else{   
+      for (int l = 0; l < layers; l++) //fill with current PDE values
+        y[l] = PDEvars[l*sizex*sizey + id];
 
-  //-----FIRST STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+      //-----FIRST STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+      
+        //// Nernst potential
+      E_Na = R*T/F*log(Nao/y[17]);
+      E_Ca = 0.5*R*T/F*log(Cao/y[2]);
+      E_K  = R*T/F*log(Ko/Ki);
+      E_Ks = R*T/F*log((Ko+PkNa*Nao)/(Ki+PkNa*y[17]));
     
-      //// Nernst potential
-    E_Na = R*T/F*log(Nao/y[17]);
-    E_Ca = 0.5*R*T/F*log(Cao/y[2]);
-    E_K  = R*T/F*log(Ko/Ki);
-    E_Ks = R*T/F*log((Ko+PkNa*Nao)/(Ki+PkNa*y[17]));
-  
-    //// INa adapted from DOI:10.3389/fphys.2018.00080
-    i_Na        =  g_Na*pow((float)y[13],3.0f)*y[11]*y[12]*(y[0] - E_Na);
-  
-    m_inf       = 1 / (1 + exp((y[0]*1000 + 39)/-11.2));
-    tau_m       = (0.00001 + 0.00013*exp(-pow((float)((y[0]*1000 + 48)/15),2.0f)) + 0.000045 / (1 + exp((y[0]*1000 + 42)/-5)));
-    dydt[13]   = (m_inf-y[13])/tau_m;
-  
-    h_inf       = 1 / (1 + exp((y[0]*1000 + 66.5)/6.8));
-    tau_h       = (0.00007 + 0.034 / (1 + exp((y[0]*1000 + 41)/5.5) + exp(-(y[0]*1000 + 41)/14)) + 0.0002 / (1 + exp(-(y[0]*1000 + 79)/14)));
-    dydt[11]   = (h_inf-y[11])/tau_h;
-  
-    j_inf       = h_inf;
-    tau_j       = 10*(0.0007 + 0.15 / (1 + exp((y[0]*1000 + 41)/5.5) + exp(-(y[0]*1000 + 41)/14)) + 0.002 / (1 + exp(-(y[0]*1000 + 79)/14)));
-    dydt[12]   = (j_inf-y[12])/tau_j;
-  
-  
-    //// INaL
-    tauINaL     = 200; //ms
-    GNaLmax     = 17.25;//((time<tDrugApplication)*1+(time >= tDrugApplication)*INaLRedMed)* 2.3*7.5; //(S/F)
-    Vh_hLate    = 87.61;
-    i_NaL       = GNaLmax* pow((float)y[18],3.0f)*y[19]*(y[0]-E_Na);
-  
-    m_inf_L     = 1/(1+exp(-(y[0]*1000+42.85)/(5.264)));
-    alpha_m_L   = 1/(1+exp((-60-y[0]*1000)/5));
-    beta_m_L    = 0.1/(1+exp((y[0]*1000+35)/5))+0.1/(1+exp((y[0]*1000-50)/200));
-    tau_m_L     = 1 * myCoefTauM*alpha_m_L*beta_m_L;
-    dydt[18]   = (m_inf_L-y[18])/tau_m_L*1000;
-  
-    h_inf_L     = 1/(1+exp((y[0]*1000+Vh_hLate)/(7.488)));
-    tau_h_L     = 1 * tauINaL;
-    dydt[19]   = (h_inf_L-y[19])/tau_h_L*1000;
-  
-    //// If adapted from DOI:10.3389/fphys.2018.00080
-    i_fK        = fK*g_f*y[14]*(y[0] - E_K);
-    i_fNa       = fNa*g_f*y[14]*(y[0] - E_Na);
-    i_f         = i_fK + i_fNa;
-  
-    Xf_infinity = 1.0/(1.0 + exp((y[0]*1000 + 69)/8));
-    tau_Xf      = 5600 / (1 + exp((y[0]*1000 + 65)/7) + exp(-(y[0]*1000 + 65)/19));
-    dydt[14]   = 1000*(Xf_infinity-y[14])/tau_Xf;
+      //// INa adapted from DOI:10.3389/fphys.2018.00080
+      i_Na        =  g_Na*pow((float)y[13],3.0f)*y[11]*y[12]*(y[0] - E_Na);
     
-  
-    //// ICaL
-    if(y[0]< precision && y[0] > -precision) //hopital
-      i_CaL =  g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T) *y[4]*y[5]*y[6]*y[7] / (2.0*F/(R*T)) * (y[2] - 0.341*Cao);
-    else
-      i_CaL = g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T)*(y[2]*exp(2.0*y[0]*F/(R*T))-0.341*Cao)/(exp(2.0*y[0]*F/(R*T))-1.0)*y[4]*y[5]*y[6]*y[7]; //((time<tDrugApplication)*1+(time >= tDrugApplication)*ICaLRedMed)*g_CaL*4.0*y[0]*pow(F,2.0)/(R*T)*(y[2]*exp(2.0*y[0]*F/(R*T))-0.341*Cao)/(exp(2.0*y[0]*F/(R*T))-1.0)*y[4]*y[5]*y[6]*y[7];
-  
-    d_infinity  = 1.0/(1.0+exp(-(y[0]*1000.0+9.1)/7.0));
-    alpha_d     = 0.25+1.4/(1.0+exp((-y[0]*1000.0-35.0)/13.0));
-    beta_d      = 1.4/(1.0+exp((y[0]*1000.0+5.0)/5.0));
-    gamma_d     = 1.0/(1.0+exp((-y[0]*1000.0+50.0)/20.0));
-    tau_d       = (alpha_d*beta_d+gamma_d)*1.0/1000.0;
-    dydt[4]    = (d_infinity-y[4])/tau_d;
-  
-    f1_inf      = 1.0/(1.0+exp((y[0]*1000.0+26.0)/3.0));
-    if (f1_inf-y[5] > 0.0)
-        constf1 = 1.0+1433.0*(y[2]-50.0*1.0e-6);
-    else
-        constf1 = 1.0;
-  
-    tau_f1      = (20.0+1102.5*exp(-pow((float)((y[0]*1000.0+27.0)/15.0),2.0f))+200.0/(1.0+exp((13.0-y[0]*1000.0)/10.0))+180.0/(1.0+exp((30.0+y[0]*1000.0)/10.0)))*constf1/1000.0;
-    dydt[5]    = (f1_inf-y[5])/tau_f1;
-  
-    f2_inf      = 0.33+0.67/(1.0+exp((y[0]*1000.0+32.0)/4.0));
-    tau_f2      = (600.0*exp(-pow((float)(y[0]*1000.0+25.0),2.0f)/170.0)+31.0/(1.0+exp((25.0-y[0]*1000.0)/10.0))+16.0/(1.0+exp((30.0+y[0]*1000.0)/10.0)))*constf2/1000.0;
-    dydt[6]    = (f2_inf-y[6])/tau_f2;
-  
-    alpha_fCa   = 1.0/(1.0+pow((float)(y[2]/0.0006),8.0f));
-    beta_fCa    = 0.1/(1.0+exp((y[2]-0.0009)/0.0001));
-    gamma_fCa   = 0.3/(1.0+exp((y[2]-0.00075)/0.0008));
-    fCa_inf     = (alpha_fCa+beta_fCa+gamma_fCa)/1.3156;
-  
-    if ((y[0] > -0.06) && (fCa_inf > y[7]))
-        constfCa = 0.0;
-    else
-        constfCa = 1.0;
-  
-    dydt[7]    = constfCa*(fCa_inf-y[7])/tau_fCa;
-  
-    //// Ito
-    i_to        = g_to*(y[0]-E_K)*y[15]*y[16];
-  
-    q_inf       = 1.0/(1.0+exp((y[0]*1000.0+53.0)/13.0));
-    tau_q       = (6.06+39.102/(0.57*exp(-0.08*(y[0]*1000.0+44.0))+0.065*exp(0.1*(y[0]*1000.0+45.93))))/1000.0;
-    dydt[15]   = (q_inf-y[15])/tau_q;
-  
-  
-    r_inf       = 1.0/(1.0+exp(-(y[0]*1000.0-22.3)/18.75));
-    tau_r       = (2.75352+14.40516/(1.037*exp(0.09*(y[0]*1000.0+30.61))+0.369*exp(-0.12*(y[0]*1000.0+23.84))))/1000.0;
-    dydt[16]   = (r_inf-y[16])/tau_r;
-  
-    //// IKs
-    i_Ks        = g_Ks*(y[0]-E_Ks)*pow((float)y[10],2.0f)*(1.0+0.6/(1.0+pow((float)(3.8*0.00001/y[2]),1.4f))); // ((time<tDrugApplication)*1+(time >= tDrugApplication)*IKsRedMed)*g_Ks*(y[0]-E_Ks)*pow((float)y[10],2.0)*(1.0+0.6/(1.0+pow((float)(3.8*0.00001/y[2]),1.4f)));
-  
-    Xs_infinity = 1.0/(1.0+exp((-y[0]*1000.0-20.0)/16.0));
-    alpha_Xs    = 1100.0/sqrt(1.0+exp((-10.0-y[0]*1000.0)/6.0));
-    beta_Xs     = 1.0/(1.0+exp((-60.0+y[0]*1000.0)/20.0));
-    tau_Xs      = 1.0*alpha_Xs*beta_Xs/1000.0;
-    dydt[10]   = (Xs_infinity-y[10])/tau_Xs;
-  
-    //// IKr
-    i_Kr         = g_Kr*(y[0]-E_K)*y[8]*y[9]*sqrt(Ko/5.4); //((time<tDrugApplication)*1+(time >= tDrugApplication)*IKrRedMed)*g_Kr*(y[0]-E_K)*y[8]*y[9]*sqrt(Ko/5.4);
-  
-    V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(L0*pow((float)(1.0+Cao/0.58),4.0f)))-0.019);
-  
-    Xr1_inf      = 1.0/(1.0+exp((V_half-y[0]*1000.0)/4.9));
-    alpha_Xr1    = 450.0/(1.0+exp((-45.0-y[0]*1000.0)/10.0));
-    beta_Xr1     = 6.0/(1.0+exp((30.0+y[0]*1000.0)/11.5));
-    tau_Xr1      = 1.0*alpha_Xr1*beta_Xr1/1000.0;
-    dydt[8]     = (Xr1_inf-y[8])/tau_Xr1;
-  
-    Xr2_infinity = 1.0/(1.0+exp((y[0]*1000.0+88.0)/50.0));
-    alpha_Xr2    = 3.0/(1.0+exp((-60.0-y[0]*1000.0)/20.0));
-    beta_Xr2     = 1.12/(1.0+exp((-60.0+y[0]*1000.0)/20.0));
-   tau_Xr2      = 1.0*alpha_Xr2*beta_Xr2/1000.0;
-    dydt[9]    = (Xr2_infinity-y[9])/tau_Xr2;
-  
-    //// IK1
-    alpha_K1    = 3.91/(1.0+exp(0.5942*(y[0]*1000.0-E_K*1000.0-200.0)));
-    beta_K1     = (-1.509*exp(0.0002*(y[0]*1000.0-E_K*1000.0+100.0))+exp(0.5886*(y[0]*1000.0-E_K*1000.0-10.0)))/(1.0+exp(0.4547*(y[0]*1000.0-E_K*1000.0)));
-    XK1_inf     = alpha_K1/(alpha_K1+beta_K1);
-    i_K1        = g_K1*XK1_inf*(y[0]-E_K)*sqrt(Ko/5.4);
-  
-    //// INaCa
-    i_NaCa      = kNaCa*(exp(gamma*y[0]*F/(R*T))*pow((float)y[17],3.0f)*Cao-exp((gamma-1.0)*y[0]*F/(R*T))*pow((float)Nao,3.0f)*y[2]*alpha)/((pow((float)KmNai,3.0f)+pow((float)Nao,3.0f))*(KmCa+Cao)*(1.0+Ksat*exp((gamma-1.0)*y[0]*F/(R*T))));
-  
-    //// INaK
-    i_NaK       = PNaK*Ko/(Ko+Km_K)*y[17]/(y[17]+Km_Na)/(1.0+0.1245*exp(-0.1*y[0]*F/(R*T))+0.0353*exp(-y[0]*F/(R*T)));
-  
-    //// IpCa
-    i_PCa       = g_PCa*y[2]/(y[2]+KPCa);
-  
-    //// Background currents
-    i_b_Na      = g_b_Na*(y[0]-E_Na);
-  
-    i_b_Ca      = g_b_Ca*(y[0]-E_Ca);
-  
-    //// Sarcoplasmic reticulum
-    i_up        = VmaxUp/(1.0+pow((float)Kup,2.0f)/pow((float)y[2],2.0f));
-  
-    i_leak      = (y[1]-y[2])*V_leak;
-  
-    dydt[3]    = 0;
-  
-    // RyR
-  
-    RyRSRCass   = (1 - 1/(1 +  exp((y[1]-0.3)/0.1)));
-    i_rel       = g_irel_max*RyRSRCass*y[21]*y[22]*(y[1]-y[2]);
-  
-    RyRainfss   = RyRa1-RyRa2/(1 + exp((1000*y[2]-(RyRahalf))/0.0082));
-    dydt[20]   = (RyRainfss- y[20])/RyRtauadapt;
-  
-    RyRoinfss   = (1 - 1/(1 +  exp((1000*y[2]-(y[20]+ RyRohalf))/0.003)));
-    if (RyRoinfss>= y[21])
-      RyRtauact = 18.75e-3;       //s
-    else
-      RyRtauact = 0.1*18.75e-3;   //s
-  
-    dydt[21]    = (RyRoinfss- y[21])/(RyRtauact);
-  
-    RyRcinfss   = (1/(1 + exp((1000*y[2]-(y[20]+RyRchalf))/0.001)));
-    if (RyRcinfss>= y[22])
-      RyRtauinact = 2*87.5e-3;    //s
-    else
-      RyRtauinact = 87.5e-3;      //s
-  
-    dydt[22]    = (RyRcinfss- y[22])/(RyRtauinact);
-  
-  
-  
-  
-    //// Ca2+ buffering
-    Cai_bufc    = 1.0/(1.0+Buf_C*Kbuf_C/pow((float)(y[2]+Kbuf_C), 2.0f));
-    Ca_SR_bufSR = 1.0/(1.0+Buf_SR*Kbuf_SR/pow((float)(y[1]+Kbuf_SR), 2.0f));
-  
-    //// Ionic concentrations
-    //Nai
-    dydt[17]   = -Cm*(i_Na+i_NaL+i_b_Na+3.0*i_NaK+3.0*i_NaCa+i_fNa)/(F*Vc*1.0e-18);
-    //Cai
-    dydt[2]    = Cai_bufc*(i_leak-i_up+i_rel-(i_CaL+i_b_Ca+i_PCa-2.0*i_NaCa)*Cm/(2.0*Vc*F*1.0e-18));
-     //caSR
-    dydt[1]    = Ca_SR_bufSR*Vc/V_SR*(i_up-(i_rel+i_leak));
-  
-    //// Stimulation
-  //  PDEFIELD_TYPE i_stim_Amplitude 		= 5.5e-10;//7.5e-10;   // ampere (in stim_mode)
-  //  PDEFIELD_TYPE i_stim_End 				= 1000.0;   // second (in stim_mode)
-  //  PDEFIELD_TYPE i_stim_PulseDuration	= 0.005;   // second (in stim_mode)
-  //  PDEFIELD_TYPE i_stim_Start 			= 0.0;   // second (in stim_mode)
-  //  PDEFIELD_TYPE i_stim_frequency        = 60.0;   // per_second (in stim_mode)
-    //PDEFIELD_TYPE stim_flag 				= stimFlag;   // dimensionless (in stim_mode)
-  //  PDEFIELD_TYPE i_stim_Period 			= 60.0/i_stim_frequency;
-  
-    //if stim_flag~=0 && stim_flag~=1
-    //error('Paci2020: wrong pacing! stimFlag can be only 0 (spontaneous) or 1 (paced)');
-    //end
-  
-    /*
-    if ((time >= i_stim_Start) && (time <= i_stim_End) && (time-i_stim_Start-floor((time-i_stim_Start)/i_stim_Period)*i_stim_Period <= i_stim_PulseDuration))
-        i_stim = stim_flag*i_stim_Amplitude/Cm;
-    else
-        i_stim = 0.0;
-    */
-  
-    //// Membrane potential
-    dydt[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
+      m_inf       = 1 / (1 + exp((y[0]*1000 + 39)/-11.2));
+      tau_m       = (0.00001 + 0.00013*exp(-pow((float)((y[0]*1000 + 48)/15),2.0f)) + 0.000045 / (1 + exp((y[0]*1000 + 42)/-5)));
+      dydt[13]   = (m_inf-y[13])/tau_m;
+    
+      h_inf       = 1 / (1 + exp((y[0]*1000 + 66.5)/6.8));
+      tau_h       = (0.00007 + 0.034 / (1 + exp((y[0]*1000 + 41)/5.5) + exp(-(y[0]*1000 + 41)/14)) + 0.0002 / (1 + exp(-(y[0]*1000 + 79)/14)));
+      dydt[11]   = (h_inf-y[11])/tau_h;
+    
+      j_inf       = h_inf;
+      tau_j       = 10*(0.0007 + 0.15 / (1 + exp((y[0]*1000 + 41)/5.5) + exp(-(y[0]*1000 + 41)/14)) + 0.002 / (1 + exp(-(y[0]*1000 + 79)/14)));
+      dydt[12]   = (j_inf-y[12])/tau_j;
+    
+    
+      //// INaL
+      tauINaL     = 200; //ms
+      GNaLmax     = 17.25;//((time<tDrugApplication)*1+(time >= tDrugApplication)*INaLRedMed)* 2.3*7.5; //(S/F)
+      Vh_hLate    = 87.61;
+      i_NaL       = GNaLmax* pow((float)y[18],3.0f)*y[19]*(y[0]-E_Na);
+    
+      m_inf_L     = 1/(1+exp(-(y[0]*1000+42.85)/(5.264)));
+      alpha_m_L   = 1/(1+exp((-60-y[0]*1000)/5));
+      beta_m_L    = 0.1/(1+exp((y[0]*1000+35)/5))+0.1/(1+exp((y[0]*1000-50)/200));
+      tau_m_L     = 1 * myCoefTauM*alpha_m_L*beta_m_L;
+      dydt[18]   = (m_inf_L-y[18])/tau_m_L*1000;
+    
+      h_inf_L     = 1/(1+exp((y[0]*1000+Vh_hLate)/(7.488)));
+      tau_h_L     = 1 * tauINaL;
+      dydt[19]   = (h_inf_L-y[19])/tau_h_L*1000;
+    
+      //// If adapted from DOI:10.3389/fphys.2018.00080
+      i_fK        = fK*g_f*y[14]*(y[0] - E_K);
+      i_fNa       = fNa*g_f*y[14]*(y[0] - E_Na);
+      i_f         = i_fK + i_fNa;
+    
+      Xf_infinity = 1.0/(1.0 + exp((y[0]*1000 + 69)/8));
+      tau_Xf      = 5600 / (1 + exp((y[0]*1000 + 65)/7) + exp(-(y[0]*1000 + 65)/19));
+      dydt[14]   = 1000*(Xf_infinity-y[14])/tau_Xf;
+      
+    
+      //// ICaL
+      if(y[0]< precision && y[0] > -precision) //hopital
+        i_CaL =  g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T) *y[4]*y[5]*y[6]*y[7] / (2.0*F/(R*T)) * (y[2] - 0.341*Cao);
+      else
+        i_CaL = g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T)*(y[2]*exp(2.0*y[0]*F/(R*T))-0.341*Cao)/(exp(2.0*y[0]*F/(R*T))-1.0)*y[4]*y[5]*y[6]*y[7]; //((time<tDrugApplication)*1+(time >= tDrugApplication)*ICaLRedMed)*g_CaL*4.0*y[0]*pow(F,2.0)/(R*T)*(y[2]*exp(2.0*y[0]*F/(R*T))-0.341*Cao)/(exp(2.0*y[0]*F/(R*T))-1.0)*y[4]*y[5]*y[6]*y[7];
+    
+      d_infinity  = 1.0/(1.0+exp(-(y[0]*1000.0+9.1)/7.0));
+      alpha_d     = 0.25+1.4/(1.0+exp((-y[0]*1000.0-35.0)/13.0));
+      beta_d      = 1.4/(1.0+exp((y[0]*1000.0+5.0)/5.0));
+      gamma_d     = 1.0/(1.0+exp((-y[0]*1000.0+50.0)/20.0));
+      tau_d       = (alpha_d*beta_d+gamma_d)*1.0/1000.0;
+      dydt[4]    = (d_infinity-y[4])/tau_d;
+    
+      f1_inf      = 1.0/(1.0+exp((y[0]*1000.0+26.0)/3.0));
+      if (f1_inf-y[5] > 0.0)
+          constf1 = 1.0+1433.0*(y[2]-50.0*1.0e-6);
+      else
+          constf1 = 1.0;
+    
+      tau_f1      = (20.0+1102.5*exp(-pow((float)((y[0]*1000.0+27.0)/15.0),2.0f))+200.0/(1.0+exp((13.0-y[0]*1000.0)/10.0))+180.0/(1.0+exp((30.0+y[0]*1000.0)/10.0)))*constf1/1000.0;
+      dydt[5]    = (f1_inf-y[5])/tau_f1;
+    
+      f2_inf      = 0.33+0.67/(1.0+exp((y[0]*1000.0+32.0)/4.0));
+      tau_f2      = (600.0*exp(-pow((float)(y[0]*1000.0+25.0),2.0f)/170.0)+31.0/(1.0+exp((25.0-y[0]*1000.0)/10.0))+16.0/(1.0+exp((30.0+y[0]*1000.0)/10.0)))*constf2/1000.0;
+      dydt[6]    = (f2_inf-y[6])/tau_f2;
+    
+      alpha_fCa   = 1.0/(1.0+pow((float)(y[2]/0.0006),8.0f));
+      beta_fCa    = 0.1/(1.0+exp((y[2]-0.0009)/0.0001));
+      gamma_fCa   = 0.3/(1.0+exp((y[2]-0.00075)/0.0008));
+      fCa_inf     = (alpha_fCa+beta_fCa+gamma_fCa)/1.3156;
+    
+      if ((y[0] > -0.06) && (fCa_inf > y[7]))
+          constfCa = 0.0;
+      else
+          constfCa = 1.0;
+    
+      dydt[7]    = constfCa*(fCa_inf-y[7])/tau_fCa;
+    
+      //// Ito
+      i_to        = g_to*(y[0]-E_K)*y[15]*y[16];
+    
+      q_inf       = 1.0/(1.0+exp((y[0]*1000.0+53.0)/13.0));
+      tau_q       = (6.06+39.102/(0.57*exp(-0.08*(y[0]*1000.0+44.0))+0.065*exp(0.1*(y[0]*1000.0+45.93))))/1000.0;
+      dydt[15]   = (q_inf-y[15])/tau_q;
+    
+    
+      r_inf       = 1.0/(1.0+exp(-(y[0]*1000.0-22.3)/18.75));
+      tau_r       = (2.75352+14.40516/(1.037*exp(0.09*(y[0]*1000.0+30.61))+0.369*exp(-0.12*(y[0]*1000.0+23.84))))/1000.0;
+      dydt[16]   = (r_inf-y[16])/tau_r;
+    
+      //// IKs
+      i_Ks        = g_Ks*(y[0]-E_Ks)*pow((float)y[10],2.0f)*(1.0+0.6/(1.0+pow((float)(3.8*0.00001/y[2]),1.4f))); // ((time<tDrugApplication)*1+(time >= tDrugApplication)*IKsRedMed)*g_Ks*(y[0]-E_Ks)*pow((float)y[10],2.0)*(1.0+0.6/(1.0+pow((float)(3.8*0.00001/y[2]),1.4f)));
+    
+      Xs_infinity = 1.0/(1.0+exp((-y[0]*1000.0-20.0)/16.0));
+      alpha_Xs    = 1100.0/sqrt(1.0+exp((-10.0-y[0]*1000.0)/6.0));
+      beta_Xs     = 1.0/(1.0+exp((-60.0+y[0]*1000.0)/20.0));
+      tau_Xs      = 1.0*alpha_Xs*beta_Xs/1000.0;
+      dydt[10]   = (Xs_infinity-y[10])/tau_Xs;
+    
+      //// IKr
+      i_Kr         = g_Kr*(y[0]-E_K)*y[8]*y[9]*sqrt(Ko/5.4); //((time<tDrugApplication)*1+(time >= tDrugApplication)*IKrRedMed)*g_Kr*(y[0]-E_K)*y[8]*y[9]*sqrt(Ko/5.4);
+    
+      V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(pow((float)(1.0+Cao/0.58),4.0f)*L0))-0.019);
+    
+      Xr1_inf      = 1.0/(1.0+exp((V_half-y[0]*1000.0)/4.9));
+      alpha_Xr1    = 450.0/(1.0+exp((-45.0-y[0]*1000.0)/10.0));
+      beta_Xr1     = 6.0/(1.0+exp((30.0+y[0]*1000.0)/11.5));
+      tau_Xr1      = 1.0*alpha_Xr1*beta_Xr1/1000.0;
+      dydt[8]     = (Xr1_inf-y[8])/tau_Xr1;
+    
+      Xr2_infinity = 1.0/(1.0+exp((y[0]*1000.0+88.0)/50.0));
+      alpha_Xr2    = 3.0/(1.0+exp((-60.0-y[0]*1000.0)/20.0));
+      beta_Xr2     = 1.12/(1.0+exp((-60.0+y[0]*1000.0)/20.0));
+      tau_Xr2      = 1.0*alpha_Xr2*beta_Xr2/1000.0;
+      dydt[9]    = (Xr2_infinity-y[9])/tau_Xr2;
+    
+      //// IK1
+      alpha_K1    = 3.91/(1.0+exp(0.5942*(y[0]*1000.0-E_K*1000.0-200.0)));
+      beta_K1     = (-1.509*exp(0.0002*(y[0]*1000.0-E_K*1000.0+100.0))+exp(0.5886*(y[0]*1000.0-E_K*1000.0-10.0)))/(1.0+exp(0.4547*(y[0]*1000.0-E_K*1000.0)));
+      XK1_inf     = alpha_K1/(alpha_K1+beta_K1);
+      i_K1        = g_K1*XK1_inf*(y[0]-E_K)*sqrt(Ko/5.4);
+    
+      //// INaCa
+      i_NaCa      = kNaCa*(exp(gamma*y[0]*F/(R*T))*pow((float)y[17],3.0f)*Cao-exp((gamma-1.0)*y[0]*F/(R*T))*pow((float)Nao,3.0f)*y[2]*alpha)/((pow((float)KmNai,3.0f)+pow((float)Nao,3.0f))*(KmCa+Cao)*(1.0+Ksat*exp((gamma-1.0)*y[0]*F/(R*T))));
+    
+      //// INaK
+      i_NaK       = PNaK*Ko/(Ko+Km_K)*y[17]/(y[17]+Km_Na)/(1.0+0.1245*exp(-0.1*y[0]*F/(R*T))+0.0353*exp(-y[0]*F/(R*T)));
+    
+      //// IpCa
+      i_PCa       = g_PCa*y[2]/(y[2]+KPCa);
+    
+      //// Background currents
+      i_b_Na      = g_b_Na*(y[0]-E_Na);
+    
+      i_b_Ca      = g_b_Ca*(y[0]-E_Ca);
+    
+      //// Sarcoplasmic reticulum
+      i_up        = VmaxUp/(1.0+pow((float)Kup,2.0f)/pow((float)y[2],2.0f));
+    
+      i_leak      = (y[1]-y[2])*V_leak;
+    
+      dydt[3]    = 0;
+    
+      // RyR
+    
+      RyRSRCass   = (1 - 1/(1 +  exp((y[1]-0.3)/0.1)));
+      i_rel       = g_irel_max*RyRSRCass*y[21]*y[22]*(y[1]-y[2]);
+    
+      RyRainfss   = RyRa1-RyRa2/(1 + exp((1000*y[2]-(RyRahalf))/0.0082));
+      dydt[20]   = (RyRainfss- y[20])/RyRtauadapt;
+    
+      RyRoinfss   = (1 - 1/(1 +  exp((1000*y[2]-(y[20]+ RyRohalf))/0.003)));
+      if (RyRoinfss>= y[21])
+        RyRtauact = 18.75e-3;       //s
+      else
+        RyRtauact = 0.1*18.75e-3;   //s
+    
+      dydt[21]    = (RyRoinfss- y[21])/(RyRtauact);
+    
+      RyRcinfss   = (1/(1 + exp((1000*y[2]-(y[20]+RyRchalf))/0.001)));
+      if (RyRcinfss>= y[22])
+        RyRtauinact = 2*87.5e-3;    //s
+      else
+        RyRtauinact = 87.5e-3;      //s
+    
+      dydt[22]    = (RyRcinfss- y[22])/(RyRtauinact);
+    
+    
+    
+    
+      //// Ca2+ buffering
+      Cai_bufc    = 1.0/(1.0+Buf_C*Kbuf_C/pow((float)(y[2]+Kbuf_C), 2.0f));
+      Ca_SR_bufSR = 1.0/(1.0+Buf_SR*Kbuf_SR/pow((float)(y[1]+Kbuf_SR), 2.0f));
+    
+      //// Ionic concentrations
+      //Nai
+      dydt[17]   = -Cm*(i_Na+i_NaL+i_b_Na+3.0*i_NaK+3.0*i_NaCa+i_fNa)/(F*Vc*1.0e-18);
+      //Cai
+      dydt[2]    = Cai_bufc*(i_leak-i_up+i_rel-(i_CaL+i_b_Ca+i_PCa-2.0*i_NaCa)*Cm/(2.0*Vc*F*1.0e-18));
+      //caSR
+      dydt[1]    = Ca_SR_bufSR*Vc/V_SR*(i_up-(i_rel+i_leak));
+    
+      //// Stimulation
+    //  PDEFIELD_TYPE i_stim_Amplitude 		= 5.5e-10;//7.5e-10;   // ampere (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_End 				= 1000.0;   // second (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_PulseDuration	= 0.005;   // second (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_Start 			= 0.0;   // second (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_frequency        = 60.0;   // per_second (in stim_mode)
+      //PDEFIELD_TYPE stim_flag 				= stimFlag;   // dimensionless (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_Period 			= 60.0/i_stim_frequency;
+    
+      //if stim_flag~=0 && stim_flag~=1
+      //error('Paci2020: wrong pacing! stimFlag can be only 0 (spontaneous) or 1 (paced)');
+      //end
+    
+      /*
+      if ((time >= i_stim_Start) && (time <= i_stim_End) && (time-i_stim_Start-floor((time-i_stim_Start)/i_stim_Period)*i_stim_Period <= i_stim_PulseDuration))
+          i_stim = stim_flag*i_stim_Amplitude/Cm;
+      else
+          i_stim = 0.0;
+      */
+    
+      //// Membrane potential
+      dydt[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
 
-  //-----WRITE NEW VALUES ------------------------------------------------------------------------------------------------------------------------------------------------------------------      
-    #pragma unroll
-    for (i=0;i<layers;i++) //Accumulate increments with proper weights.
-      alt_PDEvars[i*sizex*sizey + id]=y[i]+dydt[i]*dt;
-  
+      //-----WRITE NEW VALUES ------------------------------------------------------------------------------------------------------------------------------------------------------------------      
+      #pragma unroll
+      for (i=0;i<layers;i++) //Accumulate increments with proper weights.
+        alt_PDEvars[i*sizex*sizey + id]=y[i]+dydt[i]*dt;
+    }  
   }
 }
 
+
+
+
+__global__ void CopyAltToOriginalPDEvars(int sizex, int sizey, int layers, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars){
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int stride = blockDim.x * gridDim.x;
+  for (int id = index; id < layers*sizex*sizey; id += stride){
+    PDEvars[id] = alt_PDEvars[id]; 
+  }
+}
+
+__global__ void CopyOriginalToAltPDEvars(int sizex, int sizey, int layers, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars){
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int stride = blockDim.x * gridDim.x;
+  for (int id = index; id < layers*sizex*sizey; id += stride){
+    alt_PDEvars[id] = PDEvars[id]; 
+  }
+}
+
+__global__ void FlipSigns(int sizex, int sizey, int layers, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars){
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int stride = blockDim.x * gridDim.x;
+  for (int id = index; id < layers*sizex*sizey; id += stride){
+    alt_PDEvars[id] = -PDEvars[id]; 
+  }
+}
+
+
 void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
+  //copy current couplingcoefficient matrix and cellnumber matrix from host to device
+  couplingcoefficient = cpm->getCouplingCoefficient(); 
+  cellnumber = cpm->getSigma();
+  cudaMemcpy(d_couplingcoefficient, couplingcoefficient[0], sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_cellnumber, cellnumber[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_PDEvars, PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
+
+
   //setup matrices for upperdiagonal, diagonal and lower diagonal for both the horizontal and vertical direction, since these remain the same during once MCS
-  InitializeDiagonals<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, lowerH, upperH, diagH, lowerV, upperV, diagV, couplingcoefficient[0]);
+  InitializeDiagonals<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, lowerH, upperH, diagH, lowerV, upperV, diagV, d_couplingcoefficient);
   cudaError_t errSync  = cudaGetLastError();
   cudaError_t errAsync = cudaDeviceSynchronize();
   if (errSync != cudaSuccess) 
@@ -2809,39 +2862,9 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
 
 
   for (int iteration = 0; iteration < repeat; iteration++){
-
+    
     //Do an ODE step of size dt/2
-    ForwardEulerStep<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars);
-    errSync  = cudaGetLastError();
-    errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-
-    //Do a horizontal ADI sweep of size dt/2
-    InitializeHorizontalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BH, couplingcoefficient[0], d_alt_PDEvars);
-    errSync  = cudaGetLastError();
-    errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-    statusH = cusparseSgtsvInterleavedBatch(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, &pbuffersizeH);
-    if (statusH != CUSPARSE_STATUS_SUCCESS)
-    {
-      cout << statusH << endl;
-    }
-    NewPDEfieldH<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, BH, d_PDEvars);
-    errSync  = cudaGetLastError();
-    errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-
-    //Do an ODE step of size dt/2
-    ForwardEulerStep<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars);
+    ForwardEulerStep<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_cellnumber);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess) 
@@ -2850,21 +2873,76 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
 
     //Do a vertical ADI sweep of size dt/2
-    InitializeVerticalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BV, couplingcoefficient[0], d_alt_PDEvars);
+    InitializeVerticalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BV, d_couplingcoefficient, d_alt_PDEvars);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess) 
       printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-    statusV = cusparseSgtsvInterleavedBatch(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, &pbuffersizeV);
+    statusV = cusparseDgtsvInterleavedBatch(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, pbufferV);
     if (statusV != CUSPARSE_STATUS_SUCCESS)
     {
       cout << statusV << endl;
     }
-    NewPDEfieldV<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, BV, d_PDEvars); //////
+    cudaDeviceSynchronize();
+    NewPDEfieldV0<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, BV, d_PDEvars); //////
+    errSync  = cudaGetLastError();
+    errAsync = cudaDeviceSynchronize();
+    if (errSync != cudaSuccess) 
+      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+    if (errAsync != cudaSuccess)
+      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
+    NewPDEfieldOthers<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, BV, d_PDEvars, d_alt_PDEvars); //////
+    errSync  = cudaGetLastError();
+    errAsync = cudaDeviceSynchronize();
+    if (errSync != cudaSuccess) 
+      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+    if (errAsync != cudaSuccess)
+      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync)); 
+
+    //Do an ODE step of size dt/2
+    ForwardEulerStep<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_cellnumber);
+    errSync  = cudaGetLastError();
+    errAsync = cudaDeviceSynchronize();
+    if (errSync != cudaSuccess) 
+      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+    if (errAsync != cudaSuccess)
+      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
+    
+
+    //Do a horizontal ADI sweep of size dt/2
+    InitializeHorizontalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BH, d_couplingcoefficient, d_alt_PDEvars);
+    errSync  = cudaGetLastError();
+    errAsync = cudaDeviceSynchronize();
+    if (errSync != cudaSuccess) 
+      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+    if (errAsync != cudaSuccess)
+      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
+    statusH = cusparseDgtsvInterleavedBatch(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, pbufferH);
+    if (statusH != CUSPARSE_STATUS_SUCCESS)
+    {
+      cout << statusH << endl;
+    }
+    NewPDEfieldH0<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, BH, d_PDEvars);    
+    errSync  = cudaGetLastError();
+    errAsync = cudaDeviceSynchronize();
+    if (errSync != cudaSuccess) 
+      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+    if (errAsync != cudaSuccess)
+      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
+    NewPDEfieldOthers<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, BV, d_PDEvars, d_alt_PDEvars); //////
+    errSync  = cudaGetLastError();
+      errAsync = cudaDeviceSynchronize();
+    if (errSync != cudaSuccess) 
+      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+    if (errAsync != cudaSuccess)
+      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
+  
     thetime = thetime + dt;
   }
+  cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+
 }
 
 // public
@@ -3043,7 +3121,7 @@ bool PDE::plotPos(int x, int y, Graphics * graphics, int layer) {
   layer = 0;
   double val = PDEvars[layer*sizex*sizey+x*sizey+y];
   if (val > -100){
-    graphics->Rectangle(MapColour(val), x, y); 
+    graphics->Rectangle(MapColour(val), x, y);
     return false;
   }
   return true;

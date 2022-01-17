@@ -347,8 +347,7 @@ void PDE::AllocateTridiagonalvars(int sx, int sy){
 
 void PDE::InitializePDEvars(void){
   PDEFIELD_TYPE PDEinit[23];
-  PDEinit[0] = -0.030;
-  //PDEinit[0] = -1;
+  PDEinit[0] = -0.070;
   PDEinit[1] = 0.32;
   PDEinit[2] = 0.0002;
   PDEinit[3] = 0;
@@ -2810,7 +2809,8 @@ __global__ void ForwardEulerStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int la
       #pragma unroll
       for (i=0;i<layers;i++) //Accumulate increments with proper weights.
         alt_PDEvars[i*sizex*sizey + id]=y[i]+dydt[i]*dt;
-    }  
+    } 
+
   }
 }
 
@@ -2940,9 +2940,10 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
   
     thetime = thetime + dt;
+    
+    cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
   }
-  cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-
 }
 
 // public

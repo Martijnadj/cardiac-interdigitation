@@ -59,6 +59,7 @@ Parameter::Parameter() {
   secr_rate[0] = 1.8e-4;
   saturation = 0;
   dt = 2.0;
+  min_stepsize = 1e-6;
   dx = 2.0e-6;
   pde_its = 15;
   micropatternmask = strdup("None");
@@ -94,6 +95,7 @@ Parameter::Parameter() {
   initial_n = 0.5;
   initial_m = 0.25;
   initial_h = 0.08;
+  eps = 1e-8;
 
   couplingmedium = 1e-5;
   couplingcell = 1e-5;
@@ -164,6 +166,7 @@ void Parameter::Read(const char *filename) {
   secr_rate = dgetparlist(fp, "secr_rate", n_chem, true);
   saturation = fgetpar(fp, "saturation", 0, true);
   dt = fgetpar(fp, "dt", 2.0, true);
+  min_stepsize = fgetpar(fp, "min_stepsize", 1e-6, true);
   dx = fgetpar(fp, "dx", 2.0e-6, true);
   pde_its = igetpar(fp, "pde_its", 15, true);
   micropatternmask = sgetpar(fp, "micropatternmask", "None", true);
@@ -216,6 +219,7 @@ void Parameter::Read(const char *filename) {
   initial_n = fgetpar(fp, "initial_n", 0.5, true);
   initial_m = fgetpar(fp, "initial_m", 0.25, true);
   initial_h = fgetpar(fp, "initial_h", 0.08, true);
+  eps = fgetpar(fp, "eps", 1e-8, true);
 
   couplingmedium = fgetpar(fp, "couplingmedium", 1e-5, true);
   couplingcell = fgetpar(fp, "couplingcell", 1e-5, true);
@@ -269,6 +273,7 @@ void Parameter::Write(ostream &os) const {
   os << " secr_rate = "<< secr_rate[0] << endl;
   os << " saturation = " << saturation << endl;
   os << " dt = " << dt << endl;
+  os << " min_stepsize = " << min_stepsize << endl;
   os << " dx = " << dx << endl;
   os << " pde_its = " << pde_its << endl;
   os << " micropatternmask = " << micropatternmask << endl;
@@ -319,6 +324,7 @@ void Parameter::Write(ostream &os) const {
   os << " initial_n = " << initial_n << endl;
   os << " initial_m = " << initial_m << endl;
   os << " initial_h = " << initial_h<< endl;
+  os << " eps = " << eps<< endl;
 
   os << " couplingmedium = " << couplingmedium << endl;
   os << " couplingcell = " << couplingcell << endl;

@@ -52,6 +52,7 @@ class PDE {
   int layers;
   int btype;
   PDEFIELD_TYPE dt;
+  PDEFIELD_TYPE min_stepsize;
   PDEFIELD_TYPE dx2;
   bool usePDEorAltPDE;
 
@@ -265,6 +266,7 @@ class PDE {
 
   PDEFIELD_TYPE *PDEvars;
   PDEFIELD_TYPE *alt_PDEvars;
+  PDEFIELD_TYPE *last_stepsize;
   PDEFIELD_TYPE *d_PDEvars;
   PDEFIELD_TYPE *d_alt_PDEvars;
   PDEFIELD_TYPE **couplingcoefficient;
@@ -281,7 +283,7 @@ class PDE {
   
 
   //2d arrays containing the upperdiagonals, lower diagonals and diagonals and vectors B for all rows and columns to solve AX=B equations
-  PDEFIELD_TYPE *lowerH, *upperH, *diagH, *BH, *lowerV, *upperV, *diagV, *BV, *XH; 
+  PDEFIELD_TYPE *lowerH, *upperH, *diagH, *BH, *lowerV, *upperV, *diagV, *BV, *XH, *next_stepsize; 
 
  
  

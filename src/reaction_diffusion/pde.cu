@@ -116,8 +116,7 @@ PDE::PDE(const int l, const int sx, const int sy) {
   layers=l;
   PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
   alt_PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
-  //PDEvars=AllocatePDEvars(l,sx,sy);
-  //alt_PDEvars=AllocatePDEvars(l,sx,sy);
+  min_stepsize = par.min_stepsize;
   btype = 1;
   dx2 = par.dx*par.dx;
   dt = par.dt;
@@ -640,6 +639,8 @@ void PDE::InitializeCuda(CellularPotts *cpm){
   gpuErrchk(cudaMallocManaged(&diagV, sizey*sizex*sizeof(PDEFIELD_TYPE)));
   gpuErrchk(cudaMallocManaged(&lowerV, sizey*sizex*sizeof(PDEFIELD_TYPE)));
   gpuErrchk(cudaMallocManaged(&BV, sizey*sizex*sizeof(PDEFIELD_TYPE)));
+  gpuErrchk(cudaMallocManaged(&next_stepsize, sizey*sizex*sizeof(PDEFIELD_TYPE)));
+  
 
   handleH = 0;
   pbuffersizeH = 0;
@@ -661,10 +662,22 @@ void PDE::InitializeCuda(CellularPotts *cpm){
 
 }
 
+__global__ void InitializeLastStepsize(PDEFIELD_TYPE min_stepsize, PDEFIELD_TYPE* next_stepsize, int sizex, int sizey){
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int stride = blockDim.x * gridDim.x;
+  for (int id = index; id < sizex*sizey; id += stride){
+    next_stepsize[id] = 1e-5;
+  }
+}
+
+
 void PDE::InitializePDEs(CellularPotts *cpm){
   InitializePDEvars();
   InitializeCuda(cpm);
+  InitializeLastStepsize<<<par.number_of_cores, par.threads_per_core>>>(min_stepsize, next_stepsize, sizex, sizey);
 }
+
+
 
 
 __global__ void InitializeDiagonals(int sizex, int sizey, PDEFIELD_TYPE twooverdt, PDEFIELD_TYPE dx2, PDEFIELD_TYPE* lowerH, PDEFIELD_TYPE* upperH, PDEFIELD_TYPE* diagH, PDEFIELD_TYPE* lowerV, PDEFIELD_TYPE* upperV, PDEFIELD_TYPE* diagV, PDEFIELD_TYPE* couplingcoefficient){
@@ -790,7 +803,9 @@ __global__ void NewPDEfieldOthers(int sizex, int sizey, int layers, PDEFIELD_TYP
 
 
 
-__global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* cellnumber){
+
+#if 0
+__global__ void RungeKuttaStepOld(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* cellnumber){
   
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int stride = blockDim.x * gridDim.x;
@@ -807,13 +822,18 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
   PDEFIELD_TYPE ak6[23];
   PDEFIELD_TYPE ytemp[23]; 
   PDEFIELD_TYPE y[23];
+  PDEFIELD_TYPE yerr[23];
+  PDEFIELD_TYPE yout[23];
 
-  PDEFIELD_TYPE b21=0.2,
+  static PDEFIELD_TYPE a2=0.2,a3=0.3,a4=0.6,a5=1.0,a6=0.875,b21=0.2,
   b31=3.0/40.0,b32=9.0/40.0,b41=0.3,b42 = -0.9,b43=1.2,
   b51 = -11.0/54.0, b52=2.5,b53 = -70.0/27.0,b54=35.0/27.0,
   b61=1631.0/55296.0,b62=175.0/512.0,b63=575.0/13824.0,
   b64=44275.0/110592.0,b65=253.0/4096.0,c1=37.0/378.0,
-  c3=250.0/621.0,c4=125.0/594.0,c6=512.0/1771.0;
+  c3=250.0/621.0,c4=125.0/594.0,c6=512.0/1771.0,
+  dc5 = -277.00/14336.0;
+  PDEFIELD_TYPE dc1=c1-2825.0/27648.0,dc3=c3-18575.0/48384.0,
+    dc4=c4-13525.0/55296.0,dc6=c6-0.25;
 
   //Declare variables needed for Paci2020 model and assign the constants
 
@@ -1052,7 +1072,7 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       for (int l = 0; l < layers; l++) //fill with current PDE values
         y[l] = PDEvars[l*sizex*sizey + id];
 
-    //-----FIRST STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+      //-----FIRST STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
       
         //// Nernst potential
       E_Na = R*T/F*log(Nao/y[17]);
@@ -1481,7 +1501,7 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       ak2[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
 
 
-  //-----THIRD STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+    //-----THIRD STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+dt*(b31*dydt[i]+b32*ak2[i]);
 
@@ -1693,7 +1713,7 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       ak3[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
 
 
-  //-----FOURTH STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+    //-----FOURTH STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+dt*(b41*dydt[i]+b42*ak2[i]+b43*ak3[i]);
     
@@ -1903,7 +1923,7 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
     
       //// Membrane potential
       ak4[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
-  //-----FIFTH STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+    //-----FIFTH STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+dt*(b51*dydt[i]+b52*ak2[i]+b53*ak3[i]+b54*ak4[i]);
 
@@ -2114,7 +2134,7 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       //// Membrane potential
       ak5[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);      
 
-  //-----SIXTH STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------      
+    //-----SIXTH STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------      
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+dt*(b61*dydt[i]+b62*ak2[i]+b63*ak3[i]+b64*ak4[i]+b65*ak5[i]);
 
@@ -2330,12 +2350,635 @@ __global__ void RungeKuttaStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int laye
       ak6[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
   
       //-----WRITE NEW VALUES ------------------------------------------------------------------------------------------------------------------------------------------------------------------      
+      for (i=0;i<layers;i++){ //Accumulate increments with proper weights.
+        yout[i]=y[i]+dt*(c1*dydt[i]+c3*ak3[i]+c4*ak4[i]+c6*ak6[i]);
+        yerr[i]=dt*(dc1*dydt[i]+dc3*ak3[i]+dc4*ak4[i]+dc5*ak5[i]+dc6*ak6[i]);
+      }
+
       #pragma unroll
       for (i=0;i<layers;i++) //Accumulate increments with proper weights.
         alt_PDEvars[i*sizex*sizey + id]=y[i]+(c1*dydt[i]+c3*ak3[i]+c4*ak4[i]+c6*ak6[i])*dt;
     }  
   
   }
+}
+#endif
+
+__device__ void derivs(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt){
+
+  //Declare variables needed for Paci2020 model and assign the constants
+
+  //// Constants
+  PDEFIELD_TYPE F = 96485.3415;     // coulomb_per_mole (in model_parameters)
+  PDEFIELD_TYPE R = 8.314472;       // joule_per_mole_kelvin (in model_parameters)
+  PDEFIELD_TYPE T = 310.0;          // kelvin (in model_parameters) //37°C
+
+  //// Cell geometry
+  PDEFIELD_TYPE V_SR = 583.73;        // micrometre_cube (in model_parameters)
+  PDEFIELD_TYPE Vc   = 8800.0;        // micrometre_cube (in model_parameters)
+  PDEFIELD_TYPE Cm   = 9.87109e-11;   // farad (in model_parameters)
+
+  //// Extracellular concentrations
+  PDEFIELD_TYPE Nao = 151.0; // millimolar (in model_parameters)
+  PDEFIELD_TYPE Ko  = 5.4;   // millimolar (in model_parameters)
+  PDEFIELD_TYPE Cao = 1.8;   // millimolar (in model_parameters)
+
+  //// Intracellular concentrations
+  // Naio = 10 mM y[17]
+  PDEFIELD_TYPE Ki = 150.0;   // millimolar (in model_parameters)
+  // Cai  = 0.0002 mM y[2]
+  // caSR = 0.3 mM y[1]  
+    
+      //// Nernst potential
+  PDEFIELD_TYPE E_Na;
+  PDEFIELD_TYPE E_Ca;
+  PDEFIELD_TYPE E_K;
+  PDEFIELD_TYPE PkNa = 0.03;   // dimensionless (in electric_potentials)
+  PDEFIELD_TYPE E_Ks;
+    
+  //// INa adapted from DOI:10.3389/fphys.2018.00080
+  PDEFIELD_TYPE g_Na = 3671.2302; //((time<tDrugApplication)*1+(time >= tDrugApplication)*INaFRedMed)*6447.1896;
+  PDEFIELD_TYPE i_Na;
+    
+  PDEFIELD_TYPE m_inf;
+  PDEFIELD_TYPE tau_m;
+    
+  PDEFIELD_TYPE h_inf;
+  PDEFIELD_TYPE tau_h;
+    
+  PDEFIELD_TYPE j_inf;
+  PDEFIELD_TYPE tau_j;
+    
+    
+  //// INaL
+  PDEFIELD_TYPE myCoefTauM  = 1;
+  PDEFIELD_TYPE tauINaL = 200; //ms
+  PDEFIELD_TYPE GNaLmax = 17.25;//((time<tDrugApplication)*1+(time >= tDrugApplication)*INaLRedMed)* 2.3*7.5; //(S/F)
+  PDEFIELD_TYPE Vh_hLate = 87.61;
+  PDEFIELD_TYPE i_NaL;
+    
+  PDEFIELD_TYPE m_inf_L;
+  PDEFIELD_TYPE alpha_m_L;
+  PDEFIELD_TYPE beta_m_L;
+  PDEFIELD_TYPE tau_m_L;
+    
+  PDEFIELD_TYPE h_inf_L;
+  PDEFIELD_TYPE tau_h_L = 1 * tauINaL;
+    
+  //// If adapted from DOI:10.3389/fphys.2018.00080
+  PDEFIELD_TYPE g_f = 1; //((time<tDrugApplication)*1+(time >= tDrugApplication)*IfRedMed)*22.2763088;
+  PDEFIELD_TYPE fNa = 0.37;
+  PDEFIELD_TYPE fK = 1 - fNa;
+  PDEFIELD_TYPE i_fK;
+  PDEFIELD_TYPE i_fNa;
+  PDEFIELD_TYPE i_f;
+    
+  PDEFIELD_TYPE Xf_infinity;
+  PDEFIELD_TYPE tau_Xf; 
+    
+      //// ICaL
+  PDEFIELD_TYPE g_CaL = 8.635702e-5;   // metre_cube_per_F_per_s (in i_CaL)
+  PDEFIELD_TYPE i_CaL;  
+  PDEFIELD_TYPE precision = 0.0001;     
+    
+  PDEFIELD_TYPE d_infinity;
+  PDEFIELD_TYPE alpha_d;
+  PDEFIELD_TYPE beta_d;
+  PDEFIELD_TYPE gamma_d;
+  PDEFIELD_TYPE tau_d;
+    
+  PDEFIELD_TYPE f1_inf;
+  PDEFIELD_TYPE constf1;
+    
+  PDEFIELD_TYPE tau_f1;
+    
+  PDEFIELD_TYPE f2_inf;
+  PDEFIELD_TYPE constf2 = 1.0;
+  PDEFIELD_TYPE tau_f2;
+    
+  PDEFIELD_TYPE alpha_fCa;
+  PDEFIELD_TYPE beta_fCa;
+  PDEFIELD_TYPE gamma_fCa;
+  PDEFIELD_TYPE fCa_inf;
+    
+  PDEFIELD_TYPE constfCa;
+    
+  PDEFIELD_TYPE tau_fCa     = 0.002;   // second (in i_CaL_fCa_gate)
+    
+  //// Ito
+  PDEFIELD_TYPE g_to = 29.9038;   // S_per_F (in i_to)  
+  PDEFIELD_TYPE i_to;
+    
+  PDEFIELD_TYPE q_inf;
+  PDEFIELD_TYPE tau_q;
+    
+    
+  PDEFIELD_TYPE r_inf;
+  PDEFIELD_TYPE tau_r;
+    
+  //// IKs
+  PDEFIELD_TYPE g_Ks = 2.041;   // S_per_F (in i_Ks)
+  PDEFIELD_TYPE i_Ks; // ((time<tDrugApplication)*1+(time >= tDrugApplication)*IKsRedMed)*g_Ks*(y[0]-E_Ks)*pow((float)y[10],2.0)*(1.0+0.6/(1.0+pow((float)(3.8*0.00001/y[2]),1.4f)));
+    
+  PDEFIELD_TYPE Xs_infinity;
+  PDEFIELD_TYPE alpha_Xs;
+  PDEFIELD_TYPE beta_Xs;
+  PDEFIELD_TYPE tau_Xs;
+    
+  //// IKr
+  PDEFIELD_TYPE L0 = 0.025;   // dimensionless (in i_Kr_Xr1_gate)
+  PDEFIELD_TYPE Q = 2.3;     // dimensionless (in i_Kr_Xr1_gate)
+  PDEFIELD_TYPE g_Kr = 29.8667;   // S_per_F (in i_Kr)
+  PDEFIELD_TYPE i_Kr;
+    
+  PDEFIELD_TYPE V_half;
+    
+  PDEFIELD_TYPE Xr1_inf;
+  PDEFIELD_TYPE alpha_Xr1;
+  PDEFIELD_TYPE beta_Xr1;
+  PDEFIELD_TYPE tau_Xr1;
+    
+  PDEFIELD_TYPE Xr2_infinity;
+  PDEFIELD_TYPE alpha_Xr2;
+  PDEFIELD_TYPE beta_Xr2;
+  PDEFIELD_TYPE tau_Xr2;
+    
+  //// IK1
+  PDEFIELD_TYPE alpha_K1;
+  PDEFIELD_TYPE beta_K1;
+  PDEFIELD_TYPE XK1_inf;
+  PDEFIELD_TYPE g_K1 = 28.1492;   // S_per_F (in i_K1)
+  PDEFIELD_TYPE i_K1;
+    
+  //// INaCa
+  PDEFIELD_TYPE KmCa = 1.38;   // millimolar (in i_NaCa)
+  PDEFIELD_TYPE KmNai = 87.5;   // millimolar (in i_NaCa)
+  PDEFIELD_TYPE Ksat = 0.1;    // dimensionless (in i_NaCa)
+  PDEFIELD_TYPE gamma = 0.35;   // dimensionless (in i_NaCa)
+  PDEFIELD_TYPE alpha = 2.16659;
+  PDEFIELD_TYPE kNaCa = 3917.0463; //((time<tDrugApplication)*1+(time >= tDrugApplication)*INaCaRedMed) * 6514.47574;   // A_per_F (in i_NaCa)
+  PDEFIELD_TYPE i_NaCa;
+
+  //// INaK
+  PDEFIELD_TYPE Km_K = 1.0;    // millimolar (in i_NaK)
+  PDEFIELD_TYPE Km_Na = 40.0;   // millimolar (in i_NaK)
+  PDEFIELD_TYPE PNaK = 2.74240;// A_per_F (in i_NaK)
+  PDEFIELD_TYPE i_NaK;
+    
+  //// IpCa
+  PDEFIELD_TYPE KPCa = 0.0005;   // millimolar (in i_PCa)
+  PDEFIELD_TYPE g_PCa = 0.4125;   // A_per_F (in i_PCa)
+  PDEFIELD_TYPE i_PCa;
+    
+  //// Background currents
+  PDEFIELD_TYPE g_b_Na = 1.14;         // S_per_F (in i_b_Na)
+  PDEFIELD_TYPE i_b_Na;
+    
+  PDEFIELD_TYPE g_b_Ca = 0.8727264;    // S_per_F (in i_b_Ca)
+  PDEFIELD_TYPE i_b_Ca;
+
+  PDEFIELD_TYPE i_up;
+  PDEFIELD_TYPE i_leak;
+    
+  //// Sarcoplasmic reticulum
+  PDEFIELD_TYPE VmaxUp = 0.82205;
+  PDEFIELD_TYPE Kup	= 4.40435e-4;
+    
+  PDEFIELD_TYPE V_leak = 4.48209e-4;
+    
+  // RyR
+  PDEFIELD_TYPE g_irel_max = 55.808061;
+  PDEFIELD_TYPE RyRa1 = 0.05169;
+  PDEFIELD_TYPE RyRa2 = 0.050001;
+  PDEFIELD_TYPE RyRahalf = 0.02632;
+  PDEFIELD_TYPE RyRohalf = 0.00944;
+  PDEFIELD_TYPE RyRchalf = 0.00167;
+    
+  PDEFIELD_TYPE RyRSRCass;
+  PDEFIELD_TYPE i_rel;
+    
+  PDEFIELD_TYPE RyRainfss;
+  PDEFIELD_TYPE RyRtauadapt = 1; //s
+    
+  PDEFIELD_TYPE RyRoinfss;
+  PDEFIELD_TYPE RyRtauact;
+    
+  PDEFIELD_TYPE RyRcinfss;
+  PDEFIELD_TYPE RyRtauinact;
+
+  //// Ca2+ buffering
+  PDEFIELD_TYPE Buf_C = 0.25;   // millimolar (in calcium_dynamics)
+  PDEFIELD_TYPE Buf_SR = 10.0;   // millimolar (in calcium_dynamics)
+  PDEFIELD_TYPE Kbuf_C = 0.001;   // millimolar (in calcium_dynamics)
+  PDEFIELD_TYPE Kbuf_SR = 0.3;   // millimolar (in calcium_dynamics)
+  PDEFIELD_TYPE Cai_bufc;
+  PDEFIELD_TYPE Ca_SR_bufSR;
+    
+      //// Stimulation
+    //  PDEFIELD_TYPE i_stim_Amplitude 		= 5.5e-10;//7.5e-10;   // ampere (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_End 				= 1000.0;   // second (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_PulseDuration	= 0.005;   // second (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_Start 			= 0.0;   // second (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_frequency        = 60.0;   // per_second (in stim_mode)
+      //PDEFIELD_TYPE stim_flag 				= stimFlag;   // dimensionless (in stim_mode)
+    //  PDEFIELD_TYPE i_stim_Period 			= 60.0/i_stim_frequency;
+    
+      //if stim_flag~=0 && stim_flag~=1
+      //error('Paci2020: wrong pacing! stimFlag can be only 0 (spontaneous) or 1 (paced)');
+      //end
+    
+      /*
+      if ((time >= i_stim_Start) && (time <= i_stim_End) && (time-i_stim_Start-floor((time-i_stim_Start)/i_stim_Period)*i_stim_Period <= i_stim_PulseDuration))
+          i_stim = stim_flag*i_stim_Amplitude/Cm;
+      else
+          i_stim = 0.0;
+      */
+  PDEFIELD_TYPE i_stim = 0;
+  
+
+  //-----FIRST STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+   
+  //// Nernst potential
+  E_Na = R*T/F*log(Nao/y[17]);
+  E_Ca = 0.5*R*T/F*log(Cao/y[2]);
+  E_K  = R*T/F*log(Ko/Ki);
+  E_Ks = R*T/F*log((Ko+PkNa*Nao)/(Ki+PkNa*y[17]));
+    
+  //// INa adapted from DOI:10.3389/fphys.2018.00080
+  i_Na        =  g_Na*pow((float)y[13],3.0f)*y[11]*y[12]*(y[0] - E_Na);
+    
+  m_inf       = 1 / (1 + exp((y[0]*1000 + 39)/-11.2));
+  tau_m       = (0.00001 + 0.00013*exp(-pow((float)((y[0]*1000 + 48)/15),2.0f)) + 0.000045 / (1 + exp((y[0]*1000 + 42)/-5)));
+  dydt[13]   = (m_inf-y[13])/tau_m;
+    
+  h_inf       = 1 / (1 + exp((y[0]*1000 + 66.5)/6.8));
+  tau_h       = (0.00007 + 0.034 / (1 + exp((y[0]*1000 + 41)/5.5) + exp(-(y[0]*1000 + 41)/14)) + 0.0002 / (1 + exp(-(y[0]*1000 + 79)/14)));
+  dydt[11]   = (h_inf-y[11])/tau_h;
+    
+  j_inf       = h_inf;
+  tau_j       = 10*(0.0007 + 0.15 / (1 + exp((y[0]*1000 + 41)/5.5) + exp(-(y[0]*1000 + 41)/14)) + 0.002 / (1 + exp(-(y[0]*1000 + 79)/14)));
+  dydt[12]   = (j_inf-y[12])/tau_j;
+    
+    
+  //// INaL
+  tauINaL     = 200; //ms
+  GNaLmax     = 17.25;//((time<tDrugApplication)*1+(time >= tDrugApplication)*INaLRedMed)* 2.3*7.5; //(S/F)
+  Vh_hLate    = 87.61;
+  i_NaL       = GNaLmax* pow((float)y[18],3.0f)*y[19]*(y[0]-E_Na);
+    
+  m_inf_L     = 1/(1+exp(-(y[0]*1000+42.85)/(5.264)));
+  alpha_m_L   = 1/(1+exp((-60-y[0]*1000)/5));
+  beta_m_L    = 0.1/(1+exp((y[0]*1000+35)/5))+0.1/(1+exp((y[0]*1000-50)/200));
+  tau_m_L     = 1 * myCoefTauM*alpha_m_L*beta_m_L;
+  dydt[18]   = (m_inf_L-y[18])/tau_m_L*1000;
+    
+  h_inf_L     = 1/(1+exp((y[0]*1000+Vh_hLate)/(7.488)));
+  tau_h_L     = 1 * tauINaL;
+  dydt[19]   = (h_inf_L-y[19])/tau_h_L*1000;
+    
+  //// If adapted from DOI:10.3389/fphys.2018.00080
+  i_fK        = fK*g_f*y[14]*(y[0] - E_K);
+  i_fNa       = fNa*g_f*y[14]*(y[0] - E_Na);
+  i_f         = i_fK + i_fNa;
+    
+  Xf_infinity = 1.0/(1.0 + exp((y[0]*1000 + 69)/8));
+  tau_Xf      = 5600 / (1 + exp((y[0]*1000 + 65)/7) + exp(-(y[0]*1000 + 65)/19));
+  dydt[14]   = 1000*(Xf_infinity-y[14])/tau_Xf;
+      
+    
+  //// ICaL
+  if(y[0]< precision && y[0] > -precision) //hopital
+    i_CaL =  g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T) *y[4]*y[5]*y[6]*y[7] / (2.0*F/(R*T)) * (y[2] - 0.341*Cao);
+  else
+    i_CaL = g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T)*(y[2]*exp(2.0*y[0]*F/(R*T))-0.341*Cao)/(exp(2.0*y[0]*F/(R*T))-1.0)*y[4]*y[5]*y[6]*y[7]; //((time<tDrugApplication)*1+(time >= tDrugApplication)*ICaLRedMed)*g_CaL*4.0*y[0]*pow(F,2.0)/(R*T)*(y[2]*exp(2.0*y[0]*F/(R*T))-0.341*Cao)/(exp(2.0*y[0]*F/(R*T))-1.0)*y[4]*y[5]*y[6]*y[7];
+    
+  d_infinity  = 1.0/(1.0+exp(-(y[0]*1000.0+9.1)/7.0));
+  alpha_d     = 0.25+1.4/(1.0+exp((-y[0]*1000.0-35.0)/13.0));
+  beta_d      = 1.4/(1.0+exp((y[0]*1000.0+5.0)/5.0));
+  gamma_d     = 1.0/(1.0+exp((-y[0]*1000.0+50.0)/20.0));
+  tau_d       = (alpha_d*beta_d+gamma_d)*1.0/1000.0;
+  dydt[4]    = (d_infinity-y[4])/tau_d;
+    
+  f1_inf      = 1.0/(1.0+exp((y[0]*1000.0+26.0)/3.0));
+  if (f1_inf-y[5] > 0.0)
+      constf1 = 1.0+1433.0*(y[2]-50.0*1.0e-6);
+  else
+      constf1 = 1.0;
+  
+  tau_f1      = (20.0+1102.5*exp(-pow((float)((y[0]*1000.0+27.0)/15.0),2.0f))+200.0/(1.0+exp((13.0-y[0]*1000.0)/10.0))+180.0/(1.0+exp((30.0+y[0]*1000.0)/10.0)))*constf1/1000.0;
+  dydt[5]    = (f1_inf-y[5])/tau_f1;
+   
+  f2_inf      = 0.33+0.67/(1.0+exp((y[0]*1000.0+32.0)/4.0));
+  tau_f2      = (600.0*exp(-pow((float)(y[0]*1000.0+25.0),2.0f)/170.0)+31.0/(1.0+exp((25.0-y[0]*1000.0)/10.0))+16.0/(1.0+exp((30.0+y[0]*1000.0)/10.0)))*constf2/1000.0;
+  dydt[6]    = (f2_inf-y[6])/tau_f2;
+   
+  alpha_fCa   = 1.0/(1.0+pow((float)(y[2]/0.0006),8.0f));
+  beta_fCa    = 0.1/(1.0+exp((y[2]-0.0009)/0.0001));
+  gamma_fCa   = 0.3/(1.0+exp((y[2]-0.00075)/0.0008));
+  fCa_inf     = (alpha_fCa+beta_fCa+gamma_fCa)/1.3156;
+    
+  if ((y[0] > -0.06) && (fCa_inf > y[7]))
+    constfCa = 0.0;
+  else
+    constfCa = 1.0;
+    
+  dydt[7]    = constfCa*(fCa_inf-y[7])/tau_fCa;
+    
+  //// Ito
+  i_to        = g_to*(y[0]-E_K)*y[15]*y[16];
+    
+  q_inf       = 1.0/(1.0+exp((y[0]*1000.0+53.0)/13.0));
+  tau_q       = (6.06+39.102/(0.57*exp(-0.08*(y[0]*1000.0+44.0))+0.065*exp(0.1*(y[0]*1000.0+45.93))))/1000.0;
+  dydt[15]   = (q_inf-y[15])/tau_q;
+    
+    
+  r_inf       = 1.0/(1.0+exp(-(y[0]*1000.0-22.3)/18.75));
+  tau_r       = (2.75352+14.40516/(1.037*exp(0.09*(y[0]*1000.0+30.61))+0.369*exp(-0.12*(y[0]*1000.0+23.84))))/1000.0;
+  dydt[16]   = (r_inf-y[16])/tau_r;
+    
+  //// IKs
+  i_Ks        = g_Ks*(y[0]-E_Ks)*pow((float)y[10],2.0f)*(1.0+0.6/(1.0+pow((float)(3.8*0.00001/y[2]),1.4f))); // ((time<tDrugApplication)*1+(time >= tDrugApplication)*IKsRedMed)*g_Ks*(y[0]-E_Ks)*pow((float)y[10],2.0)*(1.0+0.6/(1.0+pow((float)(3.8*0.00001/y[2]),1.4f)));
+    
+  Xs_infinity = 1.0/(1.0+exp((-y[0]*1000.0-20.0)/16.0));
+  alpha_Xs    = 1100.0/sqrt(1.0+exp((-10.0-y[0]*1000.0)/6.0));
+  beta_Xs     = 1.0/(1.0+exp((-60.0+y[0]*1000.0)/20.0));
+  tau_Xs      = 1.0*alpha_Xs*beta_Xs/1000.0;
+  dydt[10]   = (Xs_infinity-y[10])/tau_Xs;
+    
+  //// IKr
+  i_Kr         = g_Kr*(y[0]-E_K)*y[8]*y[9]*sqrt(Ko/5.4); //((time<tDrugApplication)*1+(time >= tDrugApplication)*IKrRedMed)*g_Kr*(y[0]-E_K)*y[8]*y[9]*sqrt(Ko/5.4);
+    
+  V_half       = 1000.0*(-R*T/(F*Q)*log(pow((float)(1.0+Cao/2.6),4.0f)/(pow((float)(1.0+Cao/0.58),4.0f)*L0))-0.019);
+    
+  Xr1_inf      = 1.0/(1.0+exp((V_half-y[0]*1000.0)/4.9));
+  alpha_Xr1    = 450.0/(1.0+exp((-45.0-y[0]*1000.0)/10.0));
+  beta_Xr1     = 6.0/(1.0+exp((30.0+y[0]*1000.0)/11.5));
+  tau_Xr1      = 1.0*alpha_Xr1*beta_Xr1/1000.0;
+  dydt[8]     = (Xr1_inf-y[8])/tau_Xr1;
+    
+  Xr2_infinity = 1.0/(1.0+exp((y[0]*1000.0+88.0)/50.0));
+  alpha_Xr2    = 3.0/(1.0+exp((-60.0-y[0]*1000.0)/20.0));
+  beta_Xr2     = 1.12/(1.0+exp((-60.0+y[0]*1000.0)/20.0));
+  tau_Xr2      = 1.0*alpha_Xr2*beta_Xr2/1000.0;
+  dydt[9]    = (Xr2_infinity-y[9])/tau_Xr2;
+    
+  //// IK1
+  alpha_K1    = 3.91/(1.0+exp(0.5942*(y[0]*1000.0-E_K*1000.0-200.0)));
+  beta_K1     = (-1.509*exp(0.0002*(y[0]*1000.0-E_K*1000.0+100.0))+exp(0.5886*(y[0]*1000.0-E_K*1000.0-10.0)))/(1.0+exp(0.4547*(y[0]*1000.0-E_K*1000.0)));
+  XK1_inf     = alpha_K1/(alpha_K1+beta_K1);
+  i_K1        = g_K1*XK1_inf*(y[0]-E_K)*sqrt(Ko/5.4);
+    
+  //// INaCa
+  i_NaCa      = kNaCa*(exp(gamma*y[0]*F/(R*T))*pow((float)y[17],3.0f)*Cao-exp((gamma-1.0)*y[0]*F/(R*T))*pow((float)Nao,3.0f)*y[2]*alpha)/((pow((float)KmNai,3.0f)+pow((float)Nao,3.0f))*(KmCa+Cao)*(1.0+Ksat*exp((gamma-1.0)*y[0]*F/(R*T))));
+    
+  //// INaK
+  i_NaK       = PNaK*Ko/(Ko+Km_K)*y[17]/(y[17]+Km_Na)/(1.0+0.1245*exp(-0.1*y[0]*F/(R*T))+0.0353*exp(-y[0]*F/(R*T)));
+    
+  //// IpCa
+  i_PCa       = g_PCa*y[2]/(y[2]+KPCa);
+    
+  //// Background currents
+  i_b_Na      = g_b_Na*(y[0]-E_Na);
+    
+  i_b_Ca      = g_b_Ca*(y[0]-E_Ca);
+   
+  //// Sarcoplasmic reticulum
+  i_up        = VmaxUp/(1.0+pow((float)Kup,2.0f)/pow((float)y[2],2.0f));
+    
+  i_leak      = (y[1]-y[2])*V_leak;
+    
+  dydt[3]    = 0;
+    
+  // RyR
+    
+  RyRSRCass   = (1 - 1/(1 +  exp((y[1]-0.3)/0.1)));
+  i_rel       = g_irel_max*RyRSRCass*y[21]*y[22]*(y[1]-y[2]);
+    
+  RyRainfss   = RyRa1-RyRa2/(1 + exp((1000*y[2]-(RyRahalf))/0.0082));
+  dydt[20]   = (RyRainfss- y[20])/RyRtauadapt;
+    
+  RyRoinfss   = (1 - 1/(1 +  exp((1000*y[2]-(y[20]+ RyRohalf))/0.003)));
+  if (RyRoinfss>= y[21])
+    RyRtauact = 18.75e-3;       //s
+  else
+    RyRtauact = 0.1*18.75e-3;   //s
+    
+  dydt[21]    = (RyRoinfss- y[21])/(RyRtauact);
+    
+  RyRcinfss   = (1/(1 + exp((1000*y[2]-(y[20]+RyRchalf))/0.001)));
+  if (RyRcinfss>= y[22])
+    RyRtauinact = 2*87.5e-3;    //s
+  else
+    RyRtauinact = 87.5e-3;      //s
+    
+  dydt[22]    = (RyRcinfss- y[22])/(RyRtauinact);
+    
+    
+    
+    
+  //// Ca2+ buffering
+  Cai_bufc    = 1.0/(1.0+Buf_C*Kbuf_C/pow((float)(y[2]+Kbuf_C), 2.0f));
+  Ca_SR_bufSR = 1.0/(1.0+Buf_SR*Kbuf_SR/pow((float)(y[1]+Kbuf_SR), 2.0f));
+    
+  //// Ionic concentrations
+  //Nai
+  dydt[17]   = -Cm*(i_Na+i_NaL+i_b_Na+3.0*i_NaK+3.0*i_NaCa+i_fNa)/(F*Vc*1.0e-18);
+  //Cai
+  dydt[2]    = Cai_bufc*(i_leak-i_up+i_rel-(i_CaL+i_b_Ca+i_PCa-2.0*i_NaCa)*Cm/(2.0*Vc*F*1.0e-18));
+  //caSR
+  dydt[1]    = Ca_SR_bufSR*Vc/V_SR*(i_up-(i_rel+i_leak));
+    
+  //// Stimulation
+  //  PDEFIELD_TYPE i_stim_Amplitude 		= 5.5e-10;//7.5e-10;   // ampere (in stim_mode)
+  //  PDEFIELD_TYPE i_stim_End 				= 1000.0;   // second (in stim_mode)
+  //  PDEFIELD_TYPE i_stim_PulseDuration	= 0.005;   // second (in stim_mode)
+  //  PDEFIELD_TYPE i_stim_Start 			= 0.0;   // second (in stim_mode)
+  //  PDEFIELD_TYPE i_stim_frequency        = 60.0;   // per_second (in stim_mode)
+  //PDEFIELD_TYPE stim_flag 				= stimFlag;   // dimensionless (in stim_mode)
+  //  PDEFIELD_TYPE i_stim_Period 			= 60.0/i_stim_frequency;
+    
+  //if stim_flag~=0 && stim_flag~=1
+  //error('Paci2020: wrong pacing! stimFlag can be only 0 (spontaneous) or 1 (paced)');
+  //end
+    
+  /*
+  if ((time >= i_stim_Start) && (time <= i_stim_End) && (time-i_stim_Start-floor((time-i_stim_Start)/i_stim_Period)*i_stim_Period <= i_stim_PulseDuration))
+    i_stim = stim_flag*i_stim_Amplitude/Cm;
+  else
+    i_stim = 0.0;
+  */
+    
+  //// Membrane potential
+  dydt[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
+}
+
+__device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers, PDEFIELD_TYPE thetime, PDEFIELD_TYPE stepsize, PDEFIELD_TYPE* yout, PDEFIELD_TYPE *yerr, int id)
+  /*Given values for n variables y[1..n] and their derivatives dydx[1..n] known at x, use
+  the fifth-order Cash-Karp Runge-Kutta method to advance the solution over an interval h
+  and return the incremented variables as yout[1..n]. Also return an estimate of the local
+  truncation error in yout using the embedded fourth-order method. The user supplies the routine
+  derivs(x,y,dydx), which returns derivatives dydx at x.*/
+  {
+    int i;
+    static PDEFIELD_TYPE a2=0.2,a3=0.3,a4=0.6,a5=1.0,a6=0.875,b21=0.2,
+      b31=3.0/40.0,b32=9.0/40.0,b41=0.3,b42 = -0.9,b43=1.2,
+      b51 = -11.0/54.0, b52=2.5,b53 = -70.0/27.0,b54=35.0/27.0,
+      b61=1631.0/55296.0,b62=175.0/512.0,b63=575.0/13824.0,
+      b64=44275.0/110592.0,b65=253.0/4096.0,c1=37.0/378.0,
+      c3=250.0/621.0,c4=125.0/594.0,c6=512.0/1771.0,
+      dc5 = -277.00/14336.0;
+    PDEFIELD_TYPE dc1=c1-2825.0/27648.0,dc3=c3-18575.0/48384.0,
+      dc4=c4-13525.0/55296.0,dc6=c6-0.25;
+    PDEFIELD_TYPE ak2[23];
+    PDEFIELD_TYPE ak3[23];
+    PDEFIELD_TYPE ak4[23];
+    PDEFIELD_TYPE ak5[23];
+    PDEFIELD_TYPE ak6[23];
+    PDEFIELD_TYPE ytemp[23];
+    for (i=0;i<layers;i++) //First step.
+      ytemp[i]=y[i]+b21*stepsize*dydt[i];
+
+    derivs(thetime+a2*stepsize,ytemp,ak2);// Second step.
+    for (i=0;i<layers;i++)
+      ytemp[i]=y[i]+stepsize*(b31*dydt[i]+b32*ak2[i]);
+    derivs(thetime+a3*stepsize,ytemp,ak3); //Third step.
+    for (i=0;i<layers;i++)
+      ytemp[i]=y[i]+stepsize*(b41*dydt[i]+b42*ak2[i]+b43*ak3[i]);
+    derivs(thetime+a4*stepsize,ytemp,ak4); //Fourth step.
+    for (i=0;i<layers;i++)
+      ytemp[i]=y[i]+stepsize*(b51*dydt[i]+b52*ak2[i]+b53*ak3[i]+b54*ak4[i]);
+    derivs(thetime+a5*stepsize,ytemp,ak5); //Fifth step.
+    for (i=0;i<layers;i++)
+      ytemp[i]=y[i]+stepsize*(b61*dydt[i]+b62*ak2[i]+b63*ak3[i]+b64*ak4[i]+b65*ak5[i]);
+    derivs(thetime+a6*stepsize,ytemp,ak6); //Sixth step.
+    for (i=0;i<layers;i++) //Accumulate increments with proper weights.
+      yout[i]=y[i]+stepsize*(c1*dydt[i]+c3*ak3[i]+c4*ak4[i]+c6*ak6[i]);
+    for (i=0;i<layers;i++)
+      yerr[i]=stepsize*(dc1*dydt[i]+dc3*ak3[i]+dc4*ak4[i]+dc5*ak5[i]+dc6*ak6[i]);
+}
+
+__device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layers, PDEFIELD_TYPE *thetime, PDEFIELD_TYPE stepsize_try, PDEFIELD_TYPE eps, PDEFIELD_TYPE* yscal, PDEFIELD_TYPE* stepsize_did, PDEFIELD_TYPE* stepsize_next, int id){
+  /* Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
+  adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
+  at the starting value of the independent variable x. Also input are the stepsize to be attempted
+  htry, the required accuracy eps, and the vector yscal[1..n] against which the error is
+  scaled. On output, y and x are replaced by their new values, hdid is the stepsize that was
+  actually accomplished, and hnext is the estimated next stepsize. derivs is the user-supplied
+  routine that computes the right-hand side derivatives. */
+  int i;
+  PDEFIELD_TYPE errmax,stepsize,stepsize_temp,thetime_new;
+  PDEFIELD_TYPE yerr[23];
+  PDEFIELD_TYPE ytemp[23];
+
+  const PDEFIELD_TYPE Safety = 0.9;
+  const PDEFIELD_TYPE Pshrnk = -0.25;
+  const PDEFIELD_TYPE Errcon = 1.89e-4;
+  const PDEFIELD_TYPE PGrow = -0.2;
+
+  stepsize=stepsize_try; // Set stepsize to the initial trial value.
+  for (;;) {
+    RungeKuttaStep(y,dydt,layers,*thetime,stepsize,ytemp,yerr, id); // Take a step.
+    errmax=0.0; //Evaluate accuracy.
+    for (i=0;i<layers;i++){
+      if (errmax < fabs(yerr[i]/yscal[i])){
+        errmax = fabs(yerr[i]/yscal[i]);
+      }
+    } 
+    errmax /= eps; // Scale relative to required tolerance.
+    if (errmax <= 1.0){ 
+      break; //Step succeeded. Compute size of next step.
+    }
+    stepsize_temp=Safety*stepsize*pow(errmax,Pshrnk);
+    //Truncation error too large, reduce stepsize.
+    if (stepsize_temp < 0.1*stepsize)
+      stepsize = 0.1*stepsize;
+    else 
+      stepsize = stepsize_temp;
+    //No more than a factor of 10.
+    thetime_new=(*thetime)+stepsize;
+    if (thetime_new == *thetime) printf("stepsize underflow in StepsizeControl, with stepsize = %f and stepsize_try = %f at index %i",stepsize, stepsize_try, id);
+  }
+  if (errmax > Errcon) {
+    *stepsize_next=Safety*stepsize*pow(errmax,PGrow);
+  }
+  else 
+    *stepsize_next=5.0*stepsize; //No more than a factor of 5 increase.
+  *thetime += (*stepsize_did=stepsize);
+  for (i=0;i<layers;i++) y[i]=ytemp[i];
+}
+
+__global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* cellnumber, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps){
+  /* Ordinary Differential Equation step Runge Kutta Adaptive
+  Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
+  adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
+  at the starting value of the independent variable x. Also input are the stepsize to be attempted
+  htry, the required accuracy eps, and the vector yscal[1..n] against which the error is
+  scaled. On output, y and x are replaced by their new values, hdid is the stepsize that was
+  actually accomplished, and hnext is the estimated next stepsize. derivs is the user-supplied
+  routine that computes the right-hand side derivatives. */
+  
+
+  PDEFIELD_TYPE begin_time,stepsize_next,stepsize_did,stepsize, end_time;
+  PDEFIELD_TYPE yscal[23];
+  PDEFIELD_TYPE y[23];
+  PDEFIELD_TYPE dydt[23];
+  PDEFIELD_TYPE current_time;
+  PDEFIELD_TYPE Tiny = 1e-30;
+  PDEFIELD_TYPE MaxTimeError = 1e-12;
+  PDEFIELD_TYPE stepsize_overshot;
+  bool overshot = false;
+  int i;
+
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int stride = blockDim.x * gridDim.x;
+  for (int id = index; id < sizex*sizey; id += stride){
+    if (id == 2080)
+      printf("eps = %.10f", eps);
+    if (cellnumber[id] < 1){
+      for (i = 0; i < layers; i++) //fill with current PDE values
+        alt_PDEvars[i*sizex*sizey + id]= PDEvars[i*sizex*sizey + id];
+    }
+    
+    else{
+
+      //int nstp,i;
+      
+      begin_time = thetime;
+      current_time = thetime;
+      end_time = thetime + dt;
+      stepsize_next=next_stepsize[id];
+      for (i=0;i<layers;i++) 
+        y[i]=PDEvars[i*sizex*sizey + id];
+      while(fabs(current_time - begin_time - dt)>MaxTimeError){
+        stepsize = stepsize_next;
+        overshot = false;
+          derivs(current_time,y,dydt);
+          for (i=0;i<layers;i++)
+            // Scaling used to monitor accuracy. This general-purpose choice can be modified if need be.
+            yscal[i]=fabs(y[i])+fabs(dydt[i]*stepsize)+Tiny;
+
+        if (stepsize+current_time > end_time){
+          stepsize_overshot = stepsize; 
+          stepsize=end_time - current_time;// If stepsize can overshoot, decrease.
+          overshot = true;
+        }
+        StepsizeControl(y,dydt,layers,&current_time,stepsize,eps,yscal,&stepsize_did,&stepsize_next, id);
+        if (fabs(current_time - begin_time - dt)<MaxTimeError) { //Are we done?
+          for (i=0;i<layers;i++) {
+            alt_PDEvars[i*sizex*sizey + id]=y[i];
+          }
+          if(overshot && stepsize_overshot < dt)
+            next_stepsize[id] = stepsize_overshot;
+          else
+            next_stepsize[id] = stepsize_next;
+        }
+        if (fabs(stepsize_next) <= stepsize_min){
+          stepsize=stepsize_next;
+        }
+      }
+    }
+  }
+  return; //Normal exit.
 }
 
 
@@ -2864,7 +3507,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   for (int iteration = 0; iteration < repeat; iteration++){
     
     //Do an ODE step of size dt/2
-    ForwardEulerStep<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_cellnumber);
+    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_cellnumber, next_stepsize, min_stepsize, par.eps);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess) 
@@ -2902,7 +3545,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync)); 
 
     //Do an ODE step of size dt/2
-    ForwardEulerStep<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_cellnumber);
+    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_cellnumber, next_stepsize, min_stepsize, par.eps);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess) 
@@ -2944,6 +3587,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
   }
+  cout << "PDEvars[23885] = " << PDEvars[23885] << endl;
 }
 
 // public

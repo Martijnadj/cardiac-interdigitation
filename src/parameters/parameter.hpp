@@ -56,6 +56,7 @@ class Parameter {
   double * secr_rate;
   double saturation;
   double dt;
+  double min_stepsize;
   double dx;
   int pde_its;
   char * micropatternmask;
@@ -104,6 +105,7 @@ class Parameter {
   double initial_n;
   double initial_m;
   double initial_h;
+  double eps;
 
   double couplingmedium;
   double couplingcell;

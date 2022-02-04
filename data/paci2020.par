@@ -9,7 +9,7 @@ conn_diss = 2000
 vecadherinknockout = true
 chemotaxis = 0
 extensiononly = false
-border_energy = 50000
+border_energy = 0
 
 # note: do not change the following parameters for "long" cells (lambda2>0)
 neighbours = 2
@@ -21,26 +21,29 @@ diff_coeff = 1e-14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 decay_rate = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 secr_rate = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 saturation = 0
-dt = 2e-6
+dt = 1e-3
+min_stepsize = 1e-6
 dx = 2.5e-6
-pde_its = 10
+pde_its = 1
+eps = 1e-6
+
 
 # Micropatterns parameters
 micropatternmask = ../data/mask.dat
 
 # Cuda parameters
 usecuda = true
-number_of_cores = 1
-threads_per_core = 1024
+number_of_cores = 68
+threads_per_core = 64
 
 
 # initial conditions (create a "blob" of cells in the middle)
 n_init_cells = 250
 size_init_cells = 10
 sizex = 280
-sizey = 280
+sizey = 170
 divisions = 0
-mcs = 5
+mcs = 100
 rseed = -1
 subfield = 1.0
 relaxation = 0
@@ -49,9 +52,9 @@ initial_n = 0.5
 initial_m = 0.25
 initial_h = 0.08
 
-couplingmedium = 1e-5
-couplingcell = 1e-5
-couplingboundary = 1e-8
+couplingmedium = 0
+couplingcell = 5e-10
+couplingboundary = 1e-11
 couplingoffmask = 0
 
 # output

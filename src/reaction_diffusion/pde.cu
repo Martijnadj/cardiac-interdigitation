@@ -621,7 +621,7 @@ void PDE::InitializeCuda(CellularPotts *cpm){
   //AllocateTridiagonalvars(sizex, sizey);
 
   cudaMalloc((void**) &d_couplingcoefficient, sizex*sizey*sizeof(PDEFIELD_TYPE));
-  cudaMalloc((void**) &d_cellnumber, sizex*sizey*sizeof(int));
+  cudaMalloc((void**) &d_celltype, sizex*sizey*sizeof(int));
 
   cudaMalloc((void**) &d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE));
   cudaMemcpy(d_PDEvars, PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
@@ -805,7 +805,7 @@ __global__ void NewPDEfieldOthers(int sizex, int sizey, int layers, PDEFIELD_TYP
 
 
 #if 0
-__global__ void RungeKuttaStepOld(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* cellnumber){
+__global__ void RungeKuttaStepOld(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype){
   
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int stride = blockDim.x * gridDim.x;
@@ -1065,7 +1065,7 @@ __global__ void RungeKuttaStepOld(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int l
   PDEFIELD_TYPE i_stim = 0;
   
   for (int id = index; id < sizex*sizey; id += stride){
-    if (cellnumber[id] < 1)
+    if (celltype[id] < 1)
       for (int l = 0; l < layers; l++) //fill with current PDE values
         alt_PDEvars[l*sizex*sizey + id]= PDEvars[l*sizex*sizey + id];
     else{    
@@ -2857,7 +2857,7 @@ __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers
       yerr[i]=stepsize*(dc1*dydt[i]+dc3*ak3[i]+dc4*ak4[i]+dc5*ak5[i]+dc6*ak6[i]);
 }
 
-__device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layers, PDEFIELD_TYPE *thetime, PDEFIELD_TYPE stepsize_try, PDEFIELD_TYPE eps, PDEFIELD_TYPE* yscal, PDEFIELD_TYPE* stepsize_did, PDEFIELD_TYPE* stepsize_next, int id){
+__device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layers, PDEFIELD_TYPE *thetime, PDEFIELD_TYPE stepsize_try, PDEFIELD_TYPE eps, PDEFIELD_TYPE* yscal, PDEFIELD_TYPE* stepsize_did, PDEFIELD_TYPE* stepsize_next, PDEFIELD_TYPE stepsize_min, int id){
   /* Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
   at the starting value of the independent variable x. Also input are the stepsize to be attempted
@@ -2874,10 +2874,13 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
   const PDEFIELD_TYPE Pshrnk = -0.25;
   const PDEFIELD_TYPE Errcon = 1.89e-4;
   const PDEFIELD_TYPE PGrow = -0.2;
+  const PDEFIELD_TYPE accuracy = 1e-10;
 
   stepsize=stepsize_try; // Set stepsize to the initial trial value.
+
   for (;;) {
     RungeKuttaStep(y,dydt,layers,*thetime,stepsize,ytemp,yerr, id); // Take a step.
+    
     errmax=0.0; //Evaluate accuracy.
     for (i=0;i<layers;i++){
       if (errmax < fabs(yerr[i]/yscal[i])){
@@ -2885,8 +2888,11 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
       }
     } 
     errmax /= eps; // Scale relative to required tolerance.
-    if (errmax <= 1.0){ 
+    if (errmax <= 1.0){  
       break; //Step succeeded. Compute size of next step.
+    }
+    else if (fabs(stepsize - stepsize_min) < accuracy){ // force a stepsize of stepsize_min, even if it would exceed the maximum error
+      break;
     }
     stepsize_temp=Safety*stepsize*pow(errmax,Pshrnk);
     //Truncation error too large, reduce stepsize.
@@ -2907,7 +2913,7 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
   for (i=0;i<layers;i++) y[i]=ytemp[i];
 }
 
-__global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* cellnumber, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps){
+__global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps){
   /* Ordinary Differential Equation step Runge Kutta Adaptive
   Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
@@ -2932,9 +2938,7 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int stride = blockDim.x * gridDim.x;
   for (int id = index; id < sizex*sizey; id += stride){
-    if (id == 2080)
-      printf("eps = %.10f", eps);
-    if (cellnumber[id] < 1){
+    if (celltype[id] < 1){
       for (i = 0; i < layers; i++) //fill with current PDE values
         alt_PDEvars[i*sizex*sizey + id]= PDEvars[i*sizex*sizey + id];
     }
@@ -2950,7 +2954,6 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
       for (i=0;i<layers;i++) 
         y[i]=PDEvars[i*sizex*sizey + id];
       while(fabs(current_time - begin_time - dt)>MaxTimeError){
-        stepsize = stepsize_next;
         overshot = false;
           derivs(current_time,y,dydt);
           for (i=0;i<layers;i++)
@@ -2962,27 +2965,29 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
           stepsize=end_time - current_time;// If stepsize can overshoot, decrease.
           overshot = true;
         }
-        StepsizeControl(y,dydt,layers,&current_time,stepsize,eps,yscal,&stepsize_did,&stepsize_next, id);
+        StepsizeControl(y,dydt,layers,&current_time,stepsize,eps,yscal,&stepsize_did,&stepsize_next, stepsize_min, id);
         if (fabs(current_time - begin_time - dt)<MaxTimeError) { //Are we done?
           for (i=0;i<layers;i++) {
             alt_PDEvars[i*sizex*sizey + id]=y[i];
           }
           if(overshot && stepsize_overshot < dt)
             next_stepsize[id] = stepsize_overshot;
+          else if (stepsize_next < stepsize_min)
+            next_stepsize[id] = stepsize_min;
           else
             next_stepsize[id] = stepsize_next;
         }
-        if (fabs(stepsize_next) <= stepsize_min){
-          stepsize=stepsize_next;
-        }
+        if (fabs(stepsize_next) <= stepsize_min)
+          stepsize=stepsize_min;
+        else 
+          stepsize = stepsize_next;
       }
     }
   }
-  return; //Normal exit.
 }
 
 
-__global__ void ForwardEulerStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* cellnumber){
+__global__ void ForwardEulerStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype){
   
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int stride = blockDim.x * gridDim.x;
@@ -3225,14 +3230,13 @@ __global__ void ForwardEulerStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int la
   PDEFIELD_TYPE i_stim = 0;
   
   for (int id = index; id < sizex*sizey; id += stride){
-    if (cellnumber[id] < 1){
+    if (celltype[id] < 1){
       for (int l = 0; l < layers; l++) //fill with current PDE values
         alt_PDEvars[l*sizex*sizey + id]= PDEvars[l*sizex*sizey + id];
     }
     else{   
       for (int l = 0; l < layers; l++) //fill with current PDE values
         y[l] = PDEvars[l*sizex*sizey + id];
-
       //-----FIRST STEP ------------------------------------------------------------------------------------------------------------------------------------------------------------------  
       
         //// Nernst potential
@@ -3486,11 +3490,12 @@ __global__ void FlipSigns(int sizex, int sizey, int layers, PDEFIELD_TYPE* PDEva
 
 
 void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
-  //copy current couplingcoefficient matrix and cellnumber matrix from host to device
-  couplingcoefficient = cpm->getCouplingCoefficient(); 
-  cellnumber = cpm->getSigma();
+  //copy current couplingcoefficient matrix and celltype matrix from host to device
+  couplingcoefficient = cpm->getCouplingCoefficient();
+  int** cellnumber = cpm -> getSigma(); 
+  celltype = cpm->getTau();
   cudaMemcpy(d_couplingcoefficient, couplingcoefficient[0], sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_cellnumber, cellnumber[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_celltype, celltype[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(d_PDEvars, PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
 
 
@@ -3507,13 +3512,14 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   for (int iteration = 0; iteration < repeat; iteration++){
     
     //Do an ODE step of size dt/2
-    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_cellnumber, next_stepsize, min_stepsize, par.eps);
+    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess) 
       printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
+    
 
     //Do a vertical ADI sweep of size dt/2
     InitializeVerticalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BV, d_couplingcoefficient, d_alt_PDEvars);
@@ -3544,8 +3550,11 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync)); 
 
+    //increase time by dt/2
+    thetime = thetime + dt/2;  
+
     //Do an ODE step of size dt/2
-    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_cellnumber, next_stepsize, min_stepsize, par.eps);
+    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess) 
@@ -3581,8 +3590,9 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
-  
-    thetime = thetime + dt;
+    
+    //increase time by dt/2
+    thetime = thetime + dt/2; 
     
     cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();

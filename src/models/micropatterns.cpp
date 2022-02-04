@@ -60,6 +60,7 @@ INIT {
     
     // Assign a random type to each of the cells
     CPM->SetRandomTypes();
+    CPM->SetUpTauMatrix(par.sizex,par.sizey);
     CPM->InitializeEdgeList();
     CPM->InitializeCouplingCoefficient();
   } catch(const char* error) {

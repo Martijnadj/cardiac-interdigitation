@@ -123,6 +123,7 @@ public:
   // Every time AllocateSigma is called in the base class methods
   // the function belonging the actual type will be called
   virtual void AllocateSigma(int sx, int sy);
+  virtual void AllocateTau(int sx, int sy);
   virtual void AllocateNumberOfEdges(int sx, int sy);
   virtual void AllocateCouplingCoefficient(int sx, int sy);
   virtual void AllocateMask(int sx, int sy);
@@ -337,6 +338,7 @@ public:
   Jtable in parameter file).
   */
   void SetRandomTypes(void);
+  void SetUpTauMatrix(int sizex, int sizey);
 
   /*! Cells grow until twice their original target_length, then
     divide, with rate "growth_rate"
@@ -371,6 +373,10 @@ public:
   inline int** getSigma(){
     return sigma;
   }
+
+  inline int** getTau(){
+    return tau;
+  }  
 
   //Return numberofedges Array for use on GPU
   inline int** getNumberofedges(){
@@ -444,6 +450,7 @@ protected:
 
 protected:
   int **sigma;
+  int **tau;
   int **numberofedges;
   PDEFIELD_TYPE **couplingcoefficient;
   bool **mask;

@@ -271,8 +271,8 @@ class PDE {
   PDEFIELD_TYPE *d_alt_PDEvars;
   PDEFIELD_TYPE **couplingcoefficient;
   PDEFIELD_TYPE *d_couplingcoefficient;
-  int **cellnumber;
-  int *d_cellnumber;
+  int **celltype;
+  int *d_celltype;
 
   
   // Used as temporary memory in the diffusion step

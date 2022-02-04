@@ -98,14 +98,17 @@ CellularPotts::CellularPotts(vector<Cell> *cells,
   sizey=sy;
 
   AllocateSigma(sx,sy);
+  AllocateTau(sx,sy);
 
   StoreMask(par.micropatternmask);
 
   if (par.micropatternmask != string("None")){
     for(int x=0;x<sizex;x++) {
       for (int y=0;y<sizey;y++) {
-        if (mask[x][y] == false)
+        if (mask[x][y] == false) {
           sigma[x][y] = -1;
+          tau[x][y] = -1;
+        }
       }
     }
   }
@@ -114,10 +117,14 @@ CellularPotts::CellularPotts(vector<Cell> *cells,
     for (int x=0;x<sizex;x++) {
       sigma[x][0]=-1;
       sigma[x][sizey-1]=-1;
+      tau[x][0]=-1;
+      tau[x][sizey-1]=-1;
     }
     for (int y=0;y<sizey;y++) {
       sigma[0][y]=-1;
       sigma[sizex-1][y]=-1;
+      tau[0][y]=-1;
+      tau[sizex-1][y]=-1;
     }
   }
   
@@ -143,8 +150,10 @@ CellularPotts::CellularPotts(void) {
   if (par.micropatternmask != string("None")){
     for(int x=0;x<sizex;x++) {
       for (int y=0;y<sizey;y++) {
-        if (mask[x][y] == false)
+        if (mask[x][y] == false){
           sigma[x][y] = -1;
+          tau[x][y] = -1;
+        }
       }
     }
   }
@@ -154,10 +163,14 @@ CellularPotts::CellularPotts(void) {
     for (int x=0;x<sizex;x++) {
       sigma[x][0]=-1;
       sigma[x][sizey-1]=-1;
+      tau[x][0]=-1;
+      tau[x][sizey-1]=-1;
     }
     for (int y=0;y<sizey;y++) {
       sigma[0][y]=-1;
       sigma[sizex-1][y]=-1;
+      tau[0][y]=-1;
+      tau[sizex-1][y]=-1;
     }
   }
   if (par.neighbours>=1 && par.neighbours<=4)
@@ -172,6 +185,12 @@ CellularPotts::~CellularPotts(void) {
     free(sigma[0]);
     free(sigma);
     sigma=0;
+  }
+
+  if (tau) {
+    free(tau[0]);
+    free(tau);
+    tau=0;
   }
   
   if(edgelist) {
@@ -202,6 +221,28 @@ void CellularPotts::AllocateSigma(int sx, int sy) {
   /* Clear CA plane */
    {for (int i=0;i<sizex*sizey;i++) 
      sigma[0][i]=0; }
+
+}
+
+void CellularPotts::AllocateTau(int sx, int sy) {
+  
+  sizex=sx; sizey=sy;
+  
+  tau=(int **)malloc(sizex*sizeof(int *));
+  if (tau==NULL)
+    MemoryWarning();
+  
+  tau[0]=(int *)malloc(sizex*sizey*sizeof(int));
+  if (tau[0]==NULL)  
+    MemoryWarning();
+  
+  
+  {for (int i=1;i<sizex;i++) 
+    tau[i]=tau[i-1]+sizey;}
+  
+  /* Clear CA plane */
+   {for (int i=0;i<sizex*sizey;i++) 
+     tau[0][i]=0; }
 
 }
 
@@ -1057,6 +1098,7 @@ void CellularPotts::ConvertSpin(int x,int y,int xp,int yp)
     
   }
   sigma[x][y] = sigma[xp][yp];
+  tau[x][y] = tau[xp][yp];
 }
 
 void CellularPotts::ExchangeSpin(int x,int y,int xp,int yp)
@@ -1086,6 +1128,9 @@ void CellularPotts::ExchangeSpin(int x,int y,int xp,int yp)
   tmpcell = sigma[x][y];
   sigma[x][y] = sigma[xp][yp];
   sigma[xp][yp] = tmpcell;
+  tmpcell = tau[x][y];
+  tau[x][y] = tau[xp][yp];
+  tau[xp][yp] = tmpcell;
 }
 
 
@@ -1503,6 +1548,7 @@ int CellularPotts::IsingMove(PDE *PDEfield) {
         if (D_H!=0 && (p=CopyvProb(D_H,0,false)>0)) {
                     
                     sigma[x][y]=sigma[x][y]==0?1:0;
+                    //tau[x][y]=(*cell)[sigma[x][y]].getTau();
                     SumDH+=D_H;
                 }
                 //std::cerr << "[ " << D_H << ", p = " << p << " ]";
@@ -1533,6 +1579,7 @@ int CellularPotts::PottsMove(PDE *PDEfield) {
        // cerr << "D_H = " << D_H << endl;
        if (D_H<0 || (p=CopyvProb(D_H,0,false)>0)) {
            sigma[x][y]=new_state;
+           tau[x][y]=(*cell)[sigma[x][y]].getTau();
            //cerr << "[ " << x << ", " << y << "]";
            SumDH+=D_H;
        }
@@ -1589,6 +1636,7 @@ int CellularPotts::PottsNeighborMove(PDE *PDEfield) {
     // cerr << "D_H = " << D_H << endl;
     if (D_H<0 || (p=CopyvProb(D_H,0,false)>0)) {
         sigma[x][y]=kp;
+        tau[x][y]=(*cell)[sigma[x][y]].getTau();
         //cerr << "[ " << x << ", " << y << "]";
         SumDH+=D_H;
     }
@@ -1947,7 +1995,7 @@ void CellularPotts::ReadZygotePicture(void) {
     pixelmap[i][pix]='\0';
   }
 
-  for (i=0;i<sizex*sizey;i++) sigma[0][i]=0;
+  for (i=0;i<sizex*sizey;i++) {sigma[0][i]=0; tau[0][i]=0;}
   fprintf(stderr,"[%d %d]\n",checkx,checky);
   
   int offs_x, offs_y;
@@ -1968,6 +2016,8 @@ void CellularPotts::ReadZygotePicture(void) {
 	    // if c is _NOT_ medium (then c=0)
 	    // assign pixel values from "sigmamax"
 	    sigma[offs_x+i][offs_y+j]+=(Cell::MaxSigma()-1);
+      tau[offs_x+i][offs_y+j]=(*cell)[sigma[offs_x+i][offs_y+i]].getTau();
+      
 	  }
 	}
       }
@@ -2282,6 +2332,7 @@ void CellularPotts::DivideCells(vector<bool> which_cells)
          motherp->DecrementTargetArea();
          motherp->RemoveSiteFromMoments(i,j);
          sigma[i][j]=daughterp->Sigma();
+         tau[i][j]=(*cell)[sigma[i][j]].getTau();
          daughterp->AddSiteToMoments(i,j);
          daughterp->IncrementArea();
          daughterp->IncrementTargetArea();
@@ -2329,8 +2380,9 @@ int CellularPotts::ThrowInCells(int n,int cellsize) {
         for (int y=0;y<cellsize;y++)
           if ((((x-cellsize/2)*(x-cellsize/2)+(y-cellsize/2)*(y-cellsize/2)) <
              ((cellsize/2)*(cellsize/2))) &&
-             (x0+x<sizex && y0+y<sizey))
+             (x0+x<sizex && y0+y<sizey)){
       sigma[x0+x][y0+y]=cellnum;
+      tau[x0+x][y0+y]=(*cell)[cellnum].getTau();}
       cellnum++;
     }
   }
@@ -2340,10 +2392,14 @@ int CellularPotts::ThrowInCells(int n,int cellsize) {
   if (par.micropatternmask != string("None")){
     for (int x=0;x<sizex;x++) {
       for (int y=0;y<sizey;y++) {
-        if(mask[x][y] == false)
+        if(mask[x][y] == false){
           sigma[x][y] = -1;
-        else
+          tau[x][y] = -1;
+        }
+        else{
           sigma[x][y] = 0;
+          tau[x][y] = 0;
+        }
       }
     }
   }
@@ -2354,18 +2410,26 @@ int CellularPotts::ThrowInCells(int n,int cellsize) {
     for (int x=0;x<sizex-1;x++) {
       sigma[x][0]=-1;
       sigma[x][sizey-1]=-1;
+      tau[x][0]=-1;
+      tau[x][sizey-1]=-1;
     }
     for (int y=0;y<sizey-1;y++) {
       sigma[0][y]=-1;
       sigma[sizex-1][y]=-1;
+      tau[0][y]=-1;
+      tau[sizex-1][y]=-1;
     }
     for (int x=1;x<sizex-2;x++) {
         sigma[x][1]=0;
         sigma[x][sizey-2]=0;
+        tau[x][1]=0;
+        tau[x][sizey-2]=0;
       }
     for (int y=1;y<sizey-2;y++) {
         sigma[1][y]=0;
         sigma[sizex-2][y]=0;
+        tau[1][y]=0;
+        tau[sizex-2][y]=0;
     }   
   }
   return cellnum;
@@ -2408,6 +2472,7 @@ int CellularPotts::GrowInCellsInMicropattern(int n_cells, int cell_size) {
         yposition = 1+RandomNumber(sizey-2);
         if(mask[xposition][yposition]){ 
             sigma[xposition][yposition]=++cellnum;
+            tau[xposition][yposition]=(*cell)[sigma[xposition][yposition]].getTau();
             placed = true;
         }
       }
@@ -2444,6 +2509,7 @@ int CellularPotts::GrowInCellsInMicropattern(int n_cells, int cell_size) {
 	  {  for (int x=1;x<sizex-1;x++) {
       for (int y=1;y<sizey-1;y++) {
 	sigma[x][y]=new_sigma[x][y];
+  tau[x][y]=(*cell)[sigma[x][y]].getTau();
       }
     }
   }}}
@@ -2474,6 +2540,7 @@ void CellularPotts::RandomSpins(double prob) {
   for (int x=1;x<=sizex-2;x++) {
     for (int y=1;y<sizey-2;y++) {
       sigma[x][y]=(RANDOM()<prob)?0:1;
+      tau[x][y]=(*cell)[sigma[x][y]].getTau();
     }
   }
   cerr << "RandomSpins done" << endl;
@@ -2481,7 +2548,8 @@ void CellularPotts::RandomSpins(double prob) {
       
 
 int CellularPotts::GrowInCells(int n_cells, int cell_size, int sx, int sy, int offset_x, int offset_y) {
-  
+  int randomx;
+  int randomy;
   // make initial cells using Eden Growth
   
   int **new_sigma=(int **)malloc(sizex*sizeof(int *));
@@ -2510,12 +2578,16 @@ int CellularPotts::GrowInCells(int n_cells, int cell_size, int sx, int sy, int o
     
     
     { for (int i=0;i<n_cells;i++) {
-      
-      sigma[RandomNumber(sx)+offset_x][RandomNumber(sy)+offset_y]=++cellnum;
+      randomx = RandomNumber(sx);
+      randomy = RandomNumber(sy);
+      sigma[randomx+offset_x][randomy+offset_y]=++cellnum;
+      tau[randomx+offset_x][randomy+offset_y]=(*cell)[sigma[randomx+offset_x][randomy+offset_y]].getTau();
       
     }}
   } else {
     sigma[sx][sy]=++cellnum;
+    tau[sx][sy]=(*cell)[sigma[sx][sy]].getTau();
+    
 
   }
 
@@ -2549,6 +2621,7 @@ int CellularPotts::GrowInCells(int n_cells, int cell_size, int sx, int sy, int o
     {  for (int x=1;x<sizex-1;x++) {
       for (int y=1;y<sizey-1;y++) {
   sigma[x][y]=new_sigma[x][y];
+  tau[x][y]=(*cell)[sigma[x][y]].getTau();
       }
     }
   }}}
@@ -2576,6 +2649,7 @@ int CellularPotts::SquareCell(int sig, int cx, int cy, int size) {
     for (int x=xmin;x<=xmax;x++) {
         for (int y=ymin;y<=ymax;y++) {
             sigma[x][y]=sig;
+            tau[x][y]=(*cell)[sig].getTau();
         }
     }
     return 1;
@@ -2773,6 +2847,17 @@ void CellularPotts::SetRandomTypes(void) {
   } 
 }
 
+void CellularPotts::SetUpTauMatrix(int sizex, int sizey) {
+  for (int x = 0; x < sizex; x++){
+    for (int y = 0; y < sizey; y++){
+      if (sigma[x][y] == -1)
+        tau[x][y] = -1;
+      else
+        tau[x][y] = (*cell)[sigma[x][y]].getTau();
+    }
+  } 
+}
+
 
 void CellularPotts::GrowAndDivideCells(int growth_rate) {
   vector<Cell>::iterator c=cell->begin(); ++c;
@@ -2940,6 +3025,7 @@ void CellularPotts::RandomSigma(int n_cells) {
   for (int x=0;x<sizex;x++) {
     for (int y=0;y<sizey;y++) {
       sigma[x][y]=(int)(n_cells*RANDOM());
+      tau[x][y]=(*cell)[sigma[x][y]].getTau();
     }
   }
 }

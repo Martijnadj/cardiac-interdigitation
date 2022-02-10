@@ -2910,7 +2910,12 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
   else 
     *stepsize_next=5.0*stepsize; //No more than a factor of 5 increase.
   *thetime += (*stepsize_did=stepsize);
-  for (i=0;i<layers;i++) y[i]=ytemp[i];
+  for (i=0;i<layers;i++) {
+    y[i]=ytemp[i];
+    if (id == 5040){
+      printf("y[%i] = %.9f \n", i, y[i]);
+    }  
+  }
 }
 
 __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps){
@@ -2944,7 +2949,8 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
     }
     
     else{
-
+      if (id == 5040)
+        printf("celltype[%i] = %i \n", id, celltype[id]);
       //int nstp,i;
       
       begin_time = thetime;
@@ -3490,10 +3496,11 @@ __global__ void FlipSigns(int sizex, int sizey, int layers, PDEFIELD_TYPE* PDEva
 
 
 void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
+  cout << "Starting PDE step" << endl;
   //copy current couplingcoefficient matrix and celltype matrix from host to device
   couplingcoefficient = cpm->getCouplingCoefficient();
-  int** cellnumber = cpm -> getSigma(); 
-  celltype = cpm->getTau();
+  //int** cellnumber = cpm -> getSigma(); 
+  int** celltype = cpm->getTau();
   cudaMemcpy(d_couplingcoefficient, couplingcoefficient[0], sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
   cudaMemcpy(d_celltype, celltype[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(d_PDEvars, PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
@@ -3510,7 +3517,6 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
 
 
   for (int iteration = 0; iteration < repeat; iteration++){
-    
     //Do an ODE step of size dt/2
     ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps);
     errSync  = cudaGetLastError();
@@ -3519,7 +3525,6 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-    
 
     //Do a vertical ADI sweep of size dt/2
     InitializeVerticalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BV, d_couplingcoefficient, d_alt_PDEvars);
@@ -3597,7 +3602,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
   }
-  cout << "PDEvars[23885] = " << PDEvars[23885] << endl;
+  cout << "PDEvars[5040] = " << PDEvars[23885] << endl;
 }
 
 // public

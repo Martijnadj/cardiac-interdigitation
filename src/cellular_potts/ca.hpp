@@ -338,6 +338,7 @@ public:
   Jtable in parameter file).
   */
   void SetRandomTypes(void);
+  void SetTypesWithMask(void);
   void SetUpTauMatrix(int sizex, int sizey);
 
   /*! Cells grow until twice their original target_length, then
@@ -426,6 +427,7 @@ private:
   void ConvertSpin(int x,int y,int xp,int yp);
   void ExchangeSpin(int x,int y,int xp,int yp);
     
+  void DetectLeftSideIsthmus(void);
   void SprayMedium(void);
   int CopyvProb(int DH,  double stiff, bool anneal);
   void FreezeAmoebae(void);
@@ -458,6 +460,7 @@ protected:
   int sizey;
 
 private:
+  int left_side_isthmus;
   bool frozen;
   static const int nx[21], ny[21];
   static const int nbh_level[4];

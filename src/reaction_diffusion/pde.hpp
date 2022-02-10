@@ -271,7 +271,6 @@ class PDE {
   PDEFIELD_TYPE *d_alt_PDEvars;
   PDEFIELD_TYPE **couplingcoefficient;
   PDEFIELD_TYPE *d_couplingcoefficient;
-  int **celltype;
   int *d_celltype;
 
   

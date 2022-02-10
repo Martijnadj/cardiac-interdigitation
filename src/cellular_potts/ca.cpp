@@ -2519,6 +2519,26 @@ int CellularPotts::GrowInCellsInMicropattern(int n_cells, int cell_size) {
   return cellnum;
 }
 
+void CellularPotts::DetectLeftSideIsthmus(){
+  left_side_isthmus = sizex;
+  int column_occupied_by_mask;
+  int min_occupied = sizey;
+  for (int x = sizex-1; x >= 0; x--){
+    column_occupied_by_mask = 0;
+    for (int y = 0; y < sizey; y++){
+      if(mask[x][y])
+        column_occupied_by_mask++;
+    }
+    if (column_occupied_by_mask < min_occupied && column_occupied_by_mask > 0){
+      min_occupied = column_occupied_by_mask;
+    }
+    else if (column_occupied_by_mask > min_occupied){
+      left_side_isthmus = x+1;
+      break;
+    }
+    
+  }
+}
                     
 int CellularPotts::GrowInCells(int n_cells, int cell_size, double subfield, int posx, int posy) {
   int sx = (int)((sizex-2)/subfield);
@@ -2844,6 +2864,25 @@ void CellularPotts::SetRandomTypes(void) {
     int celltype = RandomNumber(Cell::maxtau);
     //cerr << "Setting celltype " << celltype << endl;
     c->setTau(celltype);
+  } 
+}
+
+void CellularPotts::SetTypesWithMask(void) {
+  DetectLeftSideIsthmus();
+  int xcoord;
+  int celltype;
+  
+  vector<Cell>::iterator c=cell->begin(); ++c; 
+  for (;
+       c!=cell->end();
+       c++) {
+	
+		int xcoord = c->getCenterX();	
+    if (xcoord > left_side_isthmus)
+      celltype = 1;
+    else
+      celltype = 2;
+    c->setTau(celltype);   
   } 
 }
 

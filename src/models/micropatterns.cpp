@@ -87,9 +87,7 @@ TIMESTEP {
     if (i>=par.relaxation) {
       if (par.useopencl){
         if(par.usecuda == true){
-          cout << "Start PDE step" << endl;
           dish->PDEfield->cuPDEsteps(dish->CPM, par.pde_its);
-          cout << "End PDE step" << endl;
         }
         else{
           PROFILE(opencl_diff, dish->PDEfield->ODEstepCL(dish->CPM, par.pde_its);)
@@ -165,9 +163,9 @@ void Plotter::Plot()  {
   
   //Somewhere here show mask
   plotPDEDensity();
-  plotCPMCellTypes();
+  //plotCPMCellTypes();
   plotCPMLines(); 
-  //plotPDEContourLines();
+  plotPDEContourLines();
   graphics->EndScene();
 }
 

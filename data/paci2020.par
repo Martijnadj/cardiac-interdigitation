@@ -33,8 +33,8 @@ micropatternmask = ../data/mask.dat
 
 # Cuda parameters
 usecuda = true
-number_of_cores = 68
-threads_per_core = 64
+number_of_cores = 80
+threads_per_core = 32
 
 
 # initial conditions (create a "blob" of cells in the middle)
@@ -44,7 +44,7 @@ sizex = 280
 sizey = 170
 divisions = 0
 mcs = 100
-rseed = -1
+rseed = 541006
 subfield = 1.0
 relaxation = 0
 initial_E_m = -90

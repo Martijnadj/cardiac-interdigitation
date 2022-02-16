@@ -51,6 +51,8 @@ class PDE {
   int sizey;
   int layers;
   int btype;
+  double bpm;
+  double pacing_interval;
   PDEFIELD_TYPE dt;
   PDEFIELD_TYPE min_stepsize;
   PDEFIELD_TYPE dx2;

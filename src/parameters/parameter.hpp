@@ -107,6 +107,9 @@ class Parameter {
   double initial_h;
   double eps;
 
+  double beats_per_minute;
+  double pacing_duration;
+  double pacing_strength;
   double couplingmedium;
   double couplingcell;
   double couplingboundary;

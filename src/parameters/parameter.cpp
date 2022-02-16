@@ -97,6 +97,10 @@ Parameter::Parameter() {
   initial_h = 0.08;
   eps = 1e-8;
 
+
+  beats_per_minute = 60;
+  pacing_duration = 1e-3;
+  pacing_strength = 100;
   couplingmedium = 1e-5;
   couplingcell = 1e-5;
   couplingboundary = 1e-8;
@@ -221,6 +225,10 @@ void Parameter::Read(const char *filename) {
   initial_h = fgetpar(fp, "initial_h", 0.08, true);
   eps = fgetpar(fp, "eps", 1e-8, true);
 
+
+  beats_per_minute = fgetpar(fp, "beats_per_minute", 60, true);
+  pacing_duration = fgetpar(fp, "pacing_duration", 5e-3, true);
+  pacing_strength = fgetpar(fp, "pacing_strength", 100, true);
   couplingmedium = fgetpar(fp, "couplingmedium", 1e-5, true);
   couplingcell = fgetpar(fp, "couplingcell", 1e-5, true);
   couplingboundary = fgetpar(fp, "couplingboundary", 1e-8, true);
@@ -324,8 +332,12 @@ void Parameter::Write(ostream &os) const {
   os << " initial_n = " << initial_n << endl;
   os << " initial_m = " << initial_m << endl;
   os << " initial_h = " << initial_h<< endl;
-  os << " eps = " << eps<< endl;
+  os << " eps = " << eps << endl;
 
+
+  os << " beats_per_minute" << beats_per_minute << endl;
+  os << " pacing_duration" << pacing_duration << endl;
+  os << " pacing_strength" << pacing_strength << endl;
   os << " couplingmedium = " << couplingmedium << endl;
   os << " couplingcell = " << couplingcell << endl;
   os << " couplingboundary = " << couplingboundary << endl;

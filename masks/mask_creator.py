@@ -79,6 +79,27 @@ def write_parameters_to_database():
 	f.write("y_max = " + str(y_max) + " pixels or " + str(y_max*pixel_size) + " mm \n\n")
 	f.write("--------------------------------------------------------------------------- \n\n")
 
+def write_parameters_to_parameter_file():
+	f = open("parameters/mask_" + mask_number + ".txt", "w")
+	if (L_shape == "circle"):
+		f.write("L_radius = " + str(L_radius) + "\n")
+	if (L_shape == "rectangle"):
+		f.write("L_width = " + str(L_width) + "\n")
+		f.write("L_height = " + str(L_height) + "\n")
+	
+	f.write("I_length = " + str(I_length) + "\n")
+	f.write("I_width = " + str(I_width) + "\n")
+
+	f.write("R_angle = " + str(R_angle) + "\n")
+	f.write("R_max_protrusion_left = " + str(R_max_protrusion_left) + "\n")
+	f.write("R_max_height = " + str(R_max_height) + "\n")
+	f.write("R_width = " + str(R_width) + "\n")
+
+	f.write("Offset_x = " + str(Offset_x) + "\n")
+	f.write("Offset_y = " + str(Offset_y) + "\n")
+
+	f.write("x_max = " + str(x_max) + "\n")
+	f.write("y_max = " + str(y_max) + "\n")
 
 def find_max_xy():
 	global x_max
@@ -163,6 +184,7 @@ def create_image():
 create_mask_filename()
 find_max_xy()
 write_parameters_to_database()
+write_parameters_to_paramater_file()
 mask = np.zeros ((x_max,y_max))
 construct_shape()
 create_image()

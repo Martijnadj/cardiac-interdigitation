@@ -113,6 +113,8 @@ PDE::PDE(const int l, const int sx, const int sy) {
   sizex=sx;
   sizey=sy;
   layers=l;
+  bpm = par.beats_per_minute;
+  pacing_interval = 1/(bpm/60);
   PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
   alt_PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
   min_stepsize = par.min_stepsize;
@@ -2363,7 +2365,7 @@ __global__ void RungeKuttaStepOld(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int l
 }
 #endif
 
-__device__ void derivs(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt){
+__device__ void derivs(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, bool activated, PDEFIELD_TYPE pacing_strength){
 
   //Declare variables needed for Paci2020 model and assign the constants
 
@@ -2809,14 +2811,17 @@ __device__ void derivs(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* y, PDEFIELD_TY
     
   //// Membrane potential
   dydt[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
+  //printf("dydt[0] = %.9f\n", dydt[0]);
+  if(activated)
+    dydt[0] += pacing_strength/Cm;
 }
 
-__device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers, PDEFIELD_TYPE thetime, PDEFIELD_TYPE stepsize, PDEFIELD_TYPE* yout, PDEFIELD_TYPE *yerr, int id){
+__device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers, PDEFIELD_TYPE thetime, PDEFIELD_TYPE stepsize, PDEFIELD_TYPE* yout, PDEFIELD_TYPE *yerr, bool activated, PDEFIELD_TYPE pacing_strength, int id){
   /*Given values for n variables y[1..n] and their derivatives dydx[1..n] known at x, use
   the fifth-order Cash-Karp Runge-Kutta method to advance the solution over an interval h
   and return the incremented variables as yout[1..n]. Also return an estimate of the local
   truncation error in yout using the embedded fourth-order method. The user supplies the routine
-  derivs(x,y,dydx), which returns derivatives dydx at x.*/
+  derivs(t,y,dydt,activated,pacing_strength), which returns derivatives dydt at t.*/
   int i;
   static PDEFIELD_TYPE a2=0.2,a3=0.3,a4=0.6,a5=1.0,a6=0.875,b21=0.2,
     b31=3.0/40.0,b32=9.0/40.0,b41=0.3,b42 = -0.9,b43=1.2,
@@ -2836,26 +2841,26 @@ __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers
   for (i=0;i<layers;i++) //First step.
     ytemp[i]=y[i]+b21*stepsize*dydt[i];
 
-  derivs(thetime+a2*stepsize,ytemp,ak2);// Second step.
+  derivs(thetime+a2*stepsize,ytemp,ak2,activated,pacing_strength);// Second step.
   for (i=0;i<layers;i++)
     ytemp[i]=y[i]+stepsize*(b31*dydt[i]+b32*ak2[i]);
-  derivs(thetime+a3*stepsize,ytemp,ak3); //Third step.
+  derivs(thetime+a3*stepsize,ytemp,ak3,activated,pacing_strength); //Third step.
   for (i=0;i<layers;i++)
     ytemp[i]=y[i]+stepsize*(b41*dydt[i]+b42*ak2[i]+b43*ak3[i]);
-  derivs(thetime+a4*stepsize,ytemp,ak4); //Fourth step.
+  derivs(thetime+a4*stepsize,ytemp,ak4,activated,pacing_strength); //Fourth step.
   for (i=0;i<layers;i++)
     ytemp[i]=y[i]+stepsize*(b51*dydt[i]+b52*ak2[i]+b53*ak3[i]+b54*ak4[i]);
-  derivs(thetime+a5*stepsize,ytemp,ak5); //Fifth step.
+  derivs(thetime+a5*stepsize,ytemp,ak5,activated,pacing_strength); //Fifth step.
   for (i=0;i<layers;i++)
     ytemp[i]=y[i]+stepsize*(b61*dydt[i]+b62*ak2[i]+b63*ak3[i]+b64*ak4[i]+b65*ak5[i]);
-  derivs(thetime+a6*stepsize,ytemp,ak6); //Sixth step.
+  derivs(thetime+a6*stepsize,ytemp,ak6,activated,pacing_strength); //Sixth step.
   for (i=0;i<layers;i++) //Accumulate increments with proper weights.
     yout[i]=y[i]+stepsize*(c1*dydt[i]+c3*ak3[i]+c4*ak4[i]+c6*ak6[i]);
   for (i=0;i<layers;i++)
     yerr[i]=stepsize*(dc1*dydt[i]+dc3*ak3[i]+dc4*ak4[i]+dc5*ak5[i]+dc6*ak6[i]);
 }
 
-__device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layers, PDEFIELD_TYPE *thetime, PDEFIELD_TYPE stepsize_try, PDEFIELD_TYPE eps, PDEFIELD_TYPE* yscal, PDEFIELD_TYPE* stepsize_did, PDEFIELD_TYPE* stepsize_next, PDEFIELD_TYPE stepsize_min, bool overshot, int id){
+__device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layers, PDEFIELD_TYPE *thetime, PDEFIELD_TYPE stepsize_try, PDEFIELD_TYPE eps, PDEFIELD_TYPE* yscal, PDEFIELD_TYPE* stepsize_did, PDEFIELD_TYPE* stepsize_next, PDEFIELD_TYPE stepsize_min, bool overshot, bool activated, PDEFIELD_TYPE pacing_strength, int id){
   /* Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
   at the starting value of the independent variable x. Also input are the stepsize to be attempted
@@ -2876,7 +2881,7 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
 
   stepsize=stepsize_try; // Set stepsize to the initial trial value.
   for(;;){
-    RungeKuttaStep(y,dydt,layers,*thetime,stepsize,ytemp,yerr, id); // Take a step.  
+    RungeKuttaStep(y,dydt,layers,*thetime,stepsize,ytemp,yerr,activated,pacing_strength,id); // Take a step.  
 
     errmax=0.0; //Evaluate accuracy.
     for (i=0;i<layers;i++){
@@ -2919,7 +2924,7 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
   }  
 }
 
-__global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps){
+__global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength){
   /* Ordinary Differential Equation step Runge Kutta Adaptive
   Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
@@ -2939,6 +2944,7 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
   PDEFIELD_TYPE MaxTimeError = 1e-12;
   PDEFIELD_TYPE stepsize_overshot;
   bool overshot = false;
+  bool activated = false;
   int i;
 
 
@@ -2958,9 +2964,12 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
       for (i=0;i<layers;i++) 
         y[i]=PDEvars[i*sizex*sizey + id];
       while(fabs(current_time - begin_time - dt)>MaxTimeError){
+        activated = false;
+        if (fmod(current_time, pacing_interval) < pacing_duration && celltype[id] == 2) //Periodically pace cells of celltype 2
+          activated = true;
         
         overshot = false;
-        derivs(current_time,y,dydt);
+        derivs(current_time,y,dydt,activated,pacing_strength);
         for (i=0;i<layers;i++)
           // Scaling used to monitor accuracy. This general-purpose choice can be modified if need be.
           yscal[i]=fabs(y[i])+fabs(dydt[i]*stepsize)+Tiny;
@@ -2972,7 +2981,7 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
         }
         if (stepsize < stepsize_min/2 && overshot == false)
           printf("Stepsize too small in ODEstepRKA at index %i\n", id);
-        StepsizeControl(y,dydt,layers,&current_time,stepsize,eps,yscal,&stepsize_did,&stepsize_next, stepsize_min, overshot, id);
+        StepsizeControl(y,dydt,layers,&current_time,stepsize,eps,yscal,&stepsize_did,&stepsize_next, stepsize_min, overshot, activated, pacing_strength, id);
         if (fabs(current_time - begin_time - dt)<MaxTimeError) { //Are we done?
           for (i=0;i<layers;i++) {
             alt_PDEvars[i*sizex*sizey + id]=y[i];
@@ -3519,7 +3528,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
 
   for (int iteration = 0; iteration < repeat; iteration++){
     //Do an ODE step of size dt/2
-    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps);
+    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess) 
@@ -3564,7 +3573,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     //increase time by dt/2
     thetime = thetime + dt/2;  
     //Do an ODE step of size dt/2
-    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps);
+    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess) 

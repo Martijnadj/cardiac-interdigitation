@@ -3511,6 +3511,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   //int** cellnumber = cpm -> getSigma(); 
   cudaError_t errSync;
   cudaError_t errAsync;
+  bool failure = false;
   celltype = cpm->getTau();
   cudaMemcpy(d_couplingcoefficient, couplingcoefficient[0], sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
   cudaMemcpy(d_celltype, celltype[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
@@ -3527,6 +3528,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
 
   for (int iteration = 0; iteration < repeat; iteration++){
+    cout << "Begin: PDEvars[1436987] = " << PDEvars[1436987] << endl;
     //Do an ODE step of size dt/2
     ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
     errSync  = cudaGetLastError();
@@ -3535,7 +3537,17 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-    
+    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
+    cout << "alt_PDEvars[1436987] = " << alt_PDEvars[1436987] << endl;
+    for (int i = 0; i < sizex*sizey; i++){
+      if (!(alt_PDEvars[i] > -1 && alt_PDEvars[i] < 1)){
+        cout << "Something went wrong at index " << i << endl;
+        failure = true;
+      }
+    }
+    if (failure)
+      exit(1);
 
     //Do a vertical ADI sweep of size dt/2
     InitializeVerticalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BV, d_couplingcoefficient, d_alt_PDEvars);
@@ -3569,6 +3581,16 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
 
     cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
+    cout << "PDEvars[1436987] = " << PDEvars[1436987] << endl;
+    for (int i = 0; i < sizex*sizey; i++){
+      if (!(PDEvars[i] > -1 && PDEvars[i] < 1)){
+        cout << "Something went wrong at index " << i << endl;
+        failure = true;
+      }
+    }
+    if (failure)
+      exit(1);
+    
 
     //increase time by dt/2
     thetime = thetime + dt/2;  
@@ -3579,7 +3601,20 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     if (errSync != cudaSuccess) 
       printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
     if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));     
+      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));    
+      
+      cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+      cudaDeviceSynchronize();
+      cout << "alt_PDEvars[1436987] = " << alt_PDEvars[1436987] << endl;
+      for (int i = 0; i < sizex*sizey; i++){
+        if (!(alt_PDEvars[i] > -1 && alt_PDEvars[i] < 1)){
+          cout << "Something went wrong at index " << i << endl;
+          failure = true;
+        }
+      }
+      if (failure)
+        exit(1);
+
     //Do a horizontal ADI sweep of size dt/2
     InitializeHorizontalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BH, d_couplingcoefficient, d_alt_PDEvars);
     errSync  = cudaGetLastError();
@@ -3613,8 +3648,18 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     
     cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
+    cout << "End: PDEvars[1436987] = " << PDEvars[1436987] << endl;
+    for (int i = 0; i < sizex*sizey; i++){
+      if (!(PDEvars[i] > -1 && PDEvars[i] < 1)){
+        cout << "Something went wrong at index " << i << endl;
+        failure = true;
+      }
+    }
+    if (failure)
+      exit(1);
+    
   }
-  cout << "PDEvars[23885] = " << PDEvars[23885] << endl;
+  
 }
 
 // public

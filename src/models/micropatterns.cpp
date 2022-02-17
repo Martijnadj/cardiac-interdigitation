@@ -187,10 +187,10 @@ int main(int argc, char *argv[]) {
   } catch(const char* error) {
     std::cerr << error << std::endl;
     return 1;
-  } catch(...) {
+  } /*catch(...) {
     std::cerr << "An unknown exception was caught" << std::endl;
     return 1;
-  }
+  }*/
 
   return 0;
 }

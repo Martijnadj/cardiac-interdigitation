@@ -28,7 +28,71 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
     // used in 10.1016/j.bpj.2020.03.018
     //
     // This software is provided for NON-COMMERCIAL USE ONLY 
-    // (read the license included in the zip file).
+    // License included:
+
+/*
+ACADEMIC PUBLIC LICENSE (software implementation of the Paci2020 model, v1.0)
+
+Copyright (c) 2021 Michelangelo Paci, Tampere University Foundation sr, All rights reserved
+
+The following license governs the use of the software implementation of the Paci2020 model of the action potential of human induced pluripotent stem cell-derived cardiomyocytes, used in the paper "All-Optical Electrophysiology Refines Populations of In Silico Human iPSC-CMs for Drug Evaluation" (10.1016/j.bpj.2020.03.018), in non-commercial academic environments. In case of need for license extensions, please contact inventions@tuni.fi
+
+------------------------------------------------------------------------------------------------------
+Preamble
+
+This license contains the terms and conditions of using the software implementation of the Paci2020 model in non-commercial settings: at academic institutions for teaching and research use, and at not-for-profit research organizations. You will find that this license provides non-commercial users of the software implementation of the Paci2020 model with rights that are similar to the well-known GNU General Public License 2.0, yet it retains the possibility for the software implementation of the Paci2020 model authors to financially support the development by selling commercial licenses. In fact, if you intend to use the software implementation of the Paci2020 model in a "for-profit" environment, where the software implementation of the Paci2020 model simulations are conducted to develop or enhance a product (including commercial or industry-sponsored research at academic institutions), or to use the software implementation of the Paci2020 model in a commercial service offering, then you need to obtain a license extension for the software implementation of the Paci2020 model. In that case, please contact inventions@tuni.fi.
+
+What are the rights given to non-commercial users? Similarly, to GPL 2.0, you have the right to use the software, to distribute copies, to receive source code, to change the software and distribute your modifications or the modified software. Also, similarly to the GPL 2.0, if you distribute verbatim or modified copies of this software, they must be distributed under this license.
+
+By modeling the GPL 2.0, this license guarantees that you’re safe when using the software implementation of the Paci2020 model in your work, for teaching, and research. This license guarantees that the software implementation of the Paci2020 model will remain available free of charge for non-profit use. You can modify the software implementation of the Paci2020 model to your purposes, and you can also share your modifications. Even in case of the authors abandoning the software implementation of the Paci2020 model entirely, this license permits anyone to continue developing it from the last release, and to create further releases under this license.
+
+The precise terms and conditions for using, copying, distribution and modification follow.
+------------------------------------------------------------------------------------------------------
+
+Terms and Conditions for Use, Copying, Distribution and Modification
+Definitions
+
+•	"Program" means a copy of the software implementation of the Paci2020 model and all the files included in this archive, which are said to be distributed under this Academic Public License.
+•	"Work based on the Program" means either the Program or any derivative work under copyright law: that is to say, a work containing the Program or a portion of it, either verbatim or with modifications and/or translated into another language. (Hereinafter, translation is included without limitation in the term "modification".)
+•	"Using the Program" means any act of creating executables that contain or directly use libraries that are part of the Program, running any of the tools that are part of the Program, or creating works based on the Program.
+•	Each licensee is addressed as "you".
+
+§1. Permission is hereby granted to use the Program free of charge for any non-commercial purpose, including teaching and research at universities, colleges and other educational institutions, non-commercial research at organizations that are either not-for-profit or reinvest all profits in their scientific research, and personal not-for-profit purposes. For using the Program for commercial purposes, including but not restricted to commercial research at academic institutions, industrially sponsored research at academic institutions, consulting activities, and design of commercial hardware or software products or services, you have to contact inventions@tuni.fi for an appropriate license.
+
+§2. You may copy and distribute verbatim copies of the source code of the program via any medium, provided that you add a conspicuous and appropriate copyright notice and a warranty disclaimer to each copy. Retain all notices relating to this license and the lack of any warranty. Forward a copy of this license to all other recipients of the program.
+
+§3. You are entitled to change your copies of the Program or a part thereof and thus create a work based on the Program. You may copy and distribute changes or work in accordance with the provisions of Section 2 provided you also meet all of the following conditions: a) You must ensure that the changed files are provided with noticeable comments stating the author of the change and when this change was made. b) You must ensure that all work that you distribute or publish, that contains or is derived from the Program or parts thereof, as a whole, is licensed under the conditions of this license.
+
+These requirements apply to the changed work as a whole. If identifiable sections of this work do not come from the Program and can be considered separate, this license and its terms do not apply to those sections if you distribute them as separate work. However, if you distribute the same sections as part of a whole that is based on the Program, the distribution of the whole must be done in accordance with the terms of this license as outlined in §2, independently of who wrote it.
+
+The mere merging of another work that is not based on the Program with the Program (or a work based on the Program) does not bring the other work into the scope of this license.
+
+§4. You may copy and distribute the Program (or a work based on it, in accordance with §3, in object code or executable form in accordance with the provisions of above Sections 2 and 3, provided that you also add the complete corresponding machine-readable source code. For an executable program, complete source code means the entire source code for all modules contained therein, as well as all associated interface definition files and scripts, with which the compilation and installation of the executable file is controlled.
+
+§5. Any attempt to copy, modify, sublicense or distribute the Program in any other way than specified in this license is void, and will automatically terminate your rights under this license. However, parties who have received copies or rights from you under this license will not lose their license as long as these parties fully comply with the terms.
+
+§6. You do not have to accept this license because you have not signed it. However, if you want to change or distribute the Program (or a work based on the Program), you automatically consent to this license and all its terms for copying, distributing or changing the program or the works based upon it.
+
+§7. Each time you redistribute the Program (or any work based on the Program), the recipient automatically acquires a license from the initial licensor to copy, distribute or modify the Program in accordance with these terms and conditions. You may not impose any further restrictions on the recipient's exercise of the rights granted here. You are not responsible for ensuring that this license is enforced by third parties.
+
+§8. If, as a result of a court decision or violation of a patent right, or for any other reason (not limited to patent issues), conditions are imposed that conflict with the terms of this license, you will not be released from the terms of this license. If you cannot distribute the Program because you would have to meet obligations under this license and other obligations at the same time, you may not distribute the Program at all.
+
+§9. If the distribution and/or use of the Program in certain countries is restricted either by patents or by copyrighted interfaces, the original copyright holder who puts the Program under this license may add an explicit geographic distribution restriction that excludes these countries. In this case, this license contains the restriction as if it was written in the body of this license.
+
+NO WARRANTY
+
+§10. SINCE THE PROGRAM IS LICENSED FOR FREE, THERE IS NO GUARANTEE FOR THE PROGRAM. THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT ANY EXPRESSED OR IMPLIED GUARANTEE, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS YOURS. IF THE PROGRAM TURNS OUT TO BE FAULTY, YOU ARE RESPONSIBLE FOR THE COSTS FOR ALL NECESSARY MAINTENANCE, REPAIR OR CORRECTION WORK.
+
+§11. UNDER NO CIRCUMSTANCES WILL A COPYRIGHT HOLDER OR ANY OTHER PARTY WHO CAN MODIFY AND/OR REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE BE LIABLE FOR DAMAGE, INCLUDING GENERAL, SPECIAL, ACCIDENTAL OR OTHER DAMAGE. THE DISCLAIMER ALSO INCLUDES CONSEQUENTIAL DAMAGES THAT RESULT FROM USING THE PROGRAM ALONE OR IN CONJUNCTION WITH OTHER PROGRAMS, INCLUDING BUT NOT LIMITED TO THE LOSS OR CORRUPTION OF DATA.
+
+IF YOU DO NOT AGREE WITH THIS LICENSE TERMS, DO NOT USE, COPY, CHANGE OR DISTRIBUTE THE PROGRAM (OR A WORK BASED ON THE PROGRAM).
+
+This license was
+- initially written by Andras Varga (public domain) for OMNeT++ https://omnetpp.org/intro/license, 
+- then adapted by the openCARP project https://opencarp.org/download/license,
+- now adapted for the software implementation of the Paci2020 model.
+The adaptation is licensed under CC0 1.0 (Public Domain Dedication).
+*/
   
   
     //-------------------------------------------------------------------------------
@@ -60,8 +124,11 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
     // 22: RyRc (dimensionless) (in calcium_dynamics)
 
 
+/*ODE solver is an adaptation from Press, W. H. (2007). 
+Numerical recipes : the art of scientific computing (3rd ed.). 
+/New York, N.Y., [etc.]: Cambridge University Press.
 
-
+*/
 
 
 
@@ -1124,6 +1191,7 @@ __global__ void RungeKuttaStepOld(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int l
       
     
       //// ICaL
+      //Prevent division by 0
       if(y[0]< precision && y[0] > -precision) //hopital
         i_CaL =  g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T) *y[4]*y[5]*y[6]*y[7] / (2.0*F/(R*T)) * (y[2] - 0.341*Cao);
       else
@@ -1338,6 +1406,7 @@ __global__ void RungeKuttaStepOld(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int l
       
     
       //// ICaL
+      //Prevent division by 0
       if(ytemp[0]< precision && ytemp[0] > -precision) //hopital
         i_CaL =  g_CaL*4.0*ytemp[0]*pow((float)F,2.0f)/(R*T) *ytemp[4]*ytemp[5]*ytemp[6]*ytemp[7] / (2.0*F/(R*T)) * (ytemp[2] - 0.341*Cao);
       else
@@ -1550,6 +1619,7 @@ __global__ void RungeKuttaStepOld(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int l
       
     
       //// ICaL  
+      //Prevent division by 0
       if(ytemp[0]< precision && ytemp[0] > -precision) //hopital
         i_CaL =  g_CaL*4.0*ytemp[0]*pow((float)F,2.0f)/(R*T) *ytemp[4]*ytemp[5]*ytemp[6]*ytemp[7] / (2.0*F/(R*T)) * (ytemp[2] - 0.341*Cao);
       else
@@ -1762,6 +1832,7 @@ __global__ void RungeKuttaStepOld(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int l
       
     
       //// ICaL
+      //Prevent division by 0
       if(ytemp[0]< precision && ytemp[0] > -precision) //hopital
         i_CaL =  g_CaL*4.0*ytemp[0]*pow((float)F,2.0f)/(R*T) *ytemp[4]*ytemp[5]*ytemp[6]*ytemp[7] / (2.0*F/(R*T)) * (ytemp[2] - 0.341*Cao);
       else
@@ -1972,6 +2043,7 @@ __global__ void RungeKuttaStepOld(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int l
       
     
       //// ICaL 
+      //Prevent division by 0
       if(ytemp[0]< precision && ytemp[0] > -precision) //hopital
         i_CaL =  g_CaL*4.0*ytemp[0]*pow((float)F,2.0f)/(R*T) *ytemp[4]*ytemp[5]*ytemp[6]*ytemp[7] / (2.0*F/(R*T)) * (ytemp[2] - 0.341*Cao);
       else
@@ -2184,6 +2256,7 @@ __global__ void RungeKuttaStepOld(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int l
       
     
       //// ICaL
+      //Prevent division by 0
       if(ytemp[0]< precision && ytemp[0] > -precision) //hopital
         i_CaL =  g_CaL*4.0*ytemp[0]*pow((float)F,2.0f)/(R*T) *ytemp[4]*ytemp[5]*ytemp[6]*ytemp[7] / (2.0*F/(R*T)) * (ytemp[2] - 0.341*Cao);
       else
@@ -2648,6 +2721,7 @@ __device__ void derivs(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* y, PDEFIELD_TY
       
     
   //// ICaL
+  //Prevent division by 0
   if(y[0]< precision && y[0] > -precision) //hopital
     i_CaL =  g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T) *y[4]*y[5]*y[6]*y[7] / (2.0*F/(R*T)) * (y[2] - 0.341*Cao);
   else
@@ -2812,55 +2886,68 @@ __device__ void derivs(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* y, PDEFIELD_TY
   //// Membrane potential
   dydt[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
   //printf("dydt[0] = %.9f\n", dydt[0]);
-  if(activated)
-    dydt[0] += pacing_strength/Cm;
+
+  //Modification of activation by Martijn de Jong, 02-03-2022
+  if(activated){
+    if (fmod(current_time,0.75) <= 0.0005)
+      dydt[0] += fmod(current_time,0.75)/0.0005*pacing_strength/Cm;
+    else if (fmod(current_time,0.75) > 0.0005 && fmod(current_time,0.75) < 0.0045)
+      dydt[0] += pacing_strength/Cm;
+    else 
+      dydt[0] += (1-(fmod(current_time,0.75)-0.0045)/0.0005)*pacing_strength/Cm;
+    
+  }
 }
 
 __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers, PDEFIELD_TYPE thetime, PDEFIELD_TYPE stepsize, PDEFIELD_TYPE* yout, PDEFIELD_TYPE *yerr, bool activated, PDEFIELD_TYPE pacing_strength, int id){
   /*Given values for n variables y[1..n] and their derivatives dydx[1..n] known at x, use
-  the fifth-order Cash-Karp Runge-Kutta method to advance the solution over an interval h
+  the fifth-order Dormand-Prince Runge-Kutta method to advance the solution over an interval h
   and return the incremented variables as yout[1..n]. Also return an estimate of the local
   truncation error in yout using the embedded fourth-order method. The user supplies the routine
   derivs(t,y,dydt,activated,pacing_strength), which returns derivatives dydt at t.*/
   int i;
-  static PDEFIELD_TYPE a2=0.2,a3=0.3,a4=0.6,a5=1.0,a6=0.875,b21=0.2,
-    b31=3.0/40.0,b32=9.0/40.0,b41=0.3,b42 = -0.9,b43=1.2,
-    b51 = -11.0/54.0, b52=2.5,b53 = -70.0/27.0,b54=35.0/27.0,
-    b61=1631.0/55296.0,b62=175.0/512.0,b63=575.0/13824.0,
-    b64=44275.0/110592.0,b65=253.0/4096.0,c1=37.0/378.0,
-    c3=250.0/621.0,c4=125.0/594.0,c6=512.0/1771.0,
-    dc5 = -277.00/14336.0;
-  PDEFIELD_TYPE dc1=c1-2825.0/27648.0,dc3=c3-18575.0/48384.0,
-    dc4=c4-13525.0/55296.0,dc6=c6-0.25;
-  PDEFIELD_TYPE ak2[ARRAY_SIZE];
-  PDEFIELD_TYPE ak3[ARRAY_SIZE];
-  PDEFIELD_TYPE ak4[ARRAY_SIZE];
-  PDEFIELD_TYPE ak5[ARRAY_SIZE];
-  PDEFIELD_TYPE ak6[ARRAY_SIZE];
-  PDEFIELD_TYPE ytemp[ARRAY_SIZE];
-  for (i=0;i<layers;i++) //First step.
-    ytemp[i]=y[i]+b21*stepsize*dydt[i];
+  static PDEFIELD_TYPE 
+  c2=0.2,c3=0.3,c4=0.8,c5=8.0/9.0,a21=0.2,a31=3.0/40.0,
+  a32=9.0/40.0,a41=44.0/45.0,a42=-56.0/15.0,a43=32.0/9.0,a51=19372.0/6561.0,
+  a52=-25360.0/2187.0,a53=64448.0/6561.0,a54=-212.0/729.0,a61=9017.0/3168.0,
+  a62=-355.0/33.0,a63=46732.0/5247.0,a64=49.0/176.0,a65=-5103.0/18656.0,
+  a71=35.0/384.0,a73=500.0/1113.0,a74=125.0/192.0,a75=-2187.0/6784.0,
+  a76=11.0/84.0,e1=71.0/57600.0,e3=-71.0/16695.0,e4=71.0/1920.0,
+  e5=-17253.0/339200.0,e6=22.0/525.0,e7=-1.0/40.0;
 
-  derivs(thetime+a2*stepsize,ytemp,ak2,activated,pacing_strength);// Second step.
+
+  PDEFIELD_TYPE k2[ARRAY_SIZE];
+  PDEFIELD_TYPE k3[ARRAY_SIZE];
+  PDEFIELD_TYPE k4[ARRAY_SIZE];
+  PDEFIELD_TYPE k5[ARRAY_SIZE];
+  PDEFIELD_TYPE k6[ARRAY_SIZE];
+  PDEFIELD_TYPE ytemp[ARRAY_SIZE];
+  PDEFIELD_TYPE dydtnew[ARRAY_SIZE];
+  for (i=0;i<layers;i++) //First step.
+    ytemp[i]=y[i]+a21*stepsize*dydt[i];
+
+  derivs(thetime+c2*stepsize,ytemp,k2,activated,pacing_strength);// Second step.
   for (i=0;i<layers;i++)
-    ytemp[i]=y[i]+stepsize*(b31*dydt[i]+b32*ak2[i]);
-  derivs(thetime+a3*stepsize,ytemp,ak3,activated,pacing_strength); //Third step.
+    ytemp[i]=y[i]+stepsize*(a31*dydt[i]+a32*k2[i]);
+  derivs(thetime+c3*stepsize,ytemp,k3,activated,pacing_strength); //Third step.
   for (i=0;i<layers;i++)
-    ytemp[i]=y[i]+stepsize*(b41*dydt[i]+b42*ak2[i]+b43*ak3[i]);
-  derivs(thetime+a4*stepsize,ytemp,ak4,activated,pacing_strength); //Fourth step.
+    ytemp[i]=y[i]+stepsize*(a41*dydt[i]+a42*k2[i]+a43*k3[i]);
+  derivs(thetime+c4*stepsize,ytemp,k4,activated,pacing_strength); //Fourth step.
   for (i=0;i<layers;i++)
-    ytemp[i]=y[i]+stepsize*(b51*dydt[i]+b52*ak2[i]+b53*ak3[i]+b54*ak4[i]);
-  derivs(thetime+a5*stepsize,ytemp,ak5,activated,pacing_strength); //Fifth step.
+    ytemp[i]=y[i]+stepsize*(a51*dydt[i]+a52*k2[i]+a53*k3[i]+a54*k4[i]);
+  derivs(thetime+c5*stepsize,ytemp,k5,activated,pacing_strength); //Fifth step.
   for (i=0;i<layers;i++)
-    ytemp[i]=y[i]+stepsize*(b61*dydt[i]+b62*ak2[i]+b63*ak3[i]+b64*ak4[i]+b65*ak5[i]);
-  derivs(thetime+a6*stepsize,ytemp,ak6,activated,pacing_strength); //Sixth step.
+    ytemp[i]=y[i]+stepsize*(a61*dydt[i]+a62*k2[i]+a63*k3[i]+a64*k4[i]+a65*k5[i]);
+  PDEFIELD_TYPE timeplusdt = thetime+stepsize;
+  derivs(timeplusdt,ytemp,k6,activated,pacing_strength); //Sixth step.
   for (i=0;i<layers;i++) //Accumulate increments with proper weights.
-    yout[i]=y[i]+stepsize*(c1*dydt[i]+c3*ak3[i]+c4*ak4[i]+c6*ak6[i]);
-  for (i=0;i<layers;i++)
-    yerr[i]=stepsize*(dc1*dydt[i]+dc3*ak3[i]+dc4*ak4[i]+dc5*ak5[i]+dc6*ak6[i]);
+    yout[i]=y[i]+stepsize*(a71*dydt[i]+a73*k3[i]+a74*k4[i]+a75*k5[i]+a76*k6[i]);
+  derivs(timeplusdt,yout,dydtnew,activated,pacing_strength);
+  for (i=0;i<layers;i++) //Estimate error as difference between fourth- and fifth-order methods.
+    yerr[i]=stepsize*(e1*dydt[i]+e3*k3[i]+e4*k4[i]+e5*k5[i]+e6*k6[i]+e7*dydtnew[i]);
 }
 
-__device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layers, PDEFIELD_TYPE *thetime, PDEFIELD_TYPE stepsize_try, PDEFIELD_TYPE eps, PDEFIELD_TYPE* yscal, PDEFIELD_TYPE* stepsize_did, PDEFIELD_TYPE* stepsize_next, PDEFIELD_TYPE stepsize_min, bool overshot, bool activated, PDEFIELD_TYPE pacing_strength, int id){
+__device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layers, PDEFIELD_TYPE *thetime, PDEFIELD_TYPE stepsize_try, PDEFIELD_TYPE eps, PDEFIELD_TYPE* yscal, PDEFIELD_TYPE* stepsize_did, PDEFIELD_TYPE* stepsize_next, PDEFIELD_TYPE dt, PDEFIELD_TYPE stepsize_min, bool overshot, bool activated, PDEFIELD_TYPE pacing_strength, int id){
   /* Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
   at the starting value of the independent variable x. Also input are the stepsize to be attempted
@@ -2869,56 +2956,52 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
   actually accomplished, and hnext is the estimated next stepsize. derivs is the user-supplied
   routine that computes the right-hand side derivatives. */
   int i;
-  PDEFIELD_TYPE errmax,stepsize,stepsize_temp;
+  PDEFIELD_TYPE err,stepsize; //stepsize_temp;
   PDEFIELD_TYPE yerr[ARRAY_SIZE];
   PDEFIELD_TYPE ytemp[ARRAY_SIZE];
+  PDEFIELD_TYPE scale,scaling_factor,maxy;;
 
+  const PDEFIELD_TYPE alpha = 0.2;
   const PDEFIELD_TYPE Safety = 0.9;
-  const PDEFIELD_TYPE Pshrnk = -0.25;
-  const PDEFIELD_TYPE Errcon = 1.89e-4;
-  const PDEFIELD_TYPE PGrow = -0.2;
-  const PDEFIELD_TYPE accuracy = 1e-10;
+  const PDEFIELD_TYPE minscale = 0.2;
+  const PDEFIELD_TYPE maxscale = 10;
+  const PDEFIELD_TYPE rtol = 1e-3;
+  const PDEFIELD_TYPE atol = 1e-6;
 
   stepsize=stepsize_try; // Set stepsize to the initial trial value.
   for(;;){
     RungeKuttaStep(y,dydt,layers,*thetime,stepsize,ytemp,yerr,activated,pacing_strength,id); // Take a step.  
 
-    errmax=0.0; //Evaluate accuracy.
+
+    err=0; //Evaluate accuracy.
     for (i=0;i<layers;i++){
-      if (errmax < fabs(yerr[i]/yscal[i])){
-        errmax = fabs(yerr[i]/yscal[i]);
+      //compute the total euclidean scaled error
+      maxy = fabs(y[i]);
+      if (fabs(y[i]) < fabs(ytemp[i]))
+        maxy = fabs(ytemp[i]);
+        scaling_factor = atol+rtol*maxy;
+      err += pow(yerr[i]/scaling_factor,2);
       }
-    } 
-    errmax /= eps; // Scale relative to required tolerance.
-    if (errmax <= 1.0){  
+    err = sqrt(err/layers); 
+    err /= eps; // Scale relative to required tolerance.
+    if (err <= 1.0){  
+      if (stepsize < stepsize_min){
+        printf("At index %i, we do a step of %.10f nanoseconds and the time is %.9f and err = %.9f\n", id, stepsize*1e9, *thetime, err);
+        
+      }
       break; //Step succeeded. Compute size of next step.
     }
-    else if (fabs(stepsize - stepsize_min) < accuracy){ // force a stepsize of stepsize_min, even if it would exceed the maximum error
-      break;
-    }
-    else if (overshot && stepsize < stepsize_min) //if we would overshoot, but with a step smaller than stepsize_min, always accept it.
-      break;
-    stepsize_temp=Safety*stepsize*pow(errmax,Pshrnk);
-    //Truncation error too large, reduce stepsize.
-    if (stepsize_temp < 0.1*stepsize)
-      stepsize = 0.1*stepsize;
-    else 
-      stepsize = stepsize_temp;
-    //No more than a factor of 10.
-    if (stepsize < stepsize_min){
-      //printf("stepsize underflow in StepsizeControl, with stepsize = %f and stepsize_try = %f at index %i. Force stepsize of size %.9f \n",stepsize, stepsize_try, id, stepsize_min);
-      stepsize = stepsize_min;
-    }
+
+    scale=fmax(Safety*pow(err,-alpha),minscale);
+    stepsize *= scale;
+    
 
   }
-  if (errmax > Errcon) {
-    *stepsize_next=Safety*stepsize*pow(errmax,PGrow);
-  }
-  else 
-    *stepsize_next=5.0*stepsize; //No more than a factor of 5 increase.
+  scale=Safety*pow(err,-alpha);
+  if (scale<minscale) scale = minscale;
+  if (scale>maxscale) scale = maxscale;
+  *stepsize_next = stepsize*scale;
   *thetime += (*stepsize_did=stepsize);
-  if (*stepsize_did < stepsize_min/2 && !overshot)
-    printf("Stepsize too small at index %i: *stepsize_did = %.9f\n", id, *stepsize_did);
   for (i=0;i<layers;i++) {
     y[i]=ytemp[i];
   }  
@@ -2940,13 +3023,11 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
   PDEFIELD_TYPE y[ARRAY_SIZE];
   PDEFIELD_TYPE dydt[ARRAY_SIZE];
   PDEFIELD_TYPE current_time;
-  PDEFIELD_TYPE Tiny = 1e-30;
   PDEFIELD_TYPE MaxTimeError = 1e-12;
   PDEFIELD_TYPE stepsize_overshot;
   bool overshot = false;
   bool activated = false;
   int i;
-
 
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int stride = blockDim.x * gridDim.x;
@@ -2967,34 +3048,25 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
         activated = false;
         if (fmod(current_time, pacing_interval) < pacing_duration && celltype[id] == 2) //Periodically pace cells of celltype 2
           activated = true;
-        
+
         overshot = false;
         derivs(current_time,y,dydt,activated,pacing_strength);
-        for (i=0;i<layers;i++)
-          // Scaling used to monitor accuracy. This general-purpose choice can be modified if need be.
-          yscal[i]=fabs(y[i])+fabs(dydt[i]*stepsize)+Tiny;
 
         if (stepsize+current_time > end_time){
           stepsize_overshot = stepsize; 
           stepsize=end_time - current_time;// If stepsize can overshoot, decrease.
           overshot = true;
         }
-        if (stepsize < stepsize_min/2 && overshot == false)
-          printf("Stepsize too small in ODEstepRKA at index %i\n", id);
-        StepsizeControl(y,dydt,layers,&current_time,stepsize,eps,yscal,&stepsize_did,&stepsize_next, stepsize_min, overshot, activated, pacing_strength, id);
+        StepsizeControl(y,dydt,layers,&current_time,stepsize,eps,yscal,&stepsize_did,&stepsize_next, dt, stepsize_min, overshot, activated, pacing_strength, id);
         if (fabs(current_time - begin_time - dt)<MaxTimeError) { //Are we done?
           for (i=0;i<layers;i++) {
             alt_PDEvars[i*sizex*sizey + id]=y[i];
           }
-          if(overshot && (stepsize_overshot < dt) && (stepsize_overshot > stepsize_min))
+          if(overshot && (stepsize_overshot < dt)) 
             next_stepsize[id] = stepsize_overshot;
-          else if (stepsize_next < stepsize_min)
-            next_stepsize[id] = stepsize_min;
           else
             next_stepsize[id] = stepsize_next;
         }
-        if (fabs(stepsize_next) <= stepsize_min)
-          stepsize=stepsize_min;
         else 
           stepsize = stepsize_next;
       }
@@ -3304,6 +3376,7 @@ __global__ void ForwardEulerStep(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int la
       
     
       //// ICaL
+      //Prevent division by 0
       if(y[0]< precision && y[0] > -precision) //hopital
         i_CaL =  g_CaL*4.0*y[0]*pow((float)F,2.0f)/(R*T) *y[4]*y[5]*y[6]*y[7] / (2.0*F/(R*T)) * (y[2] - 0.341*Cao);
       else
@@ -3511,7 +3584,6 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   //int** cellnumber = cpm -> getSigma(); 
   cudaError_t errSync;
   cudaError_t errAsync;
-  bool failure = false;
   celltype = cpm->getTau();
   cudaMemcpy(d_couplingcoefficient, couplingcoefficient[0], sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
   cudaMemcpy(d_celltype, celltype[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
@@ -3528,7 +3600,6 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
 
   for (int iteration = 0; iteration < repeat; iteration++){
-    cout << "Begin: PDEvars[1436987] = " << PDEvars[1436987] << endl;
     //Do an ODE step of size dt/2
     ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
     errSync  = cudaGetLastError();
@@ -3537,17 +3608,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    cudaDeviceSynchronize();
-    cout << "alt_PDEvars[1436987] = " << alt_PDEvars[1436987] << endl;
-    for (int i = 0; i < sizex*sizey; i++){
-      if (!(alt_PDEvars[i] > -1 && alt_PDEvars[i] < 1)){
-        cout << "Something went wrong at index " << i << endl;
-        failure = true;
-      }
-    }
-    if (failure)
-      exit(1);
+
 
     //Do a vertical ADI sweep of size dt/2
     InitializeVerticalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BV, d_couplingcoefficient, d_alt_PDEvars);
@@ -3577,19 +3638,6 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync)); 
-
-
-    cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    cudaDeviceSynchronize();
-    cout << "PDEvars[1436987] = " << PDEvars[1436987] << endl;
-    for (int i = 0; i < sizex*sizey; i++){
-      if (!(PDEvars[i] > -1 && PDEvars[i] < 1)){
-        cout << "Something went wrong at index " << i << endl;
-        failure = true;
-      }
-    }
-    if (failure)
-      exit(1);
     
 
     //increase time by dt/2
@@ -3602,18 +3650,6 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));    
-      
-      cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-      cudaDeviceSynchronize();
-      cout << "alt_PDEvars[1436987] = " << alt_PDEvars[1436987] << endl;
-      for (int i = 0; i < sizex*sizey; i++){
-        if (!(alt_PDEvars[i] > -1 && alt_PDEvars[i] < 1)){
-          cout << "Something went wrong at index " << i << endl;
-          failure = true;
-        }
-      }
-      if (failure)
-        exit(1);
 
     //Do a horizontal ADI sweep of size dt/2
     InitializeHorizontalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BH, d_couplingcoefficient, d_alt_PDEvars);
@@ -3648,16 +3684,14 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     
     cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
-    cout << "End: PDEvars[1436987] = " << PDEvars[1436987] << endl;
-    for (int i = 0; i < sizex*sizey; i++){
-      if (!(PDEvars[i] > -1 && PDEvars[i] < 1)){
-        cout << "Something went wrong at index " << i << endl;
-        failure = true;
-      }
-    }
-    if (failure)
-      exit(1);
-    
+    ofstream myfile;
+    myfile.open ("data.txt", std::ios_base::app);
+    myfile << thetime << ",";
+    for (int i = 0; i < layers; i++)
+      myfile << PDEvars[46000 + i*sizex*sizey] << ",";
+    myfile << endl;
+    cout << "PDEvars[46000] = " << PDEvars[46000] << endl;
+
   }
   
 }

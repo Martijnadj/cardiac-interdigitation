@@ -2714,36 +2714,30 @@ int CellularPotts::ThrowInCells(int n, int cellsize)
 
 int CellularPotts::GrowInCellsInMicropattern(int n_cells, int cell_size)
 {
-  cout << "A" << endl;
 
   // make initial cells using Eden Growth
 
   int **new_sigma = (int **)malloc(sizex * sizeof(int *));
   if (new_sigma == NULL)
     MemoryWarning();
-  cout << "B" << endl;
 
   new_sigma[0] = (int *)malloc(sizex * sizey * sizeof(int));
   if (new_sigma[0] == NULL)
     MemoryWarning();
 
-  cout << "C" << endl;
   for (int i = 1; i < sizex; i++)
     new_sigma[i] = new_sigma[i - 1] + sizey;
-  cout << "D" << endl;
 
   /* Clear CA plane */
   {
     for (int i = 0; i < sizex * sizey; i++)
       new_sigma[0][i] = 0;
   }
-  cout << "E" << endl;
 
   // scatter initial points, or place a cell in the middle
   // if only one cell is desired
   int cellnum = cell->size() - 1;
 
-  cout << "F" << endl;
   bool placed;
   int xposition;
   int yposition;
@@ -2764,7 +2758,6 @@ int CellularPotts::GrowInCellsInMicropattern(int n_cells, int cell_size)
       }
     }
   }
-  cout << "M" << endl;
 
   // Do Eden growth for a number of time steps
   {
@@ -2812,7 +2805,6 @@ int CellularPotts::GrowInCellsInMicropattern(int n_cells, int cell_size)
 
   free(new_sigma[0]);
   free(new_sigma);
-  cout << "N" << endl;
   return cellnum;
 }
 

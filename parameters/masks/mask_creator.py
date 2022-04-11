@@ -12,20 +12,20 @@ pixel_size = 0.0025
 #Left shape
 L_shape = "circle"
 #Choose either "circle" or "rectangle"
-L_radius = 200
+L_radius = 100
 L_width = 1200
-L_height = 3200
+L_height = 2500
 
 #Isthmus
-I_length = 600
+I_length = 200
 I_width = 120
 
 #Right shape
-R_angle = 170
+R_angle = 150
 #between 0 and 180
-R_max_protrusion_left = 300
+R_max_protrusion_left = 150
 #smaller than I_length
-R_max_height = 3200
+R_max_height = 2400
 R_width = 1000
 
 #Offset
@@ -53,6 +53,8 @@ def create_mask_filename():
 def write_parameters_to_database():
 	f = open("mask_database.txt", "a")
 	f.write(mask_file_name + " uses the following parameters:\n\n")
+	f.write("pixel_size = " + str(pixel_size) + "\n\n")
+	
 	f.write("Left shape:\n")
 	f.write("L_shape = " + L_shape + "\n")
 	if (L_shape == "circle"):
@@ -107,6 +109,7 @@ def write_parameters_to_parameter_file():
 	f.write("y_max = " + str(y_max) + "\n")
 
 	f.write("total_area = " + str(total_area) + "\n")
+	f.write("pixel_size = " + str(pixel_size) + "\n")
 	f.close()
 
 def find_max_xy():
@@ -132,7 +135,7 @@ def construct_shape():
 	if (L_shape == "circle"):
 		centre_circle_x = Offset_x + L_radius
 		centre_circle_y = y_max/2
-		if R_angle <= 90:
+		if R_angle < 90:
 			centre_wedge_x = Offset_x + centre_circle_x + I_length + L_radius- (I_width/2)/math.tan(math.radians(R_angle))
 			for x in range(x_max):
 				for y in range(y_max):
@@ -144,7 +147,7 @@ def construct_shape():
 						mask[x,y]= 1
 						total_area = total_area + 1
 
-		elif R_angle > 90:
+		elif R_angle >= 90:
 			centre_wedge_x = Offset_x + centre_circle_x + I_length + L_radius + (I_width/2)/math.tan(math.radians(180-R_angle))
 			for x in range(x_max):
 				for y in range(y_max):
@@ -157,7 +160,7 @@ def construct_shape():
 						mask[x,y]= 1
 						total_area = total_area + 1
 	elif (L_shape == "rectangle"):
-			if R_angle <= 90:
+			if R_angle < 90:
 				centre_wedge_x = Offset_x + L_width + I_length - (I_width/2)/math.tan(math.radians(R_angle))
 				for x in range(x_max):
 					for y in range(y_max):
@@ -169,7 +172,7 @@ def construct_shape():
 							mask[x,y]= 1
 							total_area = total_area + 1
 
-			elif R_angle > 90:
+			elif R_angle >= 90:
 				centre_wedge_x = Offset_x + L_width + I_length + (I_width/2)/math.tan(math.radians(180-R_angle))
 				for x in range(x_max):
 					for y in range(y_max):

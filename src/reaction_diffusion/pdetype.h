@@ -3,7 +3,7 @@
 //adopt this setting as well.
 
 #define PDEFIELD_FLOAT
-#define PDEFIELD_DOUBLE
+//#define PDEFIELD_DOUBLE
 
 
 #ifdef PDEFIELD_FLOAT

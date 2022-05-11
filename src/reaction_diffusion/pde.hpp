@@ -168,7 +168,7 @@ class PDE {
   void InitializeAgeLayer(int l,double value,CellularPotts *cpm);
   void InitializePDEs(CellularPotts * cpm);
   void InitializeCuda(CellularPotts * cpm);
-  void InitializePDEvars();
+  void InitializePDEvars(CellularPotts * cpm);
 
  /* Function for the Act model. All the lattice sites within cells are "aged"
 	*  by decreasing their values, usually with 1.

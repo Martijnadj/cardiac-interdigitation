@@ -384,6 +384,10 @@ public:
     return numberofedges;
   }
 
+  inline bool** getMask(){
+    return mask;
+  }
+
   inline PDEFIELD_TYPE** getCouplingCoefficient(){
     return couplingcoefficient;
   }

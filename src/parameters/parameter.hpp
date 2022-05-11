@@ -114,6 +114,14 @@ class Parameter {
   double couplingcell;
   double couplingboundary;
   double couplingoffmask;
+
+  double FHN_interval_beats;
+  double FHN_pulse_duration;
+  double FHN_pulse_strength;
+  double FHN_a;
+  double FHN_b;
+  double FHN_tau;
+
  private:
 };
 

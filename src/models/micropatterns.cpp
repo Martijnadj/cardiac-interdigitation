@@ -165,10 +165,11 @@ void Plotter::Plot()  {
   plotPDEDensity();
   //plotCPMCellTypes();
   plotCPMLines(); 
-  plotPDEContourLines();
+  //plotPDEContourLines();
   graphics->EndScene();
 }
 
+/*
 int PDE::MapColour(double val) {
   if ((int(val*1000 + 100)/2) +155>255)
     return 255;
@@ -176,7 +177,21 @@ int PDE::MapColour(double val) {
     return 156;
   else  
     return (int(val*1000 + 100)/2) +155;
+}*/
+
+
+int PDE::MapColour(double val) {
+  double max_value = 2;
+  double min_value = -2;
+  if (val > max_value)
+    return 255;
+  else if (val < min_value)
+    return 156;
+  else{ 
+    return (int)((val-min_value)/(max_value-min_value)*100) + 155;
+  }
 }
+
 
 int main(int argc, char *argv[]) {
   extern Parameter par;

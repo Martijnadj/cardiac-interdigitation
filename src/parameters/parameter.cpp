@@ -106,6 +106,15 @@ Parameter::Parameter() {
   couplingboundary = 1e-8;
   couplingoffmask = 0;
 
+  FHN_interval_beats = 20;
+  FHN_pulse_duration = 2;
+  FHN_pulse_strength = 0.5;
+  FHN_a = 0.8;
+  FHN_b = 0.7;
+  FHN_tau = 12.5;
+
+  
+
 }
 
 Parameter::~Parameter() {
@@ -234,6 +243,13 @@ void Parameter::Read(const char *filename) {
   couplingboundary = fgetpar(fp, "couplingboundary", 1e-8, true);
   couplingoffmask = fgetpar(fp, "couplingoffmask", 0, true);
 
+
+  FHN_interval_beats = fgetpar(fp, "FHN_interval_beats", 20, true);
+  FHN_pulse_duration = fgetpar(fp, "FHN_pulse_duration", 2, true);
+  FHN_pulse_strength = fgetpar(fp, "FHN_pulse_strength", 0.5, true);
+  FHN_a = fgetpar(fp, "FHN_a", 0.8, true);
+  FHN_b = fgetpar(fp, "FHN_b", 0.7, true);
+  FHN_tau = fgetpar(fp, "FHN_tau", 12.5, true);
   std::cout << std::endl;
 }
 
@@ -342,6 +358,14 @@ void Parameter::Write(ostream &os) const {
   os << " couplingcell = " << couplingcell << endl;
   os << " couplingboundary = " << couplingboundary << endl;
   os << " couplingoffmask = " << couplingoffmask << endl;
+
+  os << " FHN_interval_beats" << FHN_interval_beats << endl;
+  os << " FHN_pulse_duration" << FHN_pulse_duration << endl;
+  os << " FHN_pulse_strength" << FHN_pulse_strength << endl;
+  os << " FHN_a" << FHN_a << endl;
+  os << " FHN_b" << FHN_b << endl;
+  os << " FHN_tau" << FHN_tau << endl;
+  
 }
 
 ostream &operator<<(ostream &os, Parameter &p) {

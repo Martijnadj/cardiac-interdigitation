@@ -358,3 +358,63 @@ total_area = 188830 pixels or 4.720750000000001 mm^2
 
 --------------------------------------------------------------------------- 
 
+files/mask13.dat uses the following parameters:
+
+pixel_size = 0.005
+
+Left shape:
+L_shape = circle
+L_radius = 20 pixels or 0.1 mm 
+
+Isthmus: 
+I_length = 50 pixels or 0.25 mm 
+I_width = 20 pixels or 0.1 mm 
+
+Right shape: 
+R_angle = 90
+R_max_protrusion_left = 75 pixels or 0.375 mm 
+R_max_height = 600 pixels or 3.0 mm 
+R_width = 250 pixels or 1.25 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.025 mm 
+Offset_y = 5 pixels or 0.025 mm 
+
+This results in:
+x_max = 350 pixels or 1.75 mm 
+y_max = 610 pixels or 3.0500000000000003 mm 
+
+total_area = 149898 pixels or 3.74745 mm^2 
+
+--------------------------------------------------------------------------- 
+
+files/mask14.dat uses the following parameters:
+
+pixel_size = 0.005
+
+Left shape:
+L_shape = circle
+L_radius = 20 pixels or 0.1 mm 
+
+Isthmus: 
+I_length = 50 pixels or 0.25 mm 
+I_width = 20 pixels or 0.1 mm 
+
+Right shape: 
+R_angle = 90
+R_max_protrusion_left = 75 pixels or 0.375 mm 
+R_max_height = 400 pixels or 2.0 mm 
+R_width = 250 pixels or 1.25 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.025 mm 
+Offset_y = 5 pixels or 0.025 mm 
+
+This results in:
+x_max = 350 pixels or 1.75 mm 
+y_max = 410 pixels or 2.05 mm 
+
+total_area = 100698 pixels or 2.51745 mm^2 
+
+--------------------------------------------------------------------------- 
+

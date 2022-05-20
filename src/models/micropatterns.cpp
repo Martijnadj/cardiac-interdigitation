@@ -165,7 +165,7 @@ void Plotter::Plot()  {
   plotPDEDensity();
   //plotCPMCellTypes();
   plotCPMLines(); 
-  //plotPDEContourLines();
+  plotPDEContourLines();
   graphics->EndScene();
 }
 

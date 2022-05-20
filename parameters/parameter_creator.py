@@ -6,7 +6,7 @@ from os import path
 mask_parameter_file = sys.argv[1]
 
 global par
-fraction_covered = 0.98
+fraction_covered = 1.1
 def import_mask_file():
     global par
     par = importlib.import_module("masks.parameters."+mask_parameter_file)

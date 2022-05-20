@@ -121,6 +121,11 @@ class Parameter {
   double FHN_a;
   double FHN_b;
   double FHN_tau;
+  double FHN_a_diff_perc;
+  double FHN_b_diff_perc;
+  double FHN_tau_diff_perc;
+  double FHN_start_0;
+  double FHN_start_1;
 
  private:
 };

@@ -112,6 +112,11 @@ Parameter::Parameter() {
   FHN_a = 0.8;
   FHN_b = 0.7;
   FHN_tau = 12.5;
+  FHN_a_diff_perc = 0;
+  FHN_b_diff_perc = 0;
+  FHN_tau_diff_perc = 12;
+  FHN_start_0 = 0;
+  FHN_start_1 = 0;
 
   
 
@@ -250,6 +255,11 @@ void Parameter::Read(const char *filename) {
   FHN_a = fgetpar(fp, "FHN_a", 0.8, true);
   FHN_b = fgetpar(fp, "FHN_b", 0.7, true);
   FHN_tau = fgetpar(fp, "FHN_tau", 12.5, true);
+  FHN_a_diff_perc = fgetpar(fp, "FHN_a_diff_perc", 0, true);
+  FHN_b_diff_perc = fgetpar(fp, "FHN_b_diff_perc", 0, true);
+  FHN_tau_diff_perc = fgetpar(fp, "FHN_tau_diff_perc", 0, true);
+  FHN_start_0 = fgetpar(fp, "FHN_start_0", 0, true);
+  FHN_start_1 = fgetpar(fp, "FHN_start_1", 0, true);
   std::cout << std::endl;
 }
 
@@ -365,6 +375,11 @@ void Parameter::Write(ostream &os) const {
   os << " FHN_a" << FHN_a << endl;
   os << " FHN_b" << FHN_b << endl;
   os << " FHN_tau" << FHN_tau << endl;
+  os << " FHN_a" << FHN_a_diff_perc << endl;
+  os << " FHN_b" << FHN_b_diff_perc << endl;
+  os << " FHN_tau" << FHN_tau_diff_perc << endl;
+  os << " FHN_start_0" << FHN_start_0 << endl;
+  os << " FHN_start_1" << FHN_start_1 << endl;
   
 }
 

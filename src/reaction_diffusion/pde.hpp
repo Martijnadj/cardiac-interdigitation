@@ -168,7 +168,7 @@ class PDE {
   void InitializeAgeLayer(int l,double value,CellularPotts *cpm);
   void InitializeFHNvarsCells(int nr_cells, PDEFIELD_TYPE* FHN_a, PDEFIELD_TYPE* FHN_b, PDEFIELD_TYPE* FHN_tau, PDEFIELD_TYPE FHN_a_var, PDEFIELD_TYPE FHN_b_var, PDEFIELD_TYPE FHN_tau_var, PDEFIELD_TYPE FHN_a_base, PDEFIELD_TYPE FHN_b_base, PDEFIELD_TYPE FHN_tau_base);
   void InitializePDEs(CellularPotts * cpm);
-  void InitializeCuda(CellularPotts * cpm);
+  void InitializeCuda(CellularPotts * cpm, int n_init_cells);
   void InitializePDEvars(CellularPotts * cpm, PDEFIELD_TYPE FHN_0, PDEFIELD_TYPE FHN_1);
 
  /* Function for the Act model. All the lattice sites within cells are "aged"
@@ -277,8 +277,14 @@ class PDE {
   PDEFIELD_TYPE *FHN_a;
   PDEFIELD_TYPE *FHN_b;
   PDEFIELD_TYPE *FHN_tau;
+  PDEFIELD_TYPE *d_FHN_a;
+  PDEFIELD_TYPE *d_FHN_b;
+  PDEFIELD_TYPE *d_FHN_tau;
   int** celltype;
   int *d_celltype;
+  int** sigmafield;
+  int *d_sigmafield;
+
 
   
   // Used as temporary memory in the diffusion step

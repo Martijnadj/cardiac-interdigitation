@@ -185,6 +185,9 @@ PDE::PDE(const int l, const int sx, const int sy) {
   pacing_interval = 1/(bpm/60);
   PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
   alt_PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
+  FHN_a = new PDEFIELD_TYPE[par.n_init_cells+1]; //+1 is needed because sigma has length (n+1)
+  FHN_b = new PDEFIELD_TYPE[par.n_init_cells+1];
+  FHN_tau = new PDEFIELD_TYPE[par.n_init_cells+1];
   min_stepsize = par.min_stepsize;
   btype = 1;
   dx2 = par.dx*par.dx;
@@ -205,24 +208,47 @@ PDE::PDE(void) {
 // destructor (virtual)
 PDE::~PDE(void) {
   if (PDEvars) {
-    cudaFree(PDEvars);
+    free(PDEvars);
   }
   if (alt_PDEvars) {
-    cudaFree(alt_PDEvars);
+    free(alt_PDEvars);
   }
-  free(couplingcoefficient);
-  cudaFree(PDEvars);
-  cudaFree(alt_PDEvars);
-  cudaFree(couplingcoefficient);
+  if (FHN_a) {
+    free(FHN_a);
+  }
+  if (FHN_b) {
+    free(FHN_b);
+  }
+  if (FHN_tau) {
+    free(FHN_tau);
+  }
+  if (couplingcoefficient) {
+    free(couplingcoefficient);
+  }
+  if (sigmafield) {
+    free(sigmafield);
+  }
+  if (celltype) {
+    free(celltype);
+  }
+  cudaFree(d_PDEvars);
+  cudaFree(d_alt_PDEvars);
+  cudaFree(d_couplingcoefficient);
+  cudaFree(d_celltype);
+  cudaFree(d_sigmafield);
+  cudaFree(d_FHN_a);
+  cudaFree(d_FHN_b);
+  cudaFree(d_FHN_tau);
   cudaFree(upperH);
   cudaFree(diagH);
   cudaFree(lowerH);
   cudaFree(BH);
-  cudaFree(XH);
   cudaFree(upperV);
   cudaFree(diagV);
   cudaFree(lowerV);
   cudaFree(BV);
+  cudaFree(next_stepsize);
+
 }
 
 /*
@@ -459,9 +485,20 @@ void PDE::InitializePDEvars(CellularPotts *cpm, PDEFIELD_TYPE FHN_0, PDEFIELD_TY
 }
 
 void PDE::InitializeFHNvarsCells(int nr_cells, PDEFIELD_TYPE* FHN_a, PDEFIELD_TYPE* FHN_b, PDEFIELD_TYPE* FHN_tau, PDEFIELD_TYPE FHN_a_var, PDEFIELD_TYPE FHN_b_var, PDEFIELD_TYPE FHN_tau_var, PDEFIELD_TYPE FHN_a_base, PDEFIELD_TYPE FHN_b_base, PDEFIELD_TYPE FHN_tau_base){
-  FHN_a = new PDEFIELD_TYPE[nr_cells];
-  FHN_b = new PDEFIELD_TYPE[nr_cells];
-  FHN_tau = new PDEFIELD_TYPE[nr_cells];
+  
+
+  PDEFIELD_TYPE multiplication_factor;
+
+  //randomly choose the base FHN_variables with a factor in the range (1-FHN_x_var, 1+FHN_x_var)
+  for (int i = 0; i < nr_cells; i++){
+    multiplication_factor = RANDOM()*2*FHN_a_var+1-FHN_a_var;
+    FHN_a[i] = FHN_a_base * multiplication_factor;
+    multiplication_factor = RANDOM()*2*FHN_b_var+1-FHN_b_var;
+    FHN_b[i] = FHN_b_base * multiplication_factor;
+    multiplication_factor = RANDOM()*2*FHN_tau_var+1-FHN_tau_var;
+    FHN_tau[i] = FHN_tau_base * multiplication_factor;
+  }
+  
 }
 
 
@@ -700,11 +737,12 @@ void PDE::ODEstepCL(CellularPotts *cpm, int repeat){
     
 }
 
-void PDE::InitializeCuda(CellularPotts *cpm){
+void PDE::InitializeCuda(CellularPotts *cpm, int n_init_cells){
   //AllocateTridiagonalvars(sizex, sizey);
 
   cudaMalloc((void**) &d_couplingcoefficient, sizex*sizey*sizeof(PDEFIELD_TYPE));
   cudaMalloc((void**) &d_celltype, sizex*sizey*sizeof(int));
+  cudaMalloc((void**) &d_sigmafield, sizex*sizey*sizeof(int));
 
   cudaMalloc((void**) &d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE));
   cudaMemcpy(d_PDEvars, PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
@@ -717,7 +755,6 @@ void PDE::InitializeCuda(CellularPotts *cpm){
   gpuErrchk(cudaMallocManaged(&diagH, sizex*sizey*sizeof(PDEFIELD_TYPE)));
   gpuErrchk(cudaMallocManaged(&lowerH, sizex*sizey*sizeof(PDEFIELD_TYPE)));
   gpuErrchk(cudaMallocManaged(&BH, sizex*sizey*sizeof(PDEFIELD_TYPE)));
-  gpuErrchk(cudaMallocManaged(&XH, sizex*sizey*sizeof(PDEFIELD_TYPE)));
   gpuErrchk(cudaMallocManaged(&upperV, sizey*sizex*sizeof(PDEFIELD_TYPE)));
   gpuErrchk(cudaMallocManaged(&diagV, sizey*sizex*sizeof(PDEFIELD_TYPE)));
   gpuErrchk(cudaMallocManaged(&lowerV, sizey*sizex*sizeof(PDEFIELD_TYPE)));
@@ -741,6 +778,15 @@ void PDE::InitializeCuda(CellularPotts *cpm){
   gpuErrchk(cudaMalloc( &pbufferV, sizeof(char)* pbuffersizeV));
 
   
+  //Needed for FHN variation
+  cout << "par.n_init_cells = " << n_init_cells << endl;
+  cout << "FHN_a[0] = " << FHN_a[0] << endl;
+  cudaMalloc((void**) &d_FHN_a, n_init_cells*sizeof(PDEFIELD_TYPE));
+  cudaMalloc((void**) &d_FHN_b, n_init_cells*sizeof(PDEFIELD_TYPE));
+  cudaMalloc((void**) &d_FHN_tau, n_init_cells*sizeof(PDEFIELD_TYPE));
+  cudaMemcpy(d_FHN_a, FHN_a, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_FHN_b, FHN_b, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_FHN_tau, FHN_tau, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
 
 }
 
@@ -755,8 +801,8 @@ __global__ void InitializeLastStepsize(PDEFIELD_TYPE min_stepsize, PDEFIELD_TYPE
 
 void PDE::InitializePDEs(CellularPotts *cpm){
   InitializePDEvars(cpm, par.FHN_start_0, par.FHN_start_1);
-  InitializeFHNvarsCells(par.n_init_cells, FHN_a, FHN_b, FHN_tau, par.FHN_a_diff_perc, par.FHN_b_diff_perc, par.FHN_tau_diff_perc, par.FHN_a, par. FHN_b, par. FHN_tau);
-  InitializeCuda(cpm);
+  InitializeFHNvarsCells(par.n_init_cells+1, FHN_a, FHN_b, FHN_tau, par.FHN_a_diff_perc, par.FHN_b_diff_perc, par.FHN_tau_diff_perc, par.FHN_a, par.FHN_b, par.FHN_tau);
+  InitializeCuda(cpm, par.n_init_cells+1);
   InitializeLastStepsize<<<par.number_of_cores, par.threads_per_core>>>(min_stepsize, next_stepsize, sizex, sizey);
   cudaDeviceSynchronize();
 }
@@ -2916,13 +2962,15 @@ __device__ void derivsPaci(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* y, PDEFIEL
 }
 
 
-__device__ void derivsFitzHughNagumo(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id, PDEFIELD_TYPE interval_beats, PDEFIELD_TYPE pulse_duration, PDEFIELD_TYPE pulse_strength,  PDEFIELD_TYPE a, PDEFIELD_TYPE b, PDEFIELD_TYPE tau){
+__device__ void derivsFitzHughNagumo(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, bool celltype2, int* sigmafield, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id, PDEFIELD_TYPE interval_beats, PDEFIELD_TYPE pulse_duration, PDEFIELD_TYPE pulse_strength,  PDEFIELD_TYPE a, PDEFIELD_TYPE b, PDEFIELD_TYPE tau, PDEFIELD_TYPE* FHN_a, PDEFIELD_TYPE* FHN_b, PDEFIELD_TYPE* FHN_tau ){
   PDEFIELD_TYPE RIext = 0;
+  
+  int sigma = sigmafield[id];
   if (fmod(current_time, interval_beats) < pulse_duration && celltype2)
     RIext = pulse_strength;
 
   dydt[0] = y[0] - pow(y[0],3)/3 - y[1] + RIext;
-  dydt[1] = y[0]/tau + a/tau - b*y[1] / tau; 
+  dydt[1] = y[0]/FHN_tau[sigma] + FHN_a[sigma] /FHN_tau[sigma] - FHN_b[sigma] *y[1] / FHN_tau[sigma]; 
 
 }
 
@@ -3106,7 +3154,7 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
   }
 }
 
-__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, PDEFIELD_TYPE FHN_interval_beats, PDEFIELD_TYPE FHN_pulse_duration, PDEFIELD_TYPE FHN_pulse_strength,  PDEFIELD_TYPE a, PDEFIELD_TYPE b, PDEFIELD_TYPE tau){
+__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, PDEFIELD_TYPE FHN_interval_beats, PDEFIELD_TYPE FHN_pulse_duration, PDEFIELD_TYPE FHN_pulse_strength,  PDEFIELD_TYPE a, PDEFIELD_TYPE b, PDEFIELD_TYPE tau, PDEFIELD_TYPE* FHN_a, PDEFIELD_TYPE* FHN_b, PDEFIELD_TYPE* FHN_tau){
   /* Ordinary Differential Equation step Runge Kutta Adaptive
   Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
@@ -3151,7 +3199,7 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, i
 
 
         overshot = false;
-        derivsFitzHughNagumo(current_time,y,dydt,celltype2, pacing_interval,pacing_duration,pacing_strength, id, FHN_interval_beats, FHN_pulse_duration, FHN_pulse_strength,  a, b, tau);
+        derivsFitzHughNagumo(current_time,y,dydt,celltype2, sigmafield, pacing_interval,pacing_duration,pacing_strength, id, FHN_interval_beats, FHN_pulse_duration, FHN_pulse_strength,  a, b, tau, FHN_a, FHN_b, FHN_tau);
         current_time += dtt;
         if (fabs(current_time - begin_time - dt) < MaxTimeError) { //Are we done?
           for (i=0;i<layers;i++) {
@@ -3679,8 +3727,10 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   cudaError_t errSync;
   cudaError_t errAsync;
   celltype = cpm->getTau();
+  sigmafield = cpm->getSigma();
   cudaMemcpy(d_couplingcoefficient, couplingcoefficient[0], sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
   cudaMemcpy(d_celltype, celltype[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_sigmafield, sigmafield[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(d_PDEvars, PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
 
   //setup matrices for upperdiagonal, diagonal and lower diagonal for both the horizontal and vertical direction, since these remain the same during once MCS
@@ -3695,7 +3745,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
 
   for (int iteration = 0; iteration < repeat; iteration++){
     //Do an ODE step of size dt/2
-    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength, par.FHN_interval_beats, par.FHN_pulse_duration, par.FHN_pulse_strength, par.FHN_a, par.FHN_b, par.FHN_tau);
+    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength, par.FHN_interval_beats, par.FHN_pulse_duration, par.FHN_pulse_strength, par.FHN_a, par.FHN_b, par.FHN_tau, d_FHN_a, d_FHN_b, d_FHN_tau);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess) 
@@ -3703,11 +3753,11 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
 
-    /*
-    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    
+    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
-        cout << "Error at i = " << i << ". Abort.\n";
+        cout << "Error at i = " << i << ". Abort 1.\n";
         exit(1);
       }
     }
@@ -3715,55 +3765,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     */
 
 
-    //Do a vertical ADI sweep of size dt/2
-    InitializeVerticalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BV, d_couplingcoefficient, d_alt_PDEvars);
-    errSync  = cudaGetLastError();
-    errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-    statusV = cusparseSgtsvInterleavedBatch(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, pbufferV);
-    if (statusV != CUSPARSE_STATUS_SUCCESS)
-    {
-      cout << statusV << endl;
-    }
-    cudaDeviceSynchronize();
-    NewPDEfieldV0<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, BV, d_PDEvars); //////
-    errSync  = cudaGetLastError();
-    errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-    NewPDEfieldOthers<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, BV, d_PDEvars, d_alt_PDEvars); //////
-    errSync  = cudaGetLastError();
-    errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync)); 
-    
-
-    //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    //cout << "After first ADI step, PDEvars[23885] = " << PDEvars[23885] << endl;
-
-    //increase time by dt/2
-    thetime = thetime + dt/2;  
-    //Do an ODE step of size dt/2
-    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength, par.FHN_interval_beats, par.FHN_pulse_duration, par.FHN_pulse_strength, par.FHN_a, par.FHN_b, par.FHN_tau);
-    errSync  = cudaGetLastError();
-    errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));   
-      
-      
-    //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    //cout << "After second FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
-
-    //Do a horizontal ADI sweep of size dt/2
+     //Do a horizontal ADI sweep of size dt/2
     InitializeHorizontalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BH, d_couplingcoefficient, d_alt_PDEvars);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
@@ -3791,10 +3793,95 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
     
+
+
+    /*cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    for (int i=0; i < sizex*sizey; i++){
+      if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
+        cout << "Error at i = " << i << ". Abort 2.\n";
+        exit(1);
+      }
+    }
+
+    cout << "After first FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
+    */
+    //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    //cout << "After first ADI step, PDEvars[23885] = " << PDEvars[23885] << endl;
+
+    //increase time by dt/2
+    thetime = thetime + dt/2;  
+    //Do an ODE step of size dt/2
+    //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_alt_PDEvars);
+    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength, par.FHN_interval_beats, par.FHN_pulse_duration, par.FHN_pulse_strength, par.FHN_a, par.FHN_b, par.FHN_tau, d_FHN_a, d_FHN_b, d_FHN_tau);
+    errSync  = cudaGetLastError();
+    errAsync = cudaDeviceSynchronize();
+    if (errSync != cudaSuccess) 
+      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+    if (errAsync != cudaSuccess)
+      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
+      
+      
+    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    for (int i=0; i < sizex*sizey; i++){
+      if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
+        cout << "Error at i = " << i << ". Abort 3.\n";
+        exit(1);
+      }
+    }*/
+      
+      
+    //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    //cout << "After second FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
+
+
+
+
+
+
+
+   //Do a vertical ADI sweep of size dt/2
+   InitializeVerticalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BV, d_couplingcoefficient, d_alt_PDEvars);
+   errSync  = cudaGetLastError();
+   errAsync = cudaDeviceSynchronize();
+   if (errSync != cudaSuccess) 
+     printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+   if (errAsync != cudaSuccess)
+     printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
+   statusV = cusparseSgtsvInterleavedBatch(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, pbufferV);
+   if (statusV != CUSPARSE_STATUS_SUCCESS)
+   {
+     cout << statusV << endl;
+   }
+   cudaDeviceSynchronize();
+   NewPDEfieldV0<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, BV, d_PDEvars); //////
+   errSync  = cudaGetLastError();
+   errAsync = cudaDeviceSynchronize();
+   if (errSync != cudaSuccess) 
+     printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+   if (errAsync != cudaSuccess)
+     printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
+   NewPDEfieldOthers<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, BV, d_PDEvars, d_alt_PDEvars); //////
+   errSync  = cudaGetLastError();
+   errAsync = cudaDeviceSynchronize();
+   if (errSync != cudaSuccess) 
+     printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+   if (errAsync != cudaSuccess)
+     printf("Async kernel error: %s\n", cudaGetErrorString(errAsync)); 
+
+
+
+
+    
       //increase time by dt/2
     thetime = thetime + dt/2; 
 
-
+    /*cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    for (int i=0; i < sizex*sizey; i++){
+      if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
+        cout << "Error at i = " << i << ". Abort 4.\n";
+        exit(1);
+      }
+    }*/
     //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     //cout << "After first ADI step, PDEvars[23885] = " << PDEvars[23885] << endl;
 
@@ -3802,11 +3889,21 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
     ofstream myfile;
-    myfile.open ("data.txt", std::ios_base::app);
+    myfile.open ("stimulus.txt", std::ios_base::app);
     myfile << thetime << ",";
     for (int i = 0; i < layers; i++)
-      myfile << PDEvars[23885 + i*sizex*sizey] << ",";
+      myfile << PDEvars[int(sizey*10.5)] << ",";
     myfile << endl;
+    myfile.close();
+
+    myfile.open ("end.txt", std::ios_base::app);
+    myfile << thetime << ",";
+    for (int i = 0; i < layers; i++)
+      myfile << PDEvars[sizex*sizey-int(sizey*10.5)] << ",";
+    myfile << endl;
+    myfile.close();
+
+
     cout << "PDEvars[6355] " << PDEvars[6355]  << endl;
     cout << "PDEvars[" << int(sizex/2*sizey + 0.5 * sizey) << "] = " << PDEvars[int(sizex/2*sizey + 0.5 * sizey)] << " and time = " << thetime << endl;
     if (!(PDEvars[int(sizex/2*sizey + 0.5 * sizey) ]>-100000 && PDEvars[int(sizex/2*sizey + 0.5 * sizey)] < 100000)){
@@ -3997,7 +4094,7 @@ bool PDE::plotPos(int x, int y, Graphics * graphics, int layer) {
     graphics->Rectangle(MapColour(val), x, y);
     return false;
   }
-  cout << "Something weird is happening when plotting PDE field\n";
+  //cout << "Something weird is happening when plotting PDE field\n";
   return true;
 }
 

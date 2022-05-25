@@ -150,7 +150,7 @@ Numerical recipes : the art of scientific computing (3rd ed.).
 #include "graph.hpp"
 #include <cusparse.h>
 #include <cuda_profiler_api.h>
-#define ARRAY_SIZE 2
+#define ARRAY_SIZE 23
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -442,7 +442,7 @@ void PDE::AllocateTridiagonalvars(int sx, int sy){
 void PDE::InitializePDEvars(CellularPotts *cpm, PDEFIELD_TYPE FHN_0, PDEFIELD_TYPE FHN_1){
   PDEFIELD_TYPE PDEinit[ARRAY_SIZE];
   bool* mask = cpm->getMask()[0];
-  /* For Paci2018
+   //For Paci2018
   PDEinit[0] = -0.070;
   PDEinit[1] = 0.32;
   PDEinit[2] = 0.0002;
@@ -465,10 +465,13 @@ void PDE::InitializePDEvars(CellularPotts *cpm, PDEFIELD_TYPE FHN_0, PDEFIELD_TY
   PDEinit[19] = 0.75;
   PDEinit[20] = 0.3;
   PDEinit[21] = 0.9;
-  PDEinit[22] = 0.1;*/
-
+  PDEinit[22] = 0.1;
+  /*
+  For FHN
   PDEinit[0] = FHN_0;
   PDEinit[1] = FHN_1;
+  */
+
   for (int layer = 0; layer<layers; layer++){
     for (int i = layer*sizex*sizey; i<(layer+1)*sizex*sizey; i++){
       PDEvars[i] = PDEinit[layer];
@@ -476,6 +479,7 @@ void PDE::InitializePDEvars(CellularPotts *cpm, PDEFIELD_TYPE FHN_0, PDEFIELD_TY
       //  PDEvars[i] = 100;
     }
   }
+  cout << "Initialize PDEvars\n";
 
   for (int i = 0; i < sizex*sizey; i++)
     if(!mask[i])
@@ -801,7 +805,7 @@ __global__ void InitializeLastStepsize(PDEFIELD_TYPE min_stepsize, PDEFIELD_TYPE
 
 void PDE::InitializePDEs(CellularPotts *cpm){
   InitializePDEvars(cpm, par.FHN_start_0, par.FHN_start_1);
-  InitializeFHNvarsCells(par.n_init_cells+1, FHN_a, FHN_b, FHN_tau, par.FHN_a_diff_perc, par.FHN_b_diff_perc, par.FHN_tau_diff_perc, par.FHN_a, par.FHN_b, par.FHN_tau);
+  //InitializeFHNvarsCells(par.n_init_cells+1, FHN_a, FHN_b, FHN_tau, par.FHN_a_diff_perc, par.FHN_b_diff_perc, par.FHN_tau_diff_perc, par.FHN_a, par.FHN_b, par.FHN_tau);
   InitializeCuda(cpm, par.n_init_cells+1);
   InitializeLastStepsize<<<par.number_of_cores, par.threads_per_core>>>(min_stepsize, next_stepsize, sizex, sizey);
   cudaDeviceSynchronize();
@@ -2975,7 +2979,7 @@ __device__ void derivsFitzHughNagumo(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* 
 }
 
 
-__device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers, PDEFIELD_TYPE thetime, PDEFIELD_TYPE stepsize, PDEFIELD_TYPE* yout, PDEFIELD_TYPE *yerr, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){/*
+__device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers, PDEFIELD_TYPE thetime, PDEFIELD_TYPE stepsize, PDEFIELD_TYPE* yout, PDEFIELD_TYPE *yerr, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
   //Given values for n variables y[1..n] and their derivatives dydx[1..n] known at x, use
   //the fifth-order Dormand-Prince Runge-Kutta method to advance the solution over an interval h
   //and return the incremented variables as yout[1..n]. Also return an estimate of the local
@@ -3002,26 +3006,26 @@ __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers
   for (i=0;i<layers;i++) //First step.
     ytemp[i]=y[i]+a21*stepsize*dydt[i];
 
-  derivsFitzHughNagumo(thetime+c2*stepsize,ytemp,k2,celltype2,pacing_interval,pacing_duration,pacing_strength,id);// Second step.
+  derivsPaci(thetime+c2*stepsize,ytemp,k2,celltype2,pacing_interval,pacing_duration,pacing_strength);// Second step.
   for (i=0;i<layers;i++)
     ytemp[i]=y[i]+stepsize*(a31*dydt[i]+a32*k2[i]);
-  derivsFitzHughNagumo(thetime+c3*stepsize,ytemp,k3,celltype2,pacing_interval,pacing_duration,pacing_strength,id); //Third step.
+  derivsPaci(thetime+c3*stepsize,ytemp,k3,celltype2,pacing_interval,pacing_duration,pacing_strength); //Third step.
   for (i=0;i<layers;i++)
     ytemp[i]=y[i]+stepsize*(a41*dydt[i]+a42*k2[i]+a43*k3[i]);
-  derivsFitzHughNagumo(thetime+c4*stepsize,ytemp,k4,celltype2,pacing_interval,pacing_duration,pacing_strength,id); //Fourth step.
+  derivsPaci(thetime+c4*stepsize,ytemp,k4,celltype2,pacing_interval,pacing_duration,pacing_strength); //Fourth step.
   for (i=0;i<layers;i++)
     ytemp[i]=y[i]+stepsize*(a51*dydt[i]+a52*k2[i]+a53*k3[i]+a54*k4[i]);
-  derivsFitzHughNagumo(thetime+c5*stepsize,ytemp,k5,celltype2,pacing_interval,pacing_duration,pacing_strength,id); //Fifth step.
+  derivsPaci(thetime+c5*stepsize,ytemp,k5,celltype2,pacing_interval,pacing_duration,pacing_strength); //Fifth step.
   for (i=0;i<layers;i++)
     ytemp[i]=y[i]+stepsize*(a61*dydt[i]+a62*k2[i]+a63*k3[i]+a64*k4[i]+a65*k5[i]);
   PDEFIELD_TYPE timeplusdt = thetime+stepsize;
-  derivsFitzHughNagumo(timeplusdt,ytemp,k6,celltype2,pacing_interval,pacing_duration,pacing_strength,id); //Sixth step.
+  derivsPaci(timeplusdt,ytemp,k6,celltype2,pacing_interval,pacing_duration,pacing_strength); //Sixth step.
   for (i=0;i<layers;i++) //Accumulate increments with proper weights.
     yout[i]=y[i]+stepsize*(a71*dydt[i]+a73*k3[i]+a74*k4[i]+a75*k5[i]+a76*k6[i]);
-  derivsFitzHughNagumo(timeplusdt,yout,dydtnew,celltype2,pacing_interval,pacing_duration,pacing_strength,id);
+  derivsPaci(timeplusdt,yout,dydtnew,celltype2,pacing_interval,pacing_duration,pacing_strength);
   for (i=0;i<layers;i++) //Estimate error as difference between fourth- and fifth-order methods.
     yerr[i]=stepsize*(e1*dydt[i]+e3*k3[i]+e4*k4[i]+e5*k5[i]+e6*k6[i]+e7*dydtnew[i]);
-*/}
+}
 
 __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layers, PDEFIELD_TYPE *thetime, PDEFIELD_TYPE stepsize_try, PDEFIELD_TYPE eps, PDEFIELD_TYPE* yscal, PDEFIELD_TYPE* stepsize_did, PDEFIELD_TYPE* stepsize_next, PDEFIELD_TYPE dt, PDEFIELD_TYPE stepsize_min, bool overshot, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
   /* Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
@@ -3048,6 +3052,13 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
   //stepsize=0.000001;
   for(;;){
     RungeKuttaStep(y,dydt,layers,*thetime,stepsize,ytemp,yerr,celltype2,pacing_interval,pacing_duration,pacing_strength,id); // Take a step.  
+    if (id == 2659){
+      for (int i = 0; i < layers; i++){
+        printf("After RungeKuttaStep: y[%i] = %.10f \n", i, y[i]);
+        printf("After RungeKuttaStep: dydt[%i] = %.10f \n", i, dydt[i]);
+        printf("After RungeKuttaStep: ytemp[%i] = %.10f \n", i, ytemp[i]);
+      }
+    }
     if (id == 2100){
       printf("At index %i, we attempt a step of %.10f nanoseconds and the time is %.9f\n", id, stepsize*1e9, *thetime);
     }
@@ -3080,7 +3091,12 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
   *thetime += (*stepsize_did=stepsize);
   for (i=0;i<layers;i++) {
     y[i]=ytemp[i];
-  }  
+  }
+  if (id == 2659){ 
+    for (int i = 0; i < layers; i++){
+      printf("End of StepsizeControl: y[%i] = %.10f \n", i, y[i]); 
+    }
+  }
 }
 
 __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength){
@@ -3130,14 +3146,22 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
       while(fabs(current_time - begin_time - dt)>MaxTimeError){
 
         overshot = false;
-        //derivsFitzHughNagumo(current_time,y,dydt,celltype2, pacing_interval,pacing_duration,pacing_strength,id);
+        derivsPaci(current_time,y,dydt,celltype2, pacing_interval,pacing_duration,pacing_strength);
 
         if (stepsize+current_time > end_time){
           stepsize_overshot = stepsize; 
           stepsize=end_time - current_time;// If stepsize can overshoot, decrease.
           overshot = true;
         }
+        if(id == 2659){
+          printf("current time = %.9f, stepsize = %.10f\n", current_time, stepsize);
+          for (int i = 0; i < layers; i++)
+            printf("Before StepsizeControl: y[%i] = %.10f \n", i, y[i]);
+        }
         StepsizeControl(y,dydt,layers,&current_time,stepsize,eps,yscal,&stepsize_did,&stepsize_next, dt, stepsize_min, overshot, celltype2, pacing_interval,pacing_duration,pacing_strength,id);
+        if(id == 2659)
+          for (int i = 0; i < layers; i++)
+            printf("After StepsizeControl: y[%i] = %.10f \n", i, y[i]);
         if (fabs(current_time - begin_time - dt)<MaxTimeError) { //Are we done?
           for (i=0;i<layers;i++) {
             alt_PDEvars[i*sizex*sizey + id]=y[i];
@@ -3733,6 +3757,8 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   cudaMemcpy(d_sigmafield, sigmafield[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(d_PDEvars, PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
 
+  cout << "Before: PDEvars[6355] = " << PDEvars[6355] << endl;
+
   //setup matrices for upperdiagonal, diagonal and lower diagonal for both the horizontal and vertical direction, since these remain the same during once MCS
   InitializeDiagonals<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, lowerH, upperH, diagH, lowerV, upperV, diagV, d_couplingcoefficient);
   cudaDeviceSynchronize();
@@ -3745,7 +3771,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
 
   for (int iteration = 0; iteration < repeat; iteration++){
     //Do an ODE step of size dt/2
-    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength, par.FHN_interval_beats, par.FHN_pulse_duration, par.FHN_pulse_strength, par.FHN_a, par.FHN_b, par.FHN_tau, d_FHN_a, d_FHN_b, d_FHN_tau);
+    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess) 
@@ -3754,15 +3780,15 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
 
     
-    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
         cout << "Error at i = " << i << ". Abort 1.\n";
         exit(1);
       }
     }
-    cout << "After first FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
-    */
+    cout << "After first FE step, alt_PDEvars[6355] = " << alt_PDEvars[6355] << endl;
+    
 
 
      //Do a horizontal ADI sweep of size dt/2
@@ -3812,7 +3838,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     thetime = thetime + dt/2;  
     //Do an ODE step of size dt/2
     //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_alt_PDEvars);
-    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength, par.FHN_interval_beats, par.FHN_pulse_duration, par.FHN_pulse_strength, par.FHN_a, par.FHN_b, par.FHN_tau, d_FHN_a, d_FHN_b, d_FHN_tau);
+    ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
     if (errSync != cudaSuccess) 

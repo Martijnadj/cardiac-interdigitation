@@ -3892,14 +3892,14 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     myfile.open ("stimulus.txt", std::ios_base::app);
     myfile << thetime << ",";
     for (int i = 0; i < layers; i++)
-      myfile << PDEvars[int(sizey*10.5)] << ",";
+      myfile << PDEvars[int(sizey*10.5)+sizex*sizey*i] << ",";
     myfile << endl;
     myfile.close();
 
     myfile.open ("end.txt", std::ios_base::app);
     myfile << thetime << ",";
     for (int i = 0; i < layers; i++)
-      myfile << PDEvars[sizex*sizey-int(sizey*10.5)] << ",";
+      myfile << PDEvars[sizex*sizey-int(sizey*10.5)+sizex*sizey*i] << ",";
     myfile << endl;
     myfile.close();
 

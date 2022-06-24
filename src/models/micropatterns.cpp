@@ -164,12 +164,12 @@ void Plotter::Plot()  {
   //Somewhere here show mask
   plotPDEDensity();
   //plotCPMCellTypes();
-  plotCPMLines(); 
+  //plotCPMLines(); 
   plotPDEContourLines();
   graphics->EndScene();
 }
 
-/*
+/* //Paci
 int PDE::MapColour(double val) {
   if ((int(val*1000 + 100)/2) +155>255)
     return 255;
@@ -177,9 +177,10 @@ int PDE::MapColour(double val) {
     return 156;
   else  
     return (int(val*1000 + 100)/2) +155;
-}*/
+} */
 
 
+ //FHN
 int PDE::MapColour(double val) {
   double max_value = 2;
   double min_value = -2;

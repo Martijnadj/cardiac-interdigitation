@@ -2819,25 +2819,18 @@ int CellularPotts::GrowInCellsInMicropattern(int n_cells, int cell_size)
 
 void CellularPotts::DetectLeftSideIsthmus()
 {
-  bool first_interruption = false;
-  int possible_isthmus_start = 0;
-  int interrupted = 0;
+  bool interrupted = false;
   for (int y = sizey/2; y < sizey; y++){
-    interrupted = 0;
+    interrupted = false;
     for (int x = sizex -1; x > 0; x--){
-      if(!mask[x][y] && mask[x-1][y] && interrupted == 0)
-        interrupted++;
-      else if(!mask[x][y] && mask[x-1][y] && interrupted == 1){
-        possible_isthmus_start = x;
-        interrupted++;
+      if(!mask[x][y] && mask[x-1][y] && !interrupted)
+        interrupted = true;
+      else if(!mask[x][y] && mask[x-1][y] && interrupted){
+        left_side_isthmus = x;
+        break;
       }    
     }
-    if (interrupted == 2)
-      first_interruption = true;
-    if (interrupted == 1 && first_interruption){
-      left_side_isthmus = possible_isthmus_start;
-      break;
-    }
+      
   }
 
 }

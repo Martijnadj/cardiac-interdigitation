@@ -315,7 +315,7 @@ void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
   PDEinit[1] = FHN_1;
   */
 
-
+  //Mackelar2009
   PDEinit1[0] = -74.031982;
   PDEinit1[1] = 130.022096;
   PDEinit1[2] = 8.516766;
@@ -350,7 +350,7 @@ void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
   PDEinit1[31] = 0;
   PDEinit1[32] = 0;
   
-  
+  //Fabbri-Severi 2017
   PDEinit2[0] = -47.787168;
   PDEinit2[1] = 6.226104e-5; 
   PDEinit2[2] = 5;
@@ -1306,7 +1306,6 @@ __device__ void derivsPaci(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* y, PDEFIEL
     
   //// Membrane potential
   dydt[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
-  //printf("dydt[0] = %.9f\n", dydt[0]);
 
   //Modification of activation by Martijn de Jong, 02-03-2022
   if (celltype2){
@@ -1781,7 +1780,6 @@ __device__ void derivsPaci_RL(PDEFIELD_TYPE current_time, PDEFIELD_TYPE dt, PDEF
     
   //// Membrane potential
   dydt[0] = -(i_K1+i_to+i_Kr+i_Ks+i_CaL+i_NaK+i_Na+i_NaL+i_NaCa+i_PCa+i_f+i_b_Na+i_b_Ca-i_stim);
-  //printf("dydt[0] = %.9f\n", dydt[0]);
 
   //Modification of activation by Martijn de Jong, 02-03-2022
   if (celltype2){
@@ -1821,7 +1819,7 @@ __device__ void derivsFitzHughNagumo(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* 
 
 }
 
-__device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIELD_TYPE* STATES_NEW, PDEFIELD_TYPE* RATES, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id, PDEFIELD_TYPE dt){
+__device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIELD_TYPE* RATES, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
   /*
    There are a total of 101 entries in the algebraic variable array.
    There are a total of 33 entries in each of the rate and state variable arrays.
@@ -2342,7 +2340,6 @@ __device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDE
   ALGEBRAIC[1] = CONSTANTS_FS[47]/(CONSTANTS_FS[47]+STATES[1]);
   ALGEBRAIC[7] = ( 0.00100000*ALGEBRAIC[1])/CONSTANTS_FS[46];
   RATES[8] = (ALGEBRAIC[1] - STATES[8])/ALGEBRAIC[7];
-  STATES_NEW[8] = ALGEBRAIC[1] + (STATES[8] - ALGEBRAIC[1]) * exp(-dt/ALGEBRAIC[7]);
   ALGEBRAIC[2] = CONSTANTS_FS[51] - (CONSTANTS_FS[51] - CONSTANTS_FS[52])/(1.00000+pow(CONSTANTS_FS[53]/STATES[15], CONSTANTS_FS[54]));
   ALGEBRAIC[8] = CONSTANTS_FS[55]/ALGEBRAIC[2];
   ALGEBRAIC[17] =  CONSTANTS_FS[56]*ALGEBRAIC[2];
@@ -2355,70 +2352,55 @@ __device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDE
   ALGEBRAIC[10] = 1.00000/(( 0.360000*(((ALGEBRAIC[9]+148.800) - CONSTANTS_FS[95]) - CONSTANTS_FS[99]))/(exp( 0.0660000*(((ALGEBRAIC[9]+148.800) - CONSTANTS_FS[95]) - CONSTANTS_FS[99])) - 1.00000)+( 0.100000*(((ALGEBRAIC[9]+87.3000) - CONSTANTS_FS[95]) - CONSTANTS_FS[99]))/(1.00000 - exp( - 0.200000*(((ALGEBRAIC[9]+87.3000) - CONSTANTS_FS[95]) - CONSTANTS_FS[99])))) - 0.0540000;
   ALGEBRAIC[29] = (ALGEBRAIC[9]<- (((80.0000 - CONSTANTS_FS[95]) - CONSTANTS_FS[99]) - CONSTANTS_FS[20]) ? 0.0132900+0.999210/(1.00000+exp(((((ALGEBRAIC[9]+97.1340) - CONSTANTS_FS[95]) - CONSTANTS_FS[99]) - CONSTANTS_FS[20])/8.17520)) :  0.000250100*exp(- (((ALGEBRAIC[9] - CONSTANTS_FS[95]) - CONSTANTS_FS[99]) - CONSTANTS_FS[20])/12.8610));
   RATES[3] = (ALGEBRAIC[29] - STATES[3])/ALGEBRAIC[10];
-  STATES_NEW[3] = ALGEBRAIC[29] + (STATES[3] - ALGEBRAIC[29]) * exp(-dt/ALGEBRAIC[10]);
   ALGEBRAIC[14] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+37.4000+CONSTANTS_FS[44])/(5.30000+CONSTANTS_FS[45])));
   ALGEBRAIC[33] =  0.00100000*(44.3000+ 230.000*exp(- pow((ALGEBRAIC[9]+36.0000)/10.0000, 2.00000)));
   RATES[7] = (ALGEBRAIC[14] - STATES[7])/ALGEBRAIC[33];
-  STATES_NEW[7] = ALGEBRAIC[14] + (STATES[7] - ALGEBRAIC[14]) * exp(-dt/ALGEBRAIC[33]);
   ALGEBRAIC[15] = 1.00000/(1.00000+exp(- (ALGEBRAIC[9]+38.3000)/5.50000));
   ALGEBRAIC[34] = 0.00100000/( 1.06800*exp((ALGEBRAIC[9]+38.3000)/30.0000)+ 1.06800*exp(- (ALGEBRAIC[9]+38.3000)/30.0000));
   RATES[9] = (ALGEBRAIC[15] - STATES[9])/ALGEBRAIC[34];
-  STATES_NEW[9] = ALGEBRAIC[15] + (STATES[9] - ALGEBRAIC[15]) * exp(-dt/ALGEBRAIC[34]);
   ALGEBRAIC[16] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+58.7000)/3.80000));
   ALGEBRAIC[35] = 1.00000/( 16.6700*exp(- (ALGEBRAIC[9]+75.0000)/83.3000)+ 16.6700*exp((ALGEBRAIC[9]+75.0000)/15.3800))+CONSTANTS_FS[49];
   RATES[10] = (ALGEBRAIC[16] - STATES[10])/ALGEBRAIC[35];
-  STATES_NEW[10] = ALGEBRAIC[16] + (STATES[10] - ALGEBRAIC[16]) * exp(-dt/ALGEBRAIC[35]);
   ALGEBRAIC[37] = 0.00900000/(1.00000+exp((ALGEBRAIC[9]+5.00000)/12.0000))+0.000500000;
   ALGEBRAIC[19] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+6.00000)/- 8.60000));
   RATES[24] = (ALGEBRAIC[19] - STATES[24])/ALGEBRAIC[37];
-  STATES_NEW[24] = ALGEBRAIC[19] + (STATES[24] - ALGEBRAIC[19]) * exp(-dt/ALGEBRAIC[37]);
   ALGEBRAIC[38] = 0.590000/(1.00000+exp((ALGEBRAIC[9]+60.0000)/10.0000))+3.05000;
   ALGEBRAIC[20] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+7.50000)/10.0000));
   RATES[25] = (ALGEBRAIC[20] - STATES[25])/ALGEBRAIC[38];
-  STATES_NEW[25] = ALGEBRAIC[20] + (STATES[25] - ALGEBRAIC[20]) * exp(-dt/ALGEBRAIC[38]);
   ALGEBRAIC[21] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+49.0000)/13.0000));
   ALGEBRAIC[39] =  0.00100000*0.600000*(65.1700/( 0.570000*exp( - 0.0800000*(ALGEBRAIC[9]+44.0000))+ 0.0650000*exp( 0.100000*(ALGEBRAIC[9]+45.9300)))+10.1000);
   RATES[26] = (ALGEBRAIC[21] - STATES[26])/ALGEBRAIC[39];
-  STATES_NEW[26] = ALGEBRAIC[21] + (STATES[26] - ALGEBRAIC[21]) * exp(-dt/ALGEBRAIC[39]);
   ALGEBRAIC[22] = 1.00000/(1.00000+exp(- (ALGEBRAIC[9] - 19.3000)/15.0000));
   ALGEBRAIC[40] =  0.00100000*0.660000*1.40000*(15.5900/( 1.03700*exp( 0.0900000*(ALGEBRAIC[9]+30.6100))+ 0.369000*exp( - 0.120000*(ALGEBRAIC[9]+23.8400)))+2.98000);
   RATES[27] = (ALGEBRAIC[22] - STATES[27])/ALGEBRAIC[40];
-  STATES_NEW[27] = ALGEBRAIC[22] + (STATES[27] - ALGEBRAIC[22]) * exp(-dt/ALGEBRAIC[40]);
   ALGEBRAIC[23] = 1.00000/(1.00000+exp(- (ALGEBRAIC[9]+10.0144)/7.66070));
   ALGEBRAIC[41] = 0.846554/( 4.20000*exp(ALGEBRAIC[9]/17.0000)+ 0.150000*exp(- ALGEBRAIC[9]/21.6000));
   RATES[28] = (ALGEBRAIC[23] - STATES[28])/ALGEBRAIC[41];
-  STATES_NEW[28] = ALGEBRAIC[23] + (STATES[28] - ALGEBRAIC[23]) * exp(-dt/ALGEBRAIC[41]);
   ALGEBRAIC[42] = 1.00000/( 30.0000*exp(ALGEBRAIC[9]/10.0000)+exp(- ALGEBRAIC[9]/12.0000));
   RATES[29] = (ALGEBRAIC[23] - STATES[29])/ALGEBRAIC[42];
-  STATES_NEW[29] = ALGEBRAIC[23] + (STATES[29] - ALGEBRAIC[23]) * exp(-dt/ALGEBRAIC[42]);
   ALGEBRAIC[43] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+28.6000)/17.1000));
   ALGEBRAIC[26] = 1.00000/( 100.000*exp(- ALGEBRAIC[9]/54.6450)+ 656.000*exp(ALGEBRAIC[9]/106.157));
   RATES[30] = (ALGEBRAIC[43] - STATES[30])/ALGEBRAIC[26];
-  STATES_NEW[30] = ALGEBRAIC[43] + (STATES[30] - ALGEBRAIC[43]) * exp(-dt/ALGEBRAIC[26]);
   ALGEBRAIC[28] =  10.0000*exp( 0.0133000*(ALGEBRAIC[9]+40.0000));
   ALGEBRAIC[45] = CONSTANTS_FS[115]/(CONSTANTS_FS[115]+ALGEBRAIC[28]);
   ALGEBRAIC[51] = 1.00000/(CONSTANTS_FS[115]+ALGEBRAIC[28]);
   RATES[32] = (ALGEBRAIC[45] - STATES[32])/ALGEBRAIC[51];
-  STATES_NEW[32] = ALGEBRAIC[45] + (STATES[32] - ALGEBRAIC[45]) * exp(-dt/ALGEBRAIC[51]);
   ALGEBRAIC[12] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+69.8040)/4.45650));
   ALGEBRAIC[31] =  20.0000*exp( - 0.125000*(ALGEBRAIC[9]+75.0000));
   ALGEBRAIC[47] = 2000.00/( 320.000*exp( - 0.100000*(ALGEBRAIC[9]+75.0000))+1.00000);
   ALGEBRAIC[53] = 1.00000/(ALGEBRAIC[31]+ALGEBRAIC[47]);
   RATES[5] = (ALGEBRAIC[12] - STATES[5])/ALGEBRAIC[53];
-  STATES_NEW[5] = ALGEBRAIC[12] + (STATES[5] - ALGEBRAIC[12]) * exp(-dt/ALGEBRAIC[53]);
   ALGEBRAIC[27] =  pow((1.00000/(1.00000+exp(- ((ALGEBRAIC[9]+0.638300) - CONSTANTS_FS[114])/10.7071))), 1.0 / 2);
   ALGEBRAIC[44] = 28.0000/(1.00000+exp(- ((ALGEBRAIC[9] - 40.0000) - CONSTANTS_FS[114])/3.00000));
   ALGEBRAIC[50] =  1.00000*exp(- ((ALGEBRAIC[9] - CONSTANTS_FS[114]) - 5.00000)/25.0000);
   ALGEBRAIC[56] = 1.00000/(ALGEBRAIC[44]+ALGEBRAIC[50]);
   RATES[31] = (ALGEBRAIC[27] - STATES[31])/ALGEBRAIC[56];
-  STATES_NEW[31] = ALGEBRAIC[27] + (STATES[31] - ALGEBRAIC[27]) * exp(-dt/ALGEBRAIC[56]);
   ALGEBRAIC[11] = 1.00000/(1.00000+exp(- (ALGEBRAIC[9]+42.0504)/8.31060));
   ALGEBRAIC[30] = ALGEBRAIC[9]+41.0000;
   ALGEBRAIC[46] = (fabs(ALGEBRAIC[30])<CONSTANTS_FS[40] ? 2000.00 : ( 200.000*ALGEBRAIC[30])/(1.00000 - exp( - 0.100000*ALGEBRAIC[30])));
   ALGEBRAIC[52] =  8000.00*exp( - 0.0560000*(ALGEBRAIC[9]+66.0000));
   ALGEBRAIC[57] = 1.00000/(ALGEBRAIC[46]+ALGEBRAIC[52]);
   RATES[4] = (ALGEBRAIC[11] - STATES[4])/ALGEBRAIC[57];
-  STATES_NEW[4] = ALGEBRAIC[11] + (STATES[4] - ALGEBRAIC[11]) * exp(-dt/ALGEBRAIC[57]);
   ALGEBRAIC[13] = 1.00000/(1.00000+exp(- ((ALGEBRAIC[9] - CONSTANTS_FS[43]) - CONSTANTS_FS[107])/( CONSTANTS_FS[42]*(1.00000+CONSTANTS_FS[108]/100.000))));
   ALGEBRAIC[32] = (ALGEBRAIC[9]==- 41.8000 ? - 41.8000 : ALGEBRAIC[9]==0.00000 ? 0.00000 : ALGEBRAIC[9]==- 6.80000 ? - 6.80001 : ALGEBRAIC[9]);
   ALGEBRAIC[48] = ( - 0.0283900*(ALGEBRAIC[32]+41.8000))/(exp(- (ALGEBRAIC[32]+41.8000)/2.50000) - 1.00000) - ( 0.0849000*(ALGEBRAIC[32]+6.80000))/(exp(- (ALGEBRAIC[32]+6.80000)/4.80000) - 1.00000);
@@ -2426,7 +2408,6 @@ __device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDE
   ALGEBRAIC[58] = ( 0.0114300*(ALGEBRAIC[54]+1.80000))/(exp((ALGEBRAIC[54]+1.80000)/2.50000) - 1.00000);
   ALGEBRAIC[60] = 0.00100000/(ALGEBRAIC[48]+ALGEBRAIC[58]);
   RATES[6] = (ALGEBRAIC[13] - STATES[6])/ALGEBRAIC[60];
-  STATES_NEW[6] = ALGEBRAIC[13] + (STATES[6] - ALGEBRAIC[13]) * exp(-dt/ALGEBRAIC[60]);
   ALGEBRAIC[18] = STATES[2];
   ALGEBRAIC[36] =  CONSTANTS_FS[91]*log(CONSTANTS_FS[11]/ALGEBRAIC[18]);
   ALGEBRAIC[61] =  CONSTANTS_FS[102]*CONSTANTS_FS[23]*pow(1.00000+pow(CONSTANTS_FS[21]/CONSTANTS_FS[13], 1.20000), - 1.00000)*pow(1.00000+pow(CONSTANTS_FS[22]/ALGEBRAIC[18], 1.30000), - 1.00000)*pow(1.00000+exp(- ((ALGEBRAIC[9] - ALGEBRAIC[36])+110.000)/20.0000), - 1.00000);
@@ -2453,7 +2434,6 @@ __device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDE
   RATES[2] = ( (1.00000 - CONSTANTS_FS[15])*- 1.00000*(ALGEBRAIC[79]+ALGEBRAIC[49]+ALGEBRAIC[82]+ 3.00000*ALGEBRAIC[61]+ 3.00000*ALGEBRAIC[75]))/( 1.00000*(CONSTANTS_FS[112]+CONSTANTS_FS[110])*CONSTANTS_FS[2]);
   ALGEBRAIC[90] =  CONSTANTS_FS[71]*STATES[1]*(1.00000 - STATES[20]) -  CONSTANTS_FS[76]*STATES[20];
   RATES[20] = ALGEBRAIC[90];
-  STATES_NEW[20] = CONSTANTS_FS[71]*STATES[1]/(CONSTANTS_FS[71]*STATES[1]+CONSTANTS_FS[76])*(STATES[20] - CONSTANTS_FS[71]*STATES[1]/(CONSTANTS_FS[71]*STATES[1]+CONSTANTS_FS[76]))*exp(-dt*(CONSTANTS_FS[71]*STATES[1] + CONSTANTS_FS[76]));
   ALGEBRAIC[84] =  (( 2.00000*CONSTANTS_FS[48]*ALGEBRAIC[9])/( CONSTANTS_FS[91]*(1.00000 - exp(( - 1.00000*ALGEBRAIC[9]*2.00000)/CONSTANTS_FS[91]))))*(STATES[1] -  CONSTANTS_FS[14]*exp(( - 2.00000*ALGEBRAIC[9])/CONSTANTS_FS[91]))*STATES[9]*STATES[10];
   ALGEBRAIC[80] =  (( 2.00000*CONSTANTS_FS[41]*(ALGEBRAIC[9] - 0.00000))/( CONSTANTS_FS[91]*(1.00000 - exp(( - 1.00000*(ALGEBRAIC[9] - 0.00000)*2.00000)/CONSTANTS_FS[91]))))*(STATES[1] -  CONSTANTS_FS[14]*exp(( - 2.00000*(ALGEBRAIC[9] - 0.00000))/CONSTANTS_FS[91]))*STATES[6]*STATES[7]*STATES[8];
   ALGEBRAIC[86] =  CONSTANTS_FS[50]*STATES[12]*(STATES[15] - STATES[1]);
@@ -2461,7 +2441,6 @@ __device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDE
   RATES[1] = ( ALGEBRAIC[86]*CONSTANTS_FS[111])/CONSTANTS_FS[110] - (((ALGEBRAIC[80]+ALGEBRAIC[84]) -  2.00000*ALGEBRAIC[75])/( 2.00000*CONSTANTS_FS[2]*CONSTANTS_FS[110])+ALGEBRAIC[88]+ CONSTANTS_FS[66]*ALGEBRAIC[90]);
   ALGEBRAIC[93] =  CONSTANTS_FS[68]*STATES[17]*(1.00000 - STATES[21]) -  CONSTANTS_FS[73]*STATES[21];
   RATES[21] = ALGEBRAIC[93];
-  STATES_NEW[21] = CONSTANTS_FS[68]*STATES[17]/(CONSTANTS_FS[68]*STATES[17]+CONSTANTS_FS[73])*(STATES[21] - CONSTANTS_FS[68]*STATES[17]/(CONSTANTS_FS[68]*STATES[17]+CONSTANTS_FS[73]))*exp(-dt*(CONSTANTS_FS[68]*STATES[17] + CONSTANTS_FS[73]));
   ALGEBRAIC[91] = CONSTANTS_FS[98]/(1.00000+exp((- STATES[17]+CONSTANTS_FS[62])/CONSTANTS_FS[63]));
   ALGEBRAIC[94] = (STATES[16] - STATES[15])/CONSTANTS_FS[60];
   RATES[16] = ALGEBRAIC[91] - ( ALGEBRAIC[94]*CONSTANTS_FS[111])/CONSTANTS_FS[113];
@@ -2469,11 +2448,9 @@ __device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDE
   RATES[22] = ALGEBRAIC[96];
   ALGEBRAIC[97] =  CONSTANTS_FS[72]*STATES[15]*(1.00000 - STATES[23]) -  CONSTANTS_FS[77]*STATES[23];
   RATES[23] = ALGEBRAIC[97];
-  STATES_NEW[23] = CONSTANTS_FS[72]*STATES[15]/(CONSTANTS_FS[72]*STATES[15]+CONSTANTS_FS[77])*(STATES[23] - CONSTANTS_FS[72]*STATES[15]/(CONSTANTS_FS[72]*STATES[15]+CONSTANTS_FS[77]))*exp(-dt*(CONSTANTS_FS[72]*STATES[15] + CONSTANTS_FS[77]));
   RATES[15] = ALGEBRAIC[94] - (ALGEBRAIC[86]+ CONSTANTS_FS[67]*ALGEBRAIC[97]);
   ALGEBRAIC[99] =  CONSTANTS_FS[71]*STATES[17]*(1.00000 - STATES[19]) -  CONSTANTS_FS[76]*STATES[19];
   RATES[19] = ALGEBRAIC[99];
-  STATES_NEW[19] = CONSTANTS_FS[71]*STATES[17]/(CONSTANTS_FS[71]*STATES[17]+CONSTANTS_FS[76])*(STATES[19] - CONSTANTS_FS[71]*STATES[17]/(CONSTANTS_FS[71]*STATES[17]+CONSTANTS_FS[76]))*exp(-dt*(CONSTANTS_FS[71]*STATES[17] + CONSTANTS_FS[76]));
   RATES[17] = ( 1.00000*( ALGEBRAIC[88]*CONSTANTS_FS[110] -  ALGEBRAIC[91]*CONSTANTS_FS[113]))/CONSTANTS_FS[112] - ( CONSTANTS_FS[66]*ALGEBRAIC[99]+ CONSTANTS_FS[64]*ALGEBRAIC[93]+ CONSTANTS_FS[65]*ALGEBRAIC[96]);
   ALGEBRAIC[55] =  STATES[3]*CONSTANTS_FS[101]*(ALGEBRAIC[9] - CONSTANTS_FS[96])*(1.00000 - CONSTANTS_FS[19]);
   ALGEBRAIC[59] = ALGEBRAIC[49]+ALGEBRAIC[55];
@@ -2488,20 +2465,6 @@ __device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDE
   ALGEBRAIC[100] = ALGEBRAIC[59]+ALGEBRAIC[89]+ALGEBRAIC[95]+ALGEBRAIC[87]+ALGEBRAIC[61]+ALGEBRAIC[75]+ALGEBRAIC[79]+ALGEBRAIC[83]+ALGEBRAIC[84]+ALGEBRAIC[98]+ALGEBRAIC[85];
   RATES[0] = - ALGEBRAIC[100]/CONSTANTS_FS[3];
 
-  for (int i = 0; i < 33; i++)
-    //if (i != 3 && i != 4 && i != 5 && i != 6 && i != 7 && i != 8 && i != 9 && i != 10 && /*i!= 19 && i!= 20 && i!= 21 && i!= 23 &&*/ i != 24 && i != 25 && i != 26 && i != 27 && i != 28 && i != 29 && i != 30 && i != 31 && i != 32)
-      STATES_NEW[i] = STATES[i] + dt*RATES[i];
-    /*else 
-      if (id == 2659)
-        printf("Difference at %i = %.20f \n", i, STATES_NEW[i] - STATES[i] + dt*RATES[i]);*/
-
-  /*for (int i =0; i < 33; i++){
-    if (id == 2659){
-      printf("STATES[%i] = %.20f\n", i, STATES[i]);
-      printf("RATES[%i] = %.20f\n", i, RATES[i]);
-      printf("STATES_NEW[%i] = %.20f\n", i, STATES_NEW[i]);
-    } 
-  }*/
 }
 
 __device__ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIELD_TYPE* RATES, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
@@ -2700,7 +2663,6 @@ __device__ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIEL
   PDEFIELD_TYPE CONSTANTS_M[116];
   PDEFIELD_TYPE ALGEBRAIC[101];
 
-  STATES[0] = -74.031982;
   CONSTANTS_M[0] = 8314;
   CONSTANTS_M[1] = 306.15;
   CONSTANTS_M[2] = 96487;
@@ -2945,7 +2907,6 @@ __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers
   a76=11.0/84.0,e1=71.0/57600.0,e3=-71.0/16695.0,e4=71.0/1920.0,
   e5=-17253.0/339200.0,e6=22.0/525.0,e7=-1.0/40.0;
   PDEFIELD_TYPE dt = stepsize;
-  PDEFIELD_TYPE y_new[ARRAY_SIZE];
   PDEFIELD_TYPE k2[ARRAY_SIZE];
   PDEFIELD_TYPE k3[ARRAY_SIZE];
   PDEFIELD_TYPE k4[ARRAY_SIZE];
@@ -2957,24 +2918,23 @@ __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers
   if (celltype2){
     for (i=0;i<layers;i++) //First step.
       ytemp[i]=y[i]+a21*stepsize*dydt[i];
-      derivsFabbriSeveri(thetime+c2*stepsize,ytemp,y_new, k2,pacing_interval,pacing_duration,pacing_strength, id, dt);// Second step.
+      derivsFabbriSeveri(thetime+c2*stepsize,ytemp,k2,pacing_interval,pacing_duration,pacing_strength,id);// Second step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a31*dydt[i]+a32*k2[i]);
-    //derivsPaci(thetime+c3*stepsize,ytemp,k3,celltype2,pacing_interval,pacing_duration,pacing_strength, id); //Third step.
-    derivsFabbriSeveri(thetime+c3*stepsize,ytemp,y_new, k3,pacing_interval,pacing_duration,pacing_strength, id, dt);
+    derivsFabbriSeveri(thetime+c3*stepsize,ytemp,k3,pacing_interval,pacing_duration,pacing_strength,id);  //Third step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a41*dydt[i]+a42*k2[i]+a43*k3[i]);
-    derivsFabbriSeveri(thetime+c4*stepsize,ytemp,y_new, k4,pacing_interval,pacing_duration,pacing_strength, id, dt); //Fourth step.
+    derivsFabbriSeveri(thetime+c4*stepsize,ytemp,k4,pacing_interval,pacing_duration,pacing_strength,id); //Fourth step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a51*dydt[i]+a52*k2[i]+a53*k3[i]+a54*k4[i]);
-    derivsFabbriSeveri(thetime+c5*stepsize,ytemp,y_new, k5,pacing_interval,pacing_duration,pacing_strength, id, dt); //Fifth step.
+    derivsFabbriSeveri(thetime+c5*stepsize,ytemp,k5,pacing_interval,pacing_duration,pacing_strength,id); //Fifth step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a61*dydt[i]+a62*k2[i]+a63*k3[i]+a64*k4[i]+a65*k5[i]);
     PDEFIELD_TYPE timeplusdt = thetime+stepsize;
-    derivsFabbriSeveri(timeplusdt,ytemp,y_new, k6,pacing_interval,pacing_duration,pacing_strength, id, dt); //Sixth step.
+    derivsFabbriSeveri(timeplusdt,ytemp,k6,pacing_interval,pacing_duration,pacing_strength,id); //Sixth step.
     for (i=0;i<layers;i++) //Accumulate increments with proper weights.
       yout[i]=y[i]+stepsize*(a71*dydt[i]+a73*k3[i]+a74*k4[i]+a75*k5[i]+a76*k6[i]);
-    derivsFabbriSeveri(timeplusdt,yout,y_new, dydtnew,pacing_interval,pacing_duration,pacing_strength, id,dt);
+    derivsFabbriSeveri(timeplusdt,yout,dydtnew,pacing_interval,pacing_duration,pacing_strength,id);
     for (i=0;i<layers;i++) //Estimate error as difference between fourth- and fifth-order methods.
       yerr[i]=stepsize*(e1*dydt[i]+e3*k3[i]+e4*k4[i]+e5*k5[i]+e6*k6[i]+e7*dydtnew[i]);
   }
@@ -2984,8 +2944,7 @@ __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers
     derivsMaleckar(thetime+c2*stepsize,ytemp, k2,pacing_interval,pacing_duration,pacing_strength, id);// Second step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a31*dydt[i]+a32*k2[i]);
-    //derivsPaci(thetime+c3*stepsize,ytemp,k3,celltype2,pacing_interval,pacing_duration,pacing_strength, id); //Third step.
-    derivsMaleckar(thetime+c3*stepsize,ytemp, k3,pacing_interval,pacing_duration,pacing_strength, id);
+    derivsMaleckar(thetime+c3*stepsize,ytemp, k3,pacing_interval,pacing_duration,pacing_strength, id); //Third step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a41*dydt[i]+a42*k2[i]+a43*k3[i]);
     derivsMaleckar(thetime+c4*stepsize,ytemp, k4,pacing_interval,pacing_duration,pacing_strength, id); //Fourth step.
@@ -3026,7 +2985,6 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
   const PDEFIELD_TYPE atol = 1e-6;
 
   stepsize=stepsize_try; // Set stepsize to the initial trial value.
-  //stepsize=0.000001;
   for(;;){
     RungeKuttaStep(y,dydt,layers,*thetime,stepsize,ytemp,yerr,celltype2,pacing_interval,pacing_duration,pacing_strength,id); // Take a step.  
     err=0; //Evaluate accuracy.
@@ -3084,12 +3042,10 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
   bool overshot = false;
   bool celltype2 = false;
   int i;
-  int counter;
 
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int stride = blockDim.x * gridDim.x;
   for (int id = index; id < sizex*sizey; id += stride){
-    counter = 0;
 
 
     if (celltype[id] < 1){
@@ -3108,13 +3064,9 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
       for (i=0;i<layers;i++) 
         y[i]=PDEvars[i*sizex*sizey + id];
       while(fabs(current_time - begin_time - dt)>MaxTimeError){
-        //if (celltype2){
-        counter ++;
-        //if (counter > 10000)
-        //  printf ("celltype2 = %i and id = %i \n", celltype2, id);
         overshot = false;
         if(celltype2)
-          derivsFabbriSeveri(current_time,y,y_new,dydt,pacing_interval,pacing_duration,pacing_strength, id, dt);
+          derivsFabbriSeveri(current_time,y,dydt,pacing_interval,pacing_duration,pacing_strength, id);
         else 
           derivsMaleckar(current_time,y,dydt,pacing_interval,pacing_duration,pacing_strength, id);
         if (stepsize+current_time > end_time+MaxTimeError){
@@ -3286,7 +3238,7 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, i
   PDEFIELD_TYPE y_new[ARRAY_SIZE];
   PDEFIELD_TYPE dydt[ARRAY_SIZE];
   PDEFIELD_TYPE current_time;
-  PDEFIELD_TYPE MaxTimeError = 1e-7;
+  PDEFIELD_TYPE MaxTimeError = 1e-6;
   PDEFIELD_TYPE stepsize_overshot;
   bool overshot = false;
   bool celltype2 = false;
@@ -3314,7 +3266,7 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, i
 
         overshot = false;
         if (celltype2)
-          derivsFabbriSeveri(current_time,y,y_new,dydt,pacing_interval,pacing_duration,pacing_strength, id, dtt);
+          derivsFabbriSeveri(current_time,y,dydt,pacing_interval,pacing_duration,pacing_strength, id);
         else 
           derivsMaleckar(current_time,y,dydt,pacing_interval,pacing_duration,pacing_strength, id);
         //derivsFitzHughNagumo(current_time,y,dydt,celltype2, sigmafield, pacing_interval,pacing_duration,pacing_strength, id, FHN_interval_beats, FHN_pulse_duration, FHN_pulse_strength,  a, b, tau, FHN_a, FHN_b, FHN_tau);
@@ -3405,13 +3357,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
 
     
-    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
         cout << "Error at i = " << i << ". Abort 1.\n";
         exit(1);
       }
-    }
+    }*/
     //for (int i = 0; i < layers; i++)
     //cout << "After first FE step, alt_PDEvars["<< 6355 + sizex*sizey*i << "] = " << alt_PDEvars[6355 + sizex*sizey*i] << endl;
     
@@ -3445,14 +3397,14 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
     
 
-
+    /*
     cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
         cout << "Error at i = " << i << ". Abort 2.\n";
         exit(1);
       }
-    }
+    }*/
 
     //cout << "After first FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
     
@@ -3474,13 +3426,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
       
     
-    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
         cout << "Error at i = " << i << ". Abort 3.\n";
         exit(1);
       }
-    }
+    }*/
       
       
     //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
@@ -3528,13 +3480,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       //increase time by dt/2
     thetime = thetime + dt/2; 
 
-    cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    /*cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
         cout << "Error at i = " << i << ". Abort 4.\n";
         exit(1);
       }
-    }
+    }*/
     //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     //cout << "After first ADI step, PDEvars[23885] = " << PDEvars[23885] << endl;
 
@@ -3557,8 +3509,8 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     myfile.close();
 
 
-    cout << "PDEvars[6355] " << PDEvars[6355]  << endl;
-    cout << "PDEvars[" << int(sizex/2*sizey + 0.5 * sizey) << "] = " << PDEvars[int(sizex/2*sizey + 0.5 * sizey)] << " and time = " << thetime << endl;
+    cout << "PDEvars["<< int(sizey*10.5)<< "] = " << PDEvars[int(sizey*10.5)] << 
+    ", PDEvars["<< sizex*sizey-int(sizey*10.5)<< "] = " << PDEvars[sizex*sizey-int(sizey*10.5)] << " and time = " << thetime << endl;
     if (!(PDEvars[int(sizex/2*sizey + 0.5 * sizey) ]>-1000000000 && PDEvars[int(sizex/2*sizey + 0.5 * sizey)] < 1000000000)){
       cout << "We encountered a NaN error. Abort the program. \n";
       exit(1);

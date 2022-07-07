@@ -46,7 +46,7 @@ class PDE {
  friend class Info;
 
  public:
-
+  
   int sizex;
   int sizey;
   int layers;
@@ -119,6 +119,11 @@ class PDE {
     return PDEvars[layer*sizex*sizey+x*sizey+y];
   }
 
+  inline PDEFIELD_TYPE* PDE_pointer(const int x, const int y)
+  const {
+    return &PDEvars[x*sizey+y];
+  }
+
   /*! \brief Sets grid point x,y of PDE plane "layer" to value "value".
   \param layer: PDE plane.
   \param x, y: grid point
@@ -169,8 +174,8 @@ class PDE {
   void InitializeFHNvarsCells(int nr_cells, PDEFIELD_TYPE* FHN_a, PDEFIELD_TYPE* FHN_b, PDEFIELD_TYPE* FHN_tau, PDEFIELD_TYPE FHN_a_var, PDEFIELD_TYPE FHN_b_var, PDEFIELD_TYPE FHN_tau_var, PDEFIELD_TYPE FHN_a_base, PDEFIELD_TYPE FHN_b_base, PDEFIELD_TYPE FHN_tau_base);
   void InitializePDEs(CellularPotts * cpm);
   void InitializeCuda(CellularPotts * cpm, int n_init_cells);
-  void InitializePDEvars(CellularPotts * cpm, PDEFIELD_TYPE FHN_0, PDEFIELD_TYPE FHN_1);
-
+  //void InitializePDEvars(CellularPotts * cpm, PDEFIELD_TYPE FHN_0, PDEFIELD_TYPE FHN_1);
+  void InitializePDEvars(CellularPotts * cpm, int* celltypes);
  /* Function for the Act model. All the lattice sites within cells are "aged"
 	*  by decreasing their values, usually with 1.
 	*/

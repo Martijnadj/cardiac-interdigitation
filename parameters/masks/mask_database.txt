@@ -538,3 +538,117 @@ total_area = 402151 pixels or 10.053775 mm^2
 
 --------------------------------------------------------------------------- 
 
+files/mask19.dat uses the following parameters:
+
+pixel_size = 0.0025
+
+Left shape:
+L_shape = circle
+L_radius = 20 pixels or 0.05 mm 
+
+Isthmus: 
+I_length = 50 pixels or 0.125 mm 
+I_width = 10 pixels or 0.025 mm 
+
+Right shape: 
+R_angle = 90
+R_max_protrusion_left = 150 pixels or 0.375 mm 
+R_max_height = 400 pixels or 1.0 mm 
+R_width = 250 pixels or 0.625 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.0125 mm 
+Offset_y = 5 pixels or 0.0125 mm 
+
+This results in:
+x_max = 350 pixels or 0.875 mm 
+y_max = 410 pixels or 1.025 mm 
+
+total_area = 100140 pixels or 0.6258750000000001 mm^2 
+
+--------------------------------------------------------------------------- 
+
+files/mask20.dat uses the following parameters:
+
+pixel_size = 0.0025
+
+Left shape:
+L_shape = circle
+L_radius = 20 pixels or 0.05 mm 
+
+Isthmus: 
+I_length = 50 pixels or 0.125 mm 
+I_width = 5 pixels or 0.0125 mm 
+
+Right shape: 
+R_angle = 90
+R_max_protrusion_left = 150 pixels or 0.375 mm 
+R_max_height = 400 pixels or 1.0 mm 
+R_width = 250 pixels or 0.625 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.0125 mm 
+Offset_y = 5 pixels or 0.0125 mm 
+
+This results in:
+x_max = 350 pixels or 0.875 mm 
+y_max = 410 pixels or 1.025 mm 
+
+total_area = 99920 pixels or 0.6245 mm^2 
+
+--------------------------------------------------------------------------- 
+
+files/mask21.dat uses the following parameters:
+
+pixel_size = 0.0025
+
+Left shape:
+L_shape = circle
+L_radius = 20 pixels or 0.05 mm 
+
+Isthmus: 
+I_length = 50 pixels or 0.125 mm 
+I_width = 5 pixels or 0.0125 mm 
+
+Right shape: 
+R_shape = circle
+R_radius = 250 pixels or 0.625 mm 
+Offset: 
+Offset_x = 5 pixels or 0.0125 mm 
+Offset_y = 5 pixels or 0.0125 mm 
+
+This results in:
+x_max = 600 pixels or 1.5 mm 
+y_max = 510 pixels or 1.2750000000000001 mm 
+
+total_area = 197793 pixels or 1.23620625 mm^2 
+
+--------------------------------------------------------------------------- 
+
+files/mask22.dat uses the following parameters:
+
+pixel_size = 0.005
+
+Left shape:
+L_shape = circle
+L_radius = 20 pixels or 0.1 mm 
+
+Isthmus: 
+I_length = 50 pixels or 0.25 mm 
+I_width = 20 pixels or 0.1 mm 
+
+Right shape: 
+R_shape = circle
+R_radius = 250 pixels or 1.25 mm 
+Offset: 
+Offset_x = 5 pixels or 0.025 mm 
+Offset_y = 5 pixels or 0.025 mm 
+
+This results in:
+x_max = 600 pixels or 3.0 mm 
+y_max = 510 pixels or 2.5500000000000003 mm 
+
+total_area = 198515 pixels or 4.962875 mm^2 
+
+--------------------------------------------------------------------------- 
+

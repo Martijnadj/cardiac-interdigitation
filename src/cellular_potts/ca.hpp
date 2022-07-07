@@ -209,6 +209,7 @@ public:
     \return Total energy change during MCS.
   */
   int AmoebaeMove(PDE *PDEfield=0, bool anneal = false);
+  void CopyPDEvars(int x, int y, int xp, int yp, PDE *PDEfield);
  
   
   int Act_AmoebaeMove(PDE *PDEfield);

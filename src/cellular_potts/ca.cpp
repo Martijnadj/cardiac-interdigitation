@@ -47,6 +47,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define XPM(Z) Z##_xpm
 #define ZYGXPM(Z) XPM(Z)
 
+
 /* define default zygote */
 /* NOTE: ZYGOTE is normally defined in Makefile!!!!!! */
 #ifndef ZYGOTE
@@ -1341,6 +1342,7 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
     if ((p = CopyvProb(D_H, H_diss, anneal)) > 0)
     {
       ConvertSpin(x, y, xp, yp); // sigma(x,y) will get the same value as sigma(xp,yp)
+      CopyPDEvars(x, y, xp, yp, PDEfield);
       for (int j = 1; j <= n_nb; j++)
       {
         xn = nx[j] + x;
@@ -1607,6 +1609,13 @@ int CellularPotts::CounterEdge(int edge)
   }
   int counteredge = neighbourlocation * n_nb + counterneighbour - 1;
   return counteredge;
+}
+
+void CellularPotts::CopyPDEvars(int x, int y, int xp, int yp, PDE *PDEFIELD){
+  PDEFIELD_TYPE* xy = PDEFIELD->PDE_pointer(x,y);
+  PDEFIELD_TYPE* xyp = PDEFIELD->PDE_pointer(xp,yp);
+  for (int layer = 0; layer < par.n_chem; layer++)
+    xy[layer*sizex*sizey] = xyp[layer*sizex*sizey];
 }
 
 //! Monte Carlo Step. Returns summed energy change
@@ -2810,27 +2819,27 @@ int CellularPotts::GrowInCellsInMicropattern(int n_cells, int cell_size)
 
 void CellularPotts::DetectLeftSideIsthmus()
 {
-  left_side_isthmus = sizex;
-  int column_occupied_by_mask;
-  int min_occupied = sizey;
-  for (int x = sizex - 1; x >= 0; x--)
-  {
-    column_occupied_by_mask = 0;
-    for (int y = 0; y < sizey; y++)
-    {
-      if (mask[x][y])
-        column_occupied_by_mask++;
+  bool first_interruption = false;
+  int possible_isthmus_start = 0;
+  int interrupted = 0;
+  for (int y = sizey/2; y < sizey; y++){
+    interrupted = 0;
+    for (int x = sizex -1; x > 0; x--){
+      if(!mask[x][y] && mask[x-1][y] && interrupted == 0)
+        interrupted++;
+      else if(!mask[x][y] && mask[x-1][y] && interrupted == 1){
+        possible_isthmus_start = x;
+        interrupted++;
+      }    
     }
-    if (column_occupied_by_mask < min_occupied && column_occupied_by_mask > 0)
-    {
-      min_occupied = column_occupied_by_mask;
-    }
-    else if (column_occupied_by_mask > min_occupied)
-    {
-      left_side_isthmus = x + 1;
+    if (interrupted == 2)
+      first_interruption = true;
+    if (interrupted == 1 && first_interruption){
+      left_side_isthmus = possible_isthmus_start;
       break;
     }
   }
+
 }
 
 int CellularPotts::GrowInCells(int n_cells, int cell_size, double subfield, int posx, int posy)

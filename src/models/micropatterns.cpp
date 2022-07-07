@@ -182,8 +182,8 @@ int PDE::MapColour(double val) {
 
  //FHN
 int PDE::MapColour(double val) {
-  double max_value = 2;
-  double min_value = -2;
+  double max_value = 50;
+  double min_value = -80;
   if (val > max_value)
     return 255;
   else if (val < min_value)

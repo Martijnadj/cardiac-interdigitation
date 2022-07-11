@@ -652,3 +652,34 @@ total_area = 198515 pixels or 4.962875 mm^2
 
 --------------------------------------------------------------------------- 
 
+files/mask23.dat uses the following parameters:
+
+pixel_size = 0.001
+
+Left shape:
+L_shape = circle
+L_radius = 100 pixels or 0.1 mm 
+
+Isthmus: 
+I_length = 20 pixels or 0.02 mm 
+I_width = 50 pixels or 0.05 mm 
+
+Right shape: 
+R_shape = wedge
+R_angle = 90
+R_max_protrusion_left = 150 pixels or 0.15 mm 
+R_max_height = 800 pixels or 0.8 mm 
+R_width = 500 pixels or 0.5 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.005 mm 
+Offset_y = 5 pixels or 0.005 mm 
+
+This results in:
+x_max = 730 pixels or 0.73 mm 
+y_max = 810 pixels or 0.81 mm 
+
+total_area = 429480 pixels or 0.42948 mm^2 
+
+--------------------------------------------------------------------------- 
+

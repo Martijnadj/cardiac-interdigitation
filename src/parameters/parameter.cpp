@@ -103,7 +103,9 @@ Parameter::Parameter() {
   pacing_strength = 100;
   couplingmedium = 1e-5;
   couplingcell = 1e-5;
-  couplingboundary = 1e-8;
+  couplingAtrialAtrial = 1e-8;
+  couplingAtrialPM = 1e-8;
+  couplingPMPM = 1e-8;
   couplingoffmask = 0;
 
   FHN_interval_beats = 20;
@@ -245,8 +247,10 @@ void Parameter::Read(const char *filename) {
   pacing_strength = fgetpar(fp, "pacing_strength", 100, true);
   couplingmedium = fgetpar(fp, "couplingmedium", 1e-5, true);
   couplingcell = fgetpar(fp, "couplingcell", 1e-5, true);
-  couplingboundary = fgetpar(fp, "couplingboundary", 1e-8, true);
+  couplingAtrialAtrial = fgetpar(fp, "couplingAtrialAtrial", 1e-8, true);
+  couplingAtrialPM = fgetpar(fp, "couplingAtrialPM", 1e-8, true);
   couplingoffmask = fgetpar(fp, "couplingoffmask", 0, true);
+  couplingPMPM = fgetpar(fp, "couplingPMPM", 1e-8, true);
 
 
   FHN_interval_beats = fgetpar(fp, "FHN_interval_beats", 20, true);
@@ -364,9 +368,12 @@ void Parameter::Write(ostream &os) const {
   os << " beats_per_minute" << beats_per_minute << endl;
   os << " pacing_duration" << pacing_duration << endl;
   os << " pacing_strength" << pacing_strength << endl;
+
   os << " couplingmedium = " << couplingmedium << endl;
   os << " couplingcell = " << couplingcell << endl;
-  os << " couplingboundary = " << couplingboundary << endl;
+  os << " couplingAtrialAtrial = " << couplingAtrialAtrial << endl;
+  os << " couplingAtrialPM = " << couplingAtrialPM << endl;
+  os << " couplingPMPM = " << couplingPMPM << endl;
   os << " couplingoffmask = " << couplingoffmask << endl;
 
   os << " FHN_interval_beats" << FHN_interval_beats << endl;

@@ -4,7 +4,7 @@ import os
 import math
 from os import path
 
-pixel_size = 0.005
+pixel_size = 0.001
 #in millimeters
 
 #paramaters for mask, see sketch.jpg for clarification
@@ -12,25 +12,25 @@ pixel_size = 0.005
 #Left shape
 L_shape = "circle"
 #Choose either "circle" or "rectangle"
-L_radius = 20
+L_radius = 100
 L_width = 1200
 L_height = 2500
 
 #Isthmus
-I_length = 50
-I_width = 20
+I_length = 20
+I_width = 50
 
 
 #Right shape
-R_shape = "circle"
+R_shape = "wedge"
 R_radius = 250
 #Choose either "circle" or "wedge"
 R_angle = 90
 #between 0 and 180
 R_max_protrusion_left = 150
 #smaller than I_length
-R_max_height = 400
-R_width = 250
+R_max_height = 800
+R_width = 500
 
 #Offset
 Offset_x = 5
@@ -231,8 +231,8 @@ def construct_shape():
 	f.close()
 
 def create_image():
-	plt.xticks(np.arange(0,x_max,int(1/pixel_size)), np.arange(0,pixel_size*x_max,1))
-	plt.yticks(np.arange(0,y_max,int(1/pixel_size)), np.arange(0,pixel_size*y_max,1))
+	plt.xticks(np.arange(0,x_max,int(1/(pixel_size*5))), np.round(np.arange(0,pixel_size*x_max,1/5),3))
+	plt.yticks(np.arange(0,y_max,int(1/(pixel_size*5))), np.round(np.arange(0,pixel_size*y_max,1/5),3))
 	plt.xlabel('mm')
 	plt.ylabel('mm')
 	plt.imshow(mask.T, interpolation='nearest')

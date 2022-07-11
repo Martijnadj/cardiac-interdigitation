@@ -4,6 +4,8 @@ import importlib
 from os import path
 
 mask_parameter_file = sys.argv[1]
+noise = [0,0.05,0.1,0.15,0.2,0.25]
+interval = [0.45]  
 
 global par
 fraction_covered = 1.1
@@ -65,19 +67,34 @@ def write_parameter_file():
     f.write("sizex = " + str(par.x_max) + "\n")
     f.write("sizey = " + str(par.y_max) + "\n")
     f.write("divisions = 0\n")
-    f.write("mcs = 4100\n")
+    f.write("mcs = 20100\n")
     f.write("rseed = -1\n")
     f.write("subfield = 1.0\n")
     f.write("relaxation = 100\n")
     f.write("\n")
     f.write("couplingmedium = 0\n")
-    f.write("couplingcell = 5e-8\n")
-    f.write("couplingboundary = 1e-9\n")
+    f.write("couplingAtrialAtrial = 1e-8\n")
+    f.write("couplingAtrialPM = 1e-9\n")
+    f.write("couplingPMPM = 1e-8\n")
+    f.write("couplingcell = 1e-7\n")
     f.write("couplingoffmask = 0\n")
     f.write("\n")
     f.write("beats_per_minute = 60\n")
     f.write("pacing_duration = 5e-3\n")
     f.write("pacing_strength = 5.5e-10\n")
+    f.write("\n")
+    f.write("#FitzHugh-Nagumo\n")
+    f.write("FHN_interval_beats = " + str(interval[0])+"\n")
+    f.write("FHN_pulse_duration = 0.1\n")	
+    f.write("FHN_pulse_strength = 5\n")
+    f.write("FHN_a = 0.3\n")
+    f.write("FHN_b = 0.999\n")
+    f.write("FHN_tau = 10\n")
+    f.write("FHN_a_diff_perc = " + str(noise[0])+"\n")
+    f.write("FHN_b_diff_perc = " + str(noise[0])+"\n")
+    f.write("FHN_tau_diff_perc = " + str(noise[0])+"\n")
+    f.write("FHN_start_0 = -0.575897\n")
+    f.write("FHN_start_1 = -3.84897\n")
     f.write("\n")
     f.write("# output\n")
     f.write("storage_stride = 10\n")

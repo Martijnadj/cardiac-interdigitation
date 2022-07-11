@@ -474,8 +474,26 @@ void CellularPotts::InitializeCouplingCoefficient(void)
         couplingcoefficient[x][y] = par.couplingmedium;
       else if (sigma[x][y] > 0)
         couplingcoefficient[x][y] = par.couplingcell;
-      if (numberofedges[x][y] > 0)
-        couplingcoefficient[x][y] = par.couplingboundary;
+      if (numberofedges[x][y] > 0){
+        if (tau[x][y] == 1){
+          couplingcoefficient[x][y] = par.couplingAtrialAtrial;
+          for (int i = 1; i < n_nb; i++){
+            if (tau[x+nx[i]][y+ny[i]] == 2){
+              couplingcoefficient[x][y] = par.couplingAtrialPM;
+              couplingcoefficient[x+nx[i]][y+ny[i]]= par.couplingAtrialPM;
+            }
+          }
+        }
+        else if (tau[x][y] == 2){  
+          couplingcoefficient[x][y] = par.couplingPMPM;
+          for (int i = 1; i < n_nb; i++){
+            if (tau[x+nx[i]][y+ny[i]] == 1){
+              couplingcoefficient[x][y] = par.couplingAtrialPM;
+              couplingcoefficient[x+nx[i]][y+ny[i]]= par.couplingAtrialPM;
+            }
+          }
+        } 
+      }
     }
   }
 }
@@ -1374,10 +1392,25 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
                 loop += (double)2 / n_nb;
                 numberofedges[x][y]++;
                 numberofedges[xn][yn]++;
-                if (numberofedges[x][y] == 1)
-                  couplingcoefficient[x][y] = par.couplingboundary;
-                if (numberofedges[xn][yn] == 1)
-                  couplingcoefficient[xn][yn] = par.couplingboundary;
+                if ((tau[xn][yn] == 1 && tau[x][y] == 2) || (tau[xn][yn] == 2 && tau[x][y] == 1)){
+                  couplingcoefficient[x][y] = par.couplingAtrialPM;
+                  couplingcoefficient[xn][yn] = par.couplingAtrialPM;
+                }
+                else if (tau[xn][yn] == 0 || tau[x][y] == 0){
+                  couplingcoefficient[x][y] = par.couplingmedium;
+                  couplingcoefficient[xn][yn] = par.couplingmedium;
+                }
+                else if (tau[xn][yn] == 1){
+                  couplingcoefficient[x][y] = par.couplingAtrialAtrial;
+                  if (couplingcoefficient[xn][yn] != par.couplingAtrialPM)
+                    couplingcoefficient[xn][yn] = par.couplingAtrialAtrial;
+                }
+                else if (tau[xn][yn] == 2){
+                  couplingcoefficient[x][y] = par.couplingPMPM;
+                  if (couplingcoefficient[xn][yn] != par.couplingAtrialPM)
+                    couplingcoefficient[xn][yn] = par.couplingPMPM;
+                }
+                
               }
               if (edgelist[edgeadjusting] != -1 && sigma[xn][yn] == sigma[x][y])
               { // if the sites have the same celltype and they have an edge, remove it
@@ -1385,18 +1418,16 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
                 loop -= (double)2 / n_nb;
                 numberofedges[x][y]--;
                 numberofedges[xn][yn]--;
-                if (numberofedges[x][y] == 0)
-                {
+                if (numberofedges[x][y] == 0){
                   if (sigma[x][y] == 0)
                     couplingcoefficient[x][y] = par.couplingmedium;
-                  else if (sigma[x][y] == 0)
+                  else 
                     couplingcoefficient[x][y] = par.couplingcell;
                 }
-                if (numberofedges[xn][yn] == 0)
-                {
+                if (numberofedges[xn][yn] == 0){
                   if (sigma[x][y] == 0)
                     couplingcoefficient[xn][yn] = par.couplingmedium;
-                  else if (sigma[xn][yn] == 0)
+                  else
                     couplingcoefficient[xn][yn] = par.couplingcell;
                 }
               }
@@ -1413,10 +1444,24 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
               loop += (double)2 / n_nb;
               numberofedges[x][y]++;
               numberofedges[xn][yn]++;
-              if (numberofedges[x][y] == 1)
-                couplingcoefficient[x][y] = par.couplingboundary;
-              if (numberofedges[xn][yn] == 1)
-                couplingcoefficient[xn][yn] = par.couplingboundary;
+              if ((tau[xn][yn] == 1 && tau[x][y] == 2) || (tau[xn][yn] == 2 && tau[x][y] == 1)){
+                couplingcoefficient[x][y] = par.couplingAtrialPM;
+                couplingcoefficient[xn][yn] = par.couplingAtrialPM;
+              }
+              else if (tau[xn][yn] == 0 || tau[x][y] == 0){
+                couplingcoefficient[x][y] = par.couplingmedium;
+                couplingcoefficient[xn][yn] = par.couplingmedium;
+              }
+              else if (tau[xn][yn] == 1){
+                couplingcoefficient[x][y] = par.couplingAtrialAtrial;
+                if (couplingcoefficient[xn][yn] != par.couplingAtrialPM)
+                  couplingcoefficient[xn][yn] = par.couplingAtrialAtrial;
+              }
+              else if (tau[xn][yn] == 2){
+                couplingcoefficient[x][y] = par.couplingPMPM;
+                if (couplingcoefficient[xn][yn] != par.couplingAtrialPM)
+                  couplingcoefficient[xn][yn] = par.couplingPMPM;
+              }    
             }
             if (edgelist[edgeadjusting] != -1 && sigma[xn][yn] == sigma[x][y])
             { // if the sites have the same celltype and they have an edge, remove it
@@ -2817,8 +2862,7 @@ int CellularPotts::GrowInCellsInMicropattern(int n_cells, int cell_size)
   return cellnum;
 }
 
-void CellularPotts::DetectLeftSideIsthmus()
-{
+void CellularPotts::DetectLeftSideIsthmus(){
   bool interrupted = false;
   for (int y = sizey/2; y < sizey; y++){
     interrupted = false;
@@ -2827,10 +2871,9 @@ void CellularPotts::DetectLeftSideIsthmus()
         interrupted = true;
       else if(!mask[x][y] && mask[x-1][y] && interrupted){
         left_side_isthmus = x;
-        break;
+        return;
       }    
-    }
-      
+    }      
   }
 
 }

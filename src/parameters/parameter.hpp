@@ -112,7 +112,9 @@ class Parameter {
   double pacing_strength;
   double couplingmedium;
   double couplingcell;
-  double couplingboundary;
+  double couplingAtrialAtrial;
+  double couplingAtrialPM;
+  double couplingPMPM;
   double couplingoffmask;
 
   double FHN_interval_beats;

@@ -272,6 +272,7 @@ class PDE {
 
   protected:
 
+
   PDEFIELD_TYPE *PDEvars;
   PDEFIELD_TYPE *alt_PDEvars;
   PDEFIELD_TYPE *last_stepsize;

@@ -1265,6 +1265,9 @@ void CellularPotts::ExchangeSpin(int x, int y, int xp, int yp)
 /** PUBLIC **/
 int CellularPotts::CopyvProb(int DH, double stiff, bool anneal)
 {
+  if (stiff == par.conn_diss){
+    return 0;
+  }
   double dd;
   int s;
   s = (int)stiff;

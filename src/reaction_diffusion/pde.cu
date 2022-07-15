@@ -385,7 +385,6 @@ void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
   PDEinit2[31] = 0.1162;
   PDEinit2[32] = 0.00277;
 
-
   
 
   for (int layer = 0; layer<ARRAY_SIZE; layer++){
@@ -403,7 +402,7 @@ void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
       //  PDEvars[i] = 100000000;
     }
   }
-
+  
 
 
 }
@@ -726,7 +725,6 @@ __global__ void InitializeLastStepsize(PDEFIELD_TYPE min_stepsize, PDEFIELD_TYPE
 void PDE::InitializePDEs(CellularPotts *cpm){
   int** celltypes = cpm->getTau();
   //InitializePDEvars(cpm, par.FHN_start_0, par.FHN_start_1);
-  cout << "Before PDEvars \n";
   InitializePDEvars(cpm, celltypes[0]);
   InitializeFHNvarsCells(par.n_init_cells+1, FHN_a, FHN_b, FHN_tau, par.FHN_a_diff_perc, par.FHN_b_diff_perc, par.FHN_tau_diff_perc, par.FHN_a, par.FHN_b, par.FHN_tau);
   InitializeCuda(cpm, par.n_init_cells+1);
@@ -2230,109 +2228,6 @@ __device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDE
   CONSTANTS_FS[113] =  CONSTANTS_FS[81]*CONSTANTS_FS[109];
   CONSTANTS_FS[114] = (CONSTANTS_FS[10]>0.00000 ? - 14.0000 : 0.00000);
   CONSTANTS_FS[115] = (3.59880 - 0.0256410)/(1.00000+1.21550e-06/pow( 1.00000*CONSTANTS_FS[9], 1.69510))+0.0256410;
-  ALGEBRAIC[6] =  CONSTANTS_FS[69]*CONSTANTS_FS[78]*(1.00000 - (STATES[22]+STATES[18])) -  CONSTANTS_FS[75]*STATES[18];
-  ALGEBRAIC[1] = CONSTANTS_FS[47]/(CONSTANTS_FS[47]+STATES[1]);
-  ALGEBRAIC[7] = ( 0.00100000*ALGEBRAIC[1])/CONSTANTS_FS[46];
-  ALGEBRAIC[2] = CONSTANTS_FS[51] - (CONSTANTS_FS[51] - CONSTANTS_FS[52])/(1.00000+pow(CONSTANTS_FS[53]/STATES[15], CONSTANTS_FS[54]));
-  ALGEBRAIC[8] = CONSTANTS_FS[55]/ALGEBRAIC[2];
-  ALGEBRAIC[17] =  CONSTANTS_FS[56]*ALGEBRAIC[2];
-  ALGEBRAIC[5] = (VOI>CONSTANTS_FS[5]&&VOI<CONSTANTS_FS[5]+CONSTANTS_FS[6] ? CONSTANTS_FS[7] : CONSTANTS_FS[8]);
-  ALGEBRAIC[9] = (CONSTANTS_FS[4]>=1.00000 ? ALGEBRAIC[5] : STATES[0]);
-  ALGEBRAIC[10] = 1.00000/(( 0.360000*(((ALGEBRAIC[9]+148.800) - CONSTANTS_FS[95]) - CONSTANTS_FS[99]))/(exp( 0.0660000*(((ALGEBRAIC[9]+148.800) - CONSTANTS_FS[95]) - CONSTANTS_FS[99])) - 1.00000)+( 0.100000*(((ALGEBRAIC[9]+87.3000) - CONSTANTS_FS[95]) - CONSTANTS_FS[99]))/(1.00000 - exp( - 0.200000*(((ALGEBRAIC[9]+87.3000) - CONSTANTS_FS[95]) - CONSTANTS_FS[99])))) - 0.0540000;
-  ALGEBRAIC[29] = (ALGEBRAIC[9]<- (((80.0000 - CONSTANTS_FS[95]) - CONSTANTS_FS[99]) - CONSTANTS_FS[20]) ? 0.0132900+0.999210/(1.00000+exp(((((ALGEBRAIC[9]+97.1340) - CONSTANTS_FS[95]) - CONSTANTS_FS[99]) - CONSTANTS_FS[20])/8.17520)) :  0.000250100*exp(- (((ALGEBRAIC[9] - CONSTANTS_FS[95]) - CONSTANTS_FS[99]) - CONSTANTS_FS[20])/12.8610));
-  ALGEBRAIC[14] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+37.4000+CONSTANTS_FS[44])/(5.30000+CONSTANTS_FS[45])));
-  ALGEBRAIC[33] =  0.00100000*(44.3000+ 230.000*exp(- pow((ALGEBRAIC[9]+36.0000)/10.0000, 2.00000)));
-  ALGEBRAIC[15] = 1.00000/(1.00000+exp(- (ALGEBRAIC[9]+38.3000)/5.50000));
-  ALGEBRAIC[34] = 0.00100000/( 1.06800*exp((ALGEBRAIC[9]+38.3000)/30.0000)+ 1.06800*exp(- (ALGEBRAIC[9]+38.3000)/30.0000));
-  ALGEBRAIC[16] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+58.7000)/3.80000));
-  ALGEBRAIC[35] = 1.00000/( 16.6700*exp(- (ALGEBRAIC[9]+75.0000)/83.3000)+ 16.6700*exp((ALGEBRAIC[9]+75.0000)/15.3800))+CONSTANTS_FS[49];
-  ALGEBRAIC[37] = 0.00900000/(1.00000+exp((ALGEBRAIC[9]+5.00000)/12.0000))+0.000500000;
-  ALGEBRAIC[19] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+6.00000)/- 8.60000));
-  ALGEBRAIC[38] = 0.590000/(1.00000+exp((ALGEBRAIC[9]+60.0000)/10.0000))+3.05000;
-  ALGEBRAIC[20] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+7.50000)/10.0000));
-  ALGEBRAIC[21] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+49.0000)/13.0000));
-  ALGEBRAIC[39] =  0.00100000*0.600000*(65.1700/( 0.570000*exp( - 0.0800000*(ALGEBRAIC[9]+44.0000))+ 0.0650000*exp( 0.100000*(ALGEBRAIC[9]+45.9300)))+10.1000);
-  ALGEBRAIC[22] = 1.00000/(1.00000+exp(- (ALGEBRAIC[9] - 19.3000)/15.0000));
-  ALGEBRAIC[40] =  0.00100000*0.660000*1.40000*(15.5900/( 1.03700*exp( 0.0900000*(ALGEBRAIC[9]+30.6100))+ 0.369000*exp( - 0.120000*(ALGEBRAIC[9]+23.8400)))+2.98000);
-  ALGEBRAIC[23] = 1.00000/(1.00000+exp(- (ALGEBRAIC[9]+10.0144)/7.66070));
-  ALGEBRAIC[41] = 0.846554/( 4.20000*exp(ALGEBRAIC[9]/17.0000)+ 0.150000*exp(- ALGEBRAIC[9]/21.6000));
-  ALGEBRAIC[42] = 1.00000/( 30.0000*exp(ALGEBRAIC[9]/10.0000)+exp(- ALGEBRAIC[9]/12.0000));
-  ALGEBRAIC[43] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+28.6000)/17.1000));
-  ALGEBRAIC[26] = 1.00000/( 100.000*exp(- ALGEBRAIC[9]/54.6450)+ 656.000*exp(ALGEBRAIC[9]/106.157));
-  ALGEBRAIC[28] =  10.0000*exp( 0.0133000*(ALGEBRAIC[9]+40.0000));
-  ALGEBRAIC[45] = CONSTANTS_FS[115]/(CONSTANTS_FS[115]+ALGEBRAIC[28]);
-  ALGEBRAIC[51] = 1.00000/(CONSTANTS_FS[115]+ALGEBRAIC[28]);
-  ALGEBRAIC[12] = 1.00000/(1.00000+exp((ALGEBRAIC[9]+69.8040)/4.45650));
-  ALGEBRAIC[31] =  20.0000*exp( - 0.125000*(ALGEBRAIC[9]+75.0000));
-  ALGEBRAIC[47] = 2000.00/( 320.000*exp( - 0.100000*(ALGEBRAIC[9]+75.0000))+1.00000);
-  ALGEBRAIC[53] = 1.00000/(ALGEBRAIC[31]+ALGEBRAIC[47]);
-  ALGEBRAIC[27] =  pow((1.00000/(1.00000+exp(- ((ALGEBRAIC[9]+0.638300) - CONSTANTS_FS[114])/10.7071))), 1.0 / 2);
-  ALGEBRAIC[44] = 28.0000/(1.00000+exp(- ((ALGEBRAIC[9] - 40.0000) - CONSTANTS_FS[114])/3.00000));
-  ALGEBRAIC[50] =  1.00000*exp(- ((ALGEBRAIC[9] - CONSTANTS_FS[114]) - 5.00000)/25.0000);
-  ALGEBRAIC[56] = 1.00000/(ALGEBRAIC[44]+ALGEBRAIC[50]);
-  ALGEBRAIC[11] = 1.00000/(1.00000+exp(- (ALGEBRAIC[9]+42.0504)/8.31060));
-  ALGEBRAIC[30] = ALGEBRAIC[9]+41.0000;
-  ALGEBRAIC[46] = (fabs(ALGEBRAIC[30])<CONSTANTS_FS[40] ? 2000.00 : ( 200.000*ALGEBRAIC[30])/(1.00000 - exp( - 0.100000*ALGEBRAIC[30])));
-  ALGEBRAIC[52] =  8000.00*exp( - 0.0560000*(ALGEBRAIC[9]+66.0000));
-  ALGEBRAIC[57] = 1.00000/(ALGEBRAIC[46]+ALGEBRAIC[52]);
-  ALGEBRAIC[13] = 1.00000/(1.00000+exp(- ((ALGEBRAIC[9] - CONSTANTS_FS[43]) - CONSTANTS_FS[107])/( CONSTANTS_FS[42]*(1.00000+CONSTANTS_FS[108]/100.000))));
-  ALGEBRAIC[32] = (ALGEBRAIC[9]==- 41.8000 ? - 41.8000 : ALGEBRAIC[9]==0.00000 ? 0.00000 : ALGEBRAIC[9]==- 6.80000 ? - 6.80001 : ALGEBRAIC[9]);
-  ALGEBRAIC[48] = ( - 0.0283900*(ALGEBRAIC[32]+41.8000))/(exp(- (ALGEBRAIC[32]+41.8000)/2.50000) - 1.00000) - ( 0.0849000*(ALGEBRAIC[32]+6.80000))/(exp(- (ALGEBRAIC[32]+6.80000)/4.80000) - 1.00000);
-  ALGEBRAIC[54] = (ALGEBRAIC[9]==- 1.80000 ? - 1.80001 : ALGEBRAIC[9]);
-  ALGEBRAIC[58] = ( 0.0114300*(ALGEBRAIC[54]+1.80000))/(exp((ALGEBRAIC[54]+1.80000)/2.50000) - 1.00000);
-  ALGEBRAIC[60] = 0.00100000/(ALGEBRAIC[48]+ALGEBRAIC[58]);
-  ALGEBRAIC[18] = STATES[2];
-  ALGEBRAIC[36] =  CONSTANTS_FS[91]*log(CONSTANTS_FS[11]/ALGEBRAIC[18]);
-  ALGEBRAIC[61] =  CONSTANTS_FS[102]*CONSTANTS_FS[23]*pow(1.00000+pow(CONSTANTS_FS[21]/CONSTANTS_FS[13], 1.20000), - 1.00000)*pow(1.00000+pow(CONSTANTS_FS[22]/ALGEBRAIC[18], 1.30000), - 1.00000)*pow(1.00000+exp(- ((ALGEBRAIC[9] - ALGEBRAIC[36])+110.000)/20.0000), - 1.00000);
-  ALGEBRAIC[63] = exp(( - CONSTANTS_FS[26]*ALGEBRAIC[9])/( 2.00000*CONSTANTS_FS[91]));
-  ALGEBRAIC[69] = 1.00000+ (CONSTANTS_FS[14]/CONSTANTS_FS[36])*(1.00000+exp(( CONSTANTS_FS[27]*ALGEBRAIC[9])/CONSTANTS_FS[91]))+ (CONSTANTS_FS[11]/CONSTANTS_FS[34])*(1.00000+ (CONSTANTS_FS[11]/CONSTANTS_FS[35])*(1.00000+CONSTANTS_FS[11]/CONSTANTS_FS[33]));
-  ALGEBRAIC[71] = ( (( (CONSTANTS_FS[11]/CONSTANTS_FS[34])*CONSTANTS_FS[11])/CONSTANTS_FS[35])*(1.00000+CONSTANTS_FS[11]/CONSTANTS_FS[33])*exp(( - CONSTANTS_FS[26]*ALGEBRAIC[9])/( 2.00000*CONSTANTS_FS[91])))/ALGEBRAIC[69];
-  ALGEBRAIC[70] = ( (CONSTANTS_FS[14]/CONSTANTS_FS[36])*exp(( CONSTANTS_FS[27]*ALGEBRAIC[9])/CONSTANTS_FS[91]))/ALGEBRAIC[69];
-  ALGEBRAIC[67] = exp(( CONSTANTS_FS[26]*ALGEBRAIC[9])/( 2.00000*CONSTANTS_FS[91]));
-  ALGEBRAIC[62] = ALGEBRAIC[18]/(CONSTANTS_FS[28]+ALGEBRAIC[18]);
-  ALGEBRAIC[72] =  ALGEBRAIC[63]*CONSTANTS_FS[104]*(ALGEBRAIC[71]+ALGEBRAIC[70])+ ALGEBRAIC[70]*ALGEBRAIC[67]*(ALGEBRAIC[62]+ALGEBRAIC[63]);
-  ALGEBRAIC[64] = 1.00000+ (STATES[1]/CONSTANTS_FS[29])*(1.00000+exp(( - CONSTANTS_FS[25]*ALGEBRAIC[9])/CONSTANTS_FS[91])+ALGEBRAIC[18]/CONSTANTS_FS[32])+ (ALGEBRAIC[18]/CONSTANTS_FS[30])*(1.00000+ (ALGEBRAIC[18]/CONSTANTS_FS[31])*(1.00000+ALGEBRAIC[18]/CONSTANTS_FS[28]));
-  ALGEBRAIC[65] = ( (STATES[1]/CONSTANTS_FS[29])*exp(( - CONSTANTS_FS[25]*ALGEBRAIC[9])/CONSTANTS_FS[91]))/ALGEBRAIC[64];
-  ALGEBRAIC[66] = ( (( (ALGEBRAIC[18]/CONSTANTS_FS[30])*ALGEBRAIC[18])/CONSTANTS_FS[31])*(1.00000+ALGEBRAIC[18]/CONSTANTS_FS[28])*exp(( CONSTANTS_FS[26]*ALGEBRAIC[9])/( 2.00000*CONSTANTS_FS[91])))/ALGEBRAIC[64];
-  ALGEBRAIC[68] =  ALGEBRAIC[67]*ALGEBRAIC[62]*(ALGEBRAIC[66]+ALGEBRAIC[65])+ ALGEBRAIC[63]*ALGEBRAIC[65]*(CONSTANTS_FS[104]+ALGEBRAIC[67]);
-  ALGEBRAIC[73] =  ALGEBRAIC[66]*ALGEBRAIC[62]*(ALGEBRAIC[71]+ALGEBRAIC[70])+ ALGEBRAIC[65]*ALGEBRAIC[71]*(ALGEBRAIC[62]+ALGEBRAIC[63]);
-  ALGEBRAIC[74] =  ALGEBRAIC[71]*CONSTANTS_FS[104]*(ALGEBRAIC[66]+ALGEBRAIC[65])+ ALGEBRAIC[66]*ALGEBRAIC[70]*(CONSTANTS_FS[104]+ALGEBRAIC[67]);
-  ALGEBRAIC[75] = ( (1.00000 - CONSTANTS_FS[37])*CONSTANTS_FS[24]*( ALGEBRAIC[68]*ALGEBRAIC[70] -  ALGEBRAIC[72]*ALGEBRAIC[65]))/(ALGEBRAIC[72]+ALGEBRAIC[68]+ALGEBRAIC[73]+ALGEBRAIC[74]);
-  ALGEBRAIC[76] =  CONSTANTS_FS[91]*log((CONSTANTS_FS[11]+ 0.120000*CONSTANTS_FS[13])/(ALGEBRAIC[18]+ 0.120000*CONSTANTS_FS[12]));
-  ALGEBRAIC[77] =  CONSTANTS_FS[38]*pow(STATES[4], 3.00000)*STATES[5]*(ALGEBRAIC[9] - ALGEBRAIC[76]);
-  ALGEBRAIC[78] =  CONSTANTS_FS[39]*pow(STATES[4], 3.00000)*(ALGEBRAIC[9] - ALGEBRAIC[76]);
-  ALGEBRAIC[79] = ALGEBRAIC[77]+ALGEBRAIC[78];
-  ALGEBRAIC[49] =  STATES[3]*CONSTANTS_FS[103]*(ALGEBRAIC[9] - ALGEBRAIC[36])*(1.00000 - CONSTANTS_FS[19]);
-  ALGEBRAIC[82] =  (( 1.85000e-05*CONSTANTS_FS[41]*(ALGEBRAIC[9] - 0.00000))/( CONSTANTS_FS[91]*(1.00000 - exp(( - 1.00000*(ALGEBRAIC[9] - 0.00000))/CONSTANTS_FS[91]))))*(ALGEBRAIC[18] -  CONSTANTS_FS[11]*exp(( - 1.00000*(ALGEBRAIC[9] - 0.00000))/CONSTANTS_FS[91]))*STATES[6]*STATES[7]*STATES[8];
-  ALGEBRAIC[90] =  CONSTANTS_FS[71]*STATES[1]*(1.00000 - STATES[20]) -  CONSTANTS_FS[76]*STATES[20];
-  ALGEBRAIC[84] =  (( 2.00000*CONSTANTS_FS[48]*ALGEBRAIC[9])/( CONSTANTS_FS[91]*(1.00000 - exp(( - 1.00000*ALGEBRAIC[9]*2.00000)/CONSTANTS_FS[91]))))*(STATES[1] -  CONSTANTS_FS[14]*exp(( - 2.00000*ALGEBRAIC[9])/CONSTANTS_FS[91]))*STATES[9]*STATES[10];
-  ALGEBRAIC[80] =  (( 2.00000*CONSTANTS_FS[41]*(ALGEBRAIC[9] - 0.00000))/( CONSTANTS_FS[91]*(1.00000 - exp(( - 1.00000*(ALGEBRAIC[9] - 0.00000)*2.00000)/CONSTANTS_FS[91]))))*(STATES[1] -  CONSTANTS_FS[14]*exp(( - 2.00000*(ALGEBRAIC[9] - 0.00000))/CONSTANTS_FS[91]))*STATES[6]*STATES[7]*STATES[8];
-  ALGEBRAIC[86] =  CONSTANTS_FS[50]*STATES[12]*(STATES[15] - STATES[1]);
-  ALGEBRAIC[88] = (STATES[1] - STATES[17])/CONSTANTS_FS[59];
-  ALGEBRAIC[93] =  CONSTANTS_FS[68]*STATES[17]*(1.00000 - STATES[21]) -  CONSTANTS_FS[73]*STATES[21];
-  ALGEBRAIC[91] = CONSTANTS_FS[98]/(1.00000+exp((- STATES[17]+CONSTANTS_FS[62])/CONSTANTS_FS[63]));
-  ALGEBRAIC[94] = (STATES[16] - STATES[15])/CONSTANTS_FS[60];
-  ALGEBRAIC[96] =  CONSTANTS_FS[70]*STATES[17]*(1.00000 - (STATES[22]+STATES[18])) -  CONSTANTS_FS[74]*STATES[22];
-  ALGEBRAIC[97] =  CONSTANTS_FS[72]*STATES[15]*(1.00000 - STATES[23]) -  CONSTANTS_FS[77]*STATES[23];
-  ALGEBRAIC[99] =  CONSTANTS_FS[71]*STATES[17]*(1.00000 - STATES[19]) -  CONSTANTS_FS[76]*STATES[19];
-  ALGEBRAIC[55] =  STATES[3]*CONSTANTS_FS[101]*(ALGEBRAIC[9] - CONSTANTS_FS[96])*(1.00000 - CONSTANTS_FS[19]);
-  ALGEBRAIC[59] = ALGEBRAIC[49]+ALGEBRAIC[55];
-  ALGEBRAIC[89] =  CONSTANTS_FS[87]*(ALGEBRAIC[9] - CONSTANTS_FS[96])*( 0.900000*STATES[29]+ 0.100000*STATES[28])*STATES[30];
-  ALGEBRAIC[92] =  CONSTANTS_FS[91]*log((CONSTANTS_FS[13]+ 0.120000*CONSTANTS_FS[11])/(CONSTANTS_FS[12]+ 0.120000*ALGEBRAIC[18]));
-  ALGEBRAIC[95] =  CONSTANTS_FS[94]*(ALGEBRAIC[9] - ALGEBRAIC[92])*pow(STATES[31], 2.00000);
-  ALGEBRAIC[87] =  CONSTANTS_FS[86]*(ALGEBRAIC[9] - CONSTANTS_FS[96])*STATES[26]*STATES[27];
-  ALGEBRAIC[81] =  (( 0.000365000*CONSTANTS_FS[41]*(ALGEBRAIC[9] - 0.00000))/( CONSTANTS_FS[91]*(1.00000 - exp(( - 1.00000*(ALGEBRAIC[9] - 0.00000))/CONSTANTS_FS[91]))))*(CONSTANTS_FS[12] -  CONSTANTS_FS[13]*exp(( - 1.00000*(ALGEBRAIC[9] - 0.00000))/CONSTANTS_FS[91]))*STATES[6]*STATES[7]*STATES[8];
-  ALGEBRAIC[83] =  (ALGEBRAIC[80]+ALGEBRAIC[81]+ALGEBRAIC[82])*(1.00000 - CONSTANTS_FS[106])*1.00000*CONSTANTS_FS[105];
-  ALGEBRAIC[98] = (CONSTANTS_FS[9]>0.00000 ?  CONSTANTS_FS[90]*CONSTANTS_FS[89]*(ALGEBRAIC[9] - CONSTANTS_FS[96])*(1.00000+exp((ALGEBRAIC[9]+20.0000)/20.0000))*STATES[32] : 0.00000);
-  ALGEBRAIC[85] =  CONSTANTS_FS[85]*STATES[24]*STATES[25]*(ALGEBRAIC[9] - CONSTANTS_FS[96]);
-  ALGEBRAIC[100] = ALGEBRAIC[59]+ALGEBRAIC[89]+ALGEBRAIC[95]+ALGEBRAIC[87]+ALGEBRAIC[61]+ALGEBRAIC[75]+ALGEBRAIC[79]+ALGEBRAIC[83]+ALGEBRAIC[84]+ALGEBRAIC[98]+ALGEBRAIC[85];
-  ALGEBRAIC[0] =  0.500000*CONSTANTS_FS[91]*log(CONSTANTS_FS[14]/STATES[1]);
-  ALGEBRAIC[3] = STATES[15] - STATES[1];
-  ALGEBRAIC[4] = STATES[11]+STATES[12]+STATES[13]+STATES[14];
-  ALGEBRAIC[24] = (1.00000/(1.00000+exp(- (ALGEBRAIC[9]+23.2000)/6.60000)))/(0.846554/( 37.2000*exp(ALGEBRAIC[9]/11.9000)+ 0.960000*exp(- ALGEBRAIC[9]/18.5000)));
-  ALGEBRAIC[25] =  4.00000*(( 37.2000*exp(ALGEBRAIC[9]/15.9000)+ 0.960000*exp(- ALGEBRAIC[9]/22.5000))/0.846554 - (1.00000/(1.00000+exp(- (ALGEBRAIC[9]+23.2000)/10.6000)))/(0.846554/( 37.2000*exp(ALGEBRAIC[9]/15.9000)+ 0.960000*exp(- ALGEBRAIC[9]/22.5000))));
-
-
 
 
   ALGEBRAIC[6] =  CONSTANTS_FS[69]*CONSTANTS_FS[78]*(1.00000 - (STATES[22]+STATES[18])) -  CONSTANTS_FS[75]*STATES[18];
@@ -2716,78 +2611,6 @@ __device__ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIEL
   CONSTANTS_M[50] = 0.003;
 
   ALGEBRAIC[12] =  2000.00*CONSTANTS_M[32]*((1.00000 - STATES[22]) - STATES[23]) -  666.000*STATES[23];
-  ALGEBRAIC[18] =  0.00350000*exp((( - STATES[0]*STATES[0])/30.0000)/30.0000)+0.00150000;
-  ALGEBRAIC[6] = 1.00000/(1.00000+exp((STATES[0] - 1.00000)/- 11.0000));
-  ALGEBRAIC[8] = 1.00000/(1.00000+exp(- (STATES[0]+6.00000)/8.60000));
-  ALGEBRAIC[20] = 0.00900000/(1.00000+exp((STATES[0]+5.00000)/12.0000))+0.000500000;
-  ALGEBRAIC[9] = 1.00000/(1.00000+exp((STATES[0]+7.50000)/10.0000));
-  ALGEBRAIC[21] = 0.590000/(1.00000+exp((STATES[0]+60.0000)/10.0000))+3.05000;
-  ALGEBRAIC[14] = 1.00000/(1.00000+exp((STATES[0]+27.1200)/- 8.21000));
-  ALGEBRAIC[2] = (STATES[0]+25.5700)/28.8000;
-  ALGEBRAIC[26] =  4.20000e-05*exp( - ALGEBRAIC[2]*ALGEBRAIC[2])+2.40000e-05;
-  ALGEBRAIC[3] = 1.00000/(1.00000+exp((STATES[0]+63.6000)/5.30000));
-  ALGEBRAIC[15] = 1.00000/(1.00000+exp((STATES[0]+35.1000)/3.20000));
-  ALGEBRAIC[27] =  0.0300000*ALGEBRAIC[15]+0.000300000;
-  ALGEBRAIC[28] =  0.120000*ALGEBRAIC[15]+0.00300000;
-  ALGEBRAIC[4] = 1.00000/(1.00000+exp((STATES[0]+9.00000)/- 5.80000));
-  ALGEBRAIC[16] = (STATES[0]+35.0000)/30.0000;
-  ALGEBRAIC[29] =  0.00270000*exp( - ALGEBRAIC[16]*ALGEBRAIC[16])+0.00200000;
-  ALGEBRAIC[5] = 1.00000/(1.00000+exp((STATES[0]+27.4000)/7.10000));
-  ALGEBRAIC[17] = STATES[0]+40.0000;
-  ALGEBRAIC[30] =  0.161000*exp((( - ALGEBRAIC[17]*ALGEBRAIC[17])/14.4000)/14.4000)+0.0100000;
-  ALGEBRAIC[31] =  1.33230*exp((( - ALGEBRAIC[17]*ALGEBRAIC[17])/14.2000)/14.2000)+0.0626000;
-  ALGEBRAIC[19] = (STATES[0]+52.4500)/15.8827;
-  ALGEBRAIC[32] =  0.0256350*exp( - ALGEBRAIC[19]*ALGEBRAIC[19])+0.0141400;
-  ALGEBRAIC[7] = 1.00000/(1.00000+exp((STATES[0]+40.5000)/11.5000));
-  ALGEBRAIC[22] = (STATES[0] - 20.0000)/20.0000;
-  ALGEBRAIC[33] = 0.700000+ 0.400000*exp( - ALGEBRAIC[22]*ALGEBRAIC[22]);
-  ALGEBRAIC[10] = 1.00000/(1.00000+exp((STATES[0] - 19.9000)/- 12.7000));
-  ALGEBRAIC[23] = (STATES[0]+20.1376)/22.1996;
-  ALGEBRAIC[34] = 0.0311800+ 0.217180*exp( - ALGEBRAIC[23]*ALGEBRAIC[23]);
-  ALGEBRAIC[11] = 1.00000/(1.00000+exp((STATES[0]+15.0000)/- 6.00000));
-  ALGEBRAIC[13] = STATES[6]/(STATES[6]+CONSTANTS_M[50]);
-  ALGEBRAIC[36] =  ALGEBRAIC[13]*ALGEBRAIC[13]*ALGEBRAIC[13]*ALGEBRAIC[13];
-  ALGEBRAIC[25] = STATES[19]/(STATES[19]+CONSTANTS_M[49]);
-  ALGEBRAIC[38] =  ALGEBRAIC[25]*ALGEBRAIC[25]*ALGEBRAIC[25]*ALGEBRAIC[25];
-  ALGEBRAIC[40] =  203.800*(ALGEBRAIC[38]+ALGEBRAIC[36]);
-  ALGEBRAIC[42] = 33.9600+ 339.600*ALGEBRAIC[38];
-  ALGEBRAIC[43] =  (( CONSTANTS_M[0]*CONSTANTS_M[1])/CONSTANTS_M[2])*log(STATES[10]/STATES[11]);
-  ALGEBRAIC[44] =  CONSTANTS_M[12]*STATES[12]*STATES[13]*(STATES[0] - ALGEBRAIC[43]);
-  ALGEBRAIC[45] =  CONSTANTS_M[13]*STATES[14]*STATES[15]*(STATES[0] - ALGEBRAIC[43]);
-  ALGEBRAIC[46] = ( CONSTANTS_M[14]*pow(STATES[10]/1.00000, 0.445700)*(STATES[0] - ALGEBRAIC[43]))/(1.00000+exp(( 1.50000*((STATES[0] - ALGEBRAIC[43])+3.60000)*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1])));
-  ALGEBRAIC[48] = 1.00000/(1.00000+exp((STATES[0]+55.0000)/24.0000));
-  ALGEBRAIC[49] =  CONSTANTS_M[16]*STATES[17]*ALGEBRAIC[48]*(STATES[0] - ALGEBRAIC[43]);
-  ALGEBRAIC[47] =  CONSTANTS_M[15]*STATES[16]*(STATES[0] - ALGEBRAIC[43]);
-  ALGEBRAIC[53] = pow(STATES[2], 1.50000);
-  ALGEBRAIC[54] = ( (( (( CONSTANTS_M[20]*STATES[10])/(STATES[10]+CONSTANTS_M[19]))*ALGEBRAIC[53])/(ALGEBRAIC[53]+CONSTANTS_M[21]))*(STATES[0]+150.000))/(STATES[0]+200.000);
-  ALGEBRAIC[1] =  floor(VOI/CONSTANTS_M[5])*CONSTANTS_M[5];
-  ALGEBRAIC[24] = (VOI - ALGEBRAIC[1]>=CONSTANTS_M[4]&&VOI - ALGEBRAIC[1]<=CONSTANTS_M[4]+CONSTANTS_M[6] ? CONSTANTS_M[7] : 0.00000);
-  ALGEBRAIC[35] =  (( CONSTANTS_M[0]*CONSTANTS_M[1])/CONSTANTS_M[2])*log(STATES[1]/STATES[2]);
-  ALGEBRAIC[37] = ( (( CONSTANTS_M[8]*STATES[3]*STATES[3]*STATES[3]*( 0.900000*STATES[4]+ 0.100000*STATES[5])*STATES[1]*STATES[0]*CONSTANTS_M[2]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1]))*(exp(( (STATES[0] - ALGEBRAIC[35])*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1])) - 1.00000))/(exp(( STATES[0]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1])) - 1.00000);
-  ALGEBRAIC[50] =  CONSTANTS_M[17]*(STATES[0] - ALGEBRAIC[35]);
-  ALGEBRAIC[56] = ( CONSTANTS_M[24]*( STATES[2]*STATES[2]*STATES[2]*STATES[18]*exp(( CONSTANTS_M[2]*STATES[0]*CONSTANTS_M[26])/( CONSTANTS_M[0]*CONSTANTS_M[1])) -  STATES[1]*STATES[1]*STATES[1]*STATES[19]*exp(( (CONSTANTS_M[26] - 1.00000)*STATES[0]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1]))))/(1.00000+ CONSTANTS_M[25]*( STATES[1]*STATES[1]*STATES[1]*STATES[19]+ STATES[2]*STATES[2]*STATES[2]*STATES[18]));
-  ALGEBRAIC[39] = STATES[6]/(STATES[6]+CONSTANTS_M[11]);
-  ALGEBRAIC[41] =  CONSTANTS_M[9]*STATES[7]*( ALGEBRAIC[39]*STATES[8]+ (1.00000 - ALGEBRAIC[39])*STATES[9])*(STATES[0] - CONSTANTS_M[10]);
-  ALGEBRAIC[51] =  (( CONSTANTS_M[0]*CONSTANTS_M[1])/( 2.00000*CONSTANTS_M[2]))*log(STATES[18]/STATES[19]);
-  ALGEBRAIC[52] =  CONSTANTS_M[18]*(STATES[0] - ALGEBRAIC[51]);
-  ALGEBRAIC[55] = ( CONSTANTS_M[22]*STATES[19])/(STATES[19]+CONSTANTS_M[23]);
-  ALGEBRAIC[58] = ( (STATES[6] - STATES[19])*2.00000*CONSTANTS_M[30]*CONSTANTS_M[2])/CONSTANTS_M[31];
-  ALGEBRAIC[57] =  (10.0000/(1.00000+( 9.13652*pow(1.00000, 0.477811))/pow(CONSTANTS_M[27], 0.477811)))*(0.0517000+0.451600/(1.00000+exp((STATES[0]+59.5300)/17.1800)))*(STATES[0] - ALGEBRAIC[43])*CONSTANTS_M[3];
-  ALGEBRAIC[59] = (ALGEBRAIC[37]+ALGEBRAIC[41]+ALGEBRAIC[44]+ALGEBRAIC[45]+ALGEBRAIC[46]+ALGEBRAIC[49]+ALGEBRAIC[47]+ALGEBRAIC[50]+ALGEBRAIC[52]+ALGEBRAIC[54]+ALGEBRAIC[55]+ALGEBRAIC[56]+ALGEBRAIC[57])/CONSTANTS_M[3]+ALGEBRAIC[24];
-  ALGEBRAIC[60] =  200000.*STATES[19]*(1.00000 - STATES[20]) -  476.000*STATES[20];
-  ALGEBRAIC[61] =  78400.0*STATES[19]*(1.00000 - STATES[21]) -  392.000*STATES[21];
-  ALGEBRAIC[62] =  200000.*STATES[19]*((1.00000 - STATES[22]) - STATES[23]) -  6.60000*STATES[22];
-  ALGEBRAIC[63] =  0.0800000*ALGEBRAIC[61]+ 0.160000*ALGEBRAIC[62]+ 0.0450000*ALGEBRAIC[60];
-  ALGEBRAIC[67] = ( CONSTANTS_M[40]*(STATES[19]/CONSTANTS_M[41] - ( CONSTANTS_M[43]*CONSTANTS_M[43]*STATES[26])/CONSTANTS_M[42]))/((STATES[19]+CONSTANTS_M[41])/CONSTANTS_M[41]+( CONSTANTS_M[43]*(STATES[26]+CONSTANTS_M[42]))/CONSTANTS_M[42]);
-  ALGEBRAIC[64] = STATES[29]/(STATES[29]+0.250000);
-  ALGEBRAIC[65] =  ALGEBRAIC[64]*ALGEBRAIC[64];
-  ALGEBRAIC[66] =  CONSTANTS_M[44]*ALGEBRAIC[65]*(STATES[25] - STATES[19]);
-  ALGEBRAIC[68] = ( (STATES[26] - STATES[25])*2.00000*CONSTANTS_M[46]*CONSTANTS_M[2])/CONSTANTS_M[48];
-  ALGEBRAIC[69] =  480.000*STATES[25]*(1.00000 - STATES[27]) -  400.000*STATES[27];
-  ALGEBRAIC[0] =  0.0500000*STATES[0];
-
-
-  ALGEBRAIC[12] =  2000.00*CONSTANTS_M[32]*((1.00000 - STATES[22]) - STATES[23]) -  666.000*STATES[23];
   RATES[23] = ALGEBRAIC[12];
   ALGEBRAIC[18] =  0.00350000*exp((( - STATES[0]*STATES[0])/30.0000)/30.0000)+0.00150000;
   ALGEBRAIC[6] = 1.00000/(1.00000+exp((STATES[0] - 1.00000)/- 11.0000));
@@ -2853,9 +2676,10 @@ __device__ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIEL
   RATES[10] = (CONSTANTS_M[39] - STATES[10])/CONSTANTS_M[35]+((ALGEBRAIC[44]+ALGEBRAIC[45]+ALGEBRAIC[46]+ALGEBRAIC[47]+ALGEBRAIC[49]) -  2.00000*ALGEBRAIC[54])/( CONSTANTS_M[33]*CONSTANTS_M[2]);
   ALGEBRAIC[35] =  (( CONSTANTS_M[0]*CONSTANTS_M[1])/CONSTANTS_M[2])*log(STATES[1]/STATES[2]);
   ALGEBRAIC[37] = ( (( CONSTANTS_M[8]*STATES[3]*STATES[3]*STATES[3]*( 0.900000*STATES[4]+ 0.100000*STATES[5])*STATES[1]*STATES[0]*CONSTANTS_M[2]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1]))*(exp(( (STATES[0] - ALGEBRAIC[35])*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1])) - 1.00000))/(exp(( STATES[0]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1])) - 1.00000);
+  if(!isfinite(ALGEBRAIC[37]))
+    ALGEBRAIC[37] = ( (( CONSTANTS_M[8]*STATES[3]*STATES[3]*STATES[3]*( 0.900000*STATES[4]+ 0.100000*STATES[5])*STATES[1]*CONSTANTS_M[2]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1]))*(exp((-ALGEBRAIC[35]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1])) - 1.00000))/(CONSTANTS_M[2]/(CONSTANTS_M[0]*CONSTANTS_M[1]) - 1.00000);
   ALGEBRAIC[50] =  CONSTANTS_M[17]*(STATES[0] - ALGEBRAIC[35]);
   ALGEBRAIC[56] = ( CONSTANTS_M[24]*( STATES[2]*STATES[2]*STATES[2]*STATES[18]*exp(( CONSTANTS_M[2]*STATES[0]*CONSTANTS_M[26])/( CONSTANTS_M[0]*CONSTANTS_M[1])) -  STATES[1]*STATES[1]*STATES[1]*STATES[19]*exp(( (CONSTANTS_M[26] - 1.00000)*STATES[0]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1]))))/(1.00000+ CONSTANTS_M[25]*( STATES[1]*STATES[1]*STATES[1]*STATES[19]+ STATES[2]*STATES[2]*STATES[2]*STATES[18]));
-  RATES[2] = - (ALGEBRAIC[37]+ALGEBRAIC[50]+ 3.00000*ALGEBRAIC[56]+ 3.00000*ALGEBRAIC[54]+CONSTANTS_M[28])/( CONSTANTS_M[29]*CONSTANTS_M[2]);
   ALGEBRAIC[39] = STATES[6]/(STATES[6]+CONSTANTS_M[11]);
   ALGEBRAIC[41] =  CONSTANTS_M[9]*STATES[7]*( ALGEBRAIC[39]*STATES[8]+ (1.00000 - ALGEBRAIC[39])*STATES[9])*(STATES[0] - CONSTANTS_M[10]);
   ALGEBRAIC[51] =  (( CONSTANTS_M[0]*CONSTANTS_M[1])/( 2.00000*CONSTANTS_M[2]))*log(STATES[18]/STATES[19]);
@@ -2886,9 +2710,6 @@ __device__ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIEL
   ALGEBRAIC[69] =  480.000*STATES[25]*(1.00000 - STATES[27]) -  400.000*STATES[27];
   RATES[27] = ALGEBRAIC[69];
   RATES[25] = (ALGEBRAIC[68] - ALGEBRAIC[66])/( 2.00000*CONSTANTS_M[46]*CONSTANTS_M[2]) -  31.0000*ALGEBRAIC[69];
-
- 
-
 
 }
 __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers, PDEFIELD_TYPE thetime, PDEFIELD_TYPE stepsize, PDEFIELD_TYPE* yout, PDEFIELD_TYPE *yerr, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
@@ -3037,7 +2858,7 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
   PDEFIELD_TYPE y_new[ARRAY_SIZE];
   PDEFIELD_TYPE dydt[ARRAY_SIZE];
   PDEFIELD_TYPE current_time;
-  PDEFIELD_TYPE MaxTimeError = 1e-8;
+  PDEFIELD_TYPE MaxTimeError = 5e-6;
   PDEFIELD_TYPE stepsize_overshot;
   bool overshot = false;
   bool celltype2 = false;
@@ -3238,7 +3059,7 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, i
   PDEFIELD_TYPE y_new[ARRAY_SIZE];
   PDEFIELD_TYPE dydt[ARRAY_SIZE];
   PDEFIELD_TYPE current_time;
-  PDEFIELD_TYPE MaxTimeError = 1e-6;
+  PDEFIELD_TYPE MaxTimeError = 1e-7;
   PDEFIELD_TYPE stepsize_overshot;
   bool overshot = false;
   bool celltype2 = false;
@@ -3328,22 +3149,20 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   cudaMemcpy(d_sigmafield, sigmafield[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(d_PDEvars, PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
 
-  cout << "Before: PDEvars[6355] = " << PDEvars[6355] << endl;
-
-  //setup matrices for upperdiagonal, diagonal and lower diagonal for both the horizontal and vertical direction, since these remain the same during once MCS
-  InitializeDiagonals<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, lowerH, upperH, diagH, lowerV, upperV, diagV, d_couplingcoefficient);
-  cudaDeviceSynchronize();
-  errSync  = cudaGetLastError();
-  errAsync = cudaDeviceSynchronize();
-  if (errSync != cudaSuccess) 
-    printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-  if (errAsync != cudaSuccess)
-    printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-
   
   int nr_blocks = sizex*sizey/par.threads_per_core + 1;
   
   for (int iteration = 0; iteration < repeat; iteration++){
+
+      //setup matrices for upperdiagonal, diagonal and lower diagonal for both the horizontal and vertical direction, since these remain the same during once MCS
+    InitializeDiagonals<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, lowerH, upperH, diagH, lowerV, upperV, diagV, d_couplingcoefficient);
+    cudaDeviceSynchronize();
+    errSync  = cudaGetLastError();
+    errAsync = cudaDeviceSynchronize();
+    if (errSync != cudaSuccess) 
+      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+    if (errAsync != cudaSuccess)
+      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
     //Do an ODE step of size dt/2
     //ODEstepRL_Paci<<<nr_blocks, par.threads_per_core>>>(dt/2, dtt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
     //ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
@@ -3357,13 +3176,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
 
     
-    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 1.\n";
         exit(1);
       }
-    }
+    }*/
     //for (int i = 0; i < layers; i++)
     //cout << "After first FE step, alt_PDEvars["<< 6355 + sizex*sizey*i << "] = " << alt_PDEvars[6355 + sizex*sizey*i] << endl;
     
@@ -3398,13 +3217,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     
 
     
-    cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    /*cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 2.\n";
         exit(1);
       }
-    }
+    }*/
 
     //cout << "After first FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
     
@@ -3426,13 +3245,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
       
     
-    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 3.\n";
         exit(1);
       }
-    }
+    }*/
       
       
     //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
@@ -3479,42 +3298,41 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     
       //increase time by dt/2
     thetime = thetime + dt/2; 
-
-    cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    /*cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 4.\n";
         exit(1);
       }
-    }
+    }*/
     //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     //cout << "After first ADI step, PDEvars[23885] = " << PDEvars[23885] << endl;
 
-    
-    cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    cudaDeviceSynchronize();
-    ofstream myfile;
-    myfile.open ("stimulus.txt", std::ios_base::app);
-    myfile << thetime << ",";
-    for (int i = 0; i < layers; i++)
-      myfile << PDEvars[int(sizey*10.5)+sizex*sizey*i] << ",";
-    myfile << endl;
-    myfile.close();
+     
+  }
+  cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+  cudaDeviceSynchronize();
+  ofstream myfile;
+  myfile.open ("stimulus.txt", std::ios_base::app);
+  myfile << thetime << ",";
+  for (int i = 0; i < layers; i++)
+    myfile << PDEvars[int(sizey*10.5)+sizex*sizey*i] << ",";
+  myfile << endl;
+  myfile.close();
 
-    myfile.open ("end.txt", std::ios_base::app);
-    myfile << thetime << ",";
-    for (int i = 0; i < layers; i++)
-      myfile << PDEvars[sizex*sizey-int(sizey*10.5)+sizex*sizey*i] << ",";
-    myfile << endl;
-    myfile.close();
+  myfile.open ("end.txt", std::ios_base::app);
+  myfile << thetime << ",";
+  for (int i = 0; i < layers; i++)
+    myfile << PDEvars[sizex*sizey-int(sizey*10.5)+sizex*sizey*i] << ",";
+  myfile << endl;
+  myfile.close();
 
 
-    cout << "PDEvars["<< int(sizey*10.5)<< "] = " << PDEvars[int(sizey*10.5)] << 
-    ", PDEvars["<< sizex*sizey-int(sizey*10.5)<< "] = " << PDEvars[sizex*sizey-int(sizey*10.5)] << " and time = " << thetime << endl;
-    if (!(PDEvars[int(sizex/2*sizey + 0.5 * sizey) ]>-1000000000 && PDEvars[int(sizex/2*sizey + 0.5 * sizey)] < 1000000000)){
-      cout << "We encountered a NaN error. Abort the program. \n";
-      exit(1);
-    }
+  cout << "PDEvars["<< int(sizey*10.5)<< "] = " << PDEvars[int(sizey*10.5)] << 
+  ", PDEvars["<< sizex*sizey-int(sizey*10.5)<< "] = " << PDEvars[sizex*sizey-int(sizey*10.5)] << " and time = " << thetime << endl;
+  if (!(PDEvars[int(sizex/2*sizey + 0.5 * sizey) ]>-1000000000 && PDEvars[int(sizex/2*sizey + 0.5 * sizey)] < 1000000000)){
+    cout << "We encountered a NaN error. Abort the program. \n";
+    exit(1);
   }
   
 }
@@ -3699,7 +3517,6 @@ bool PDE::plotPos(int x, int y, Graphics * graphics, int layer) {
     graphics->Rectangle(MapColour(val), x, y);
     return false;
   }
-  cout << "Something weird is happening when plotting PDE field\n";
   return true;
 }
 

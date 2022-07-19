@@ -46,8 +46,11 @@ using namespace std;
 INIT {
   try {
     // Define initial distribution of cells
-    CPM->GrowInCellsInMicropattern(par.n_init_cells,par.size_init_cells);
-    CPM->ConstructInitCells(*this);
+    //CPM->GrowInCellsInMicropattern(par.n_init_cells,par.size_init_cells);
+    //CPM->ConstructInitCells(*this);
+
+    CPM->GrowCellGrid(*this);
+    CPM->ConstructInitCellGrid(*this);
     
     // If we have only one big cell and divide it a few times
     // we start with a nice initial clump of cells. 
@@ -57,9 +60,12 @@ INIT {
     for (int i=0;i<par.divisions;i++) {
       CPM->DivideCells();
     }
+
+    
     
     // Assign a random type to each of the cells
-    CPM->SetTypesWithMask();
+
+    //CPM->SetTypesWithMask();
     //CPM->SetRandomTypes();
     CPM->SetUpTauMatrix(par.sizex,par.sizey);
     CPM->InitializeEdgeList();
@@ -69,6 +75,7 @@ INIT {
     std::cerr << error << "\n";
     exit(1);
 
+  
   }
 }
 

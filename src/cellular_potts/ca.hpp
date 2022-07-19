@@ -248,6 +248,9 @@ public:
   // to apply a blob counting algorithm
   
   void ConstructInitCells(Dish &beast);
+  void ConstructInitCellGrid(Dish &beast);
+
+  
   //void ConstructInitCells(Dish &beast, int tau, int TArea,int TPerimeter);
   //void ConstructInitCells(Dish &beast, int tau, int TArea,int TPerimeter, int AdArea);
 
@@ -304,6 +307,7 @@ public:
   int GrowInCells(int n_cells, int cellsize, double subfield=1., int posx=-1, int posy=-1);
   int GrowInCells(int n_cells, int cell_size, int sx, int sy, int offset_x, int offset_y);
   int GrowInCellsInMicropattern(int n_cells, int cellsize);
+  void GrowCellGrid(Dish &beast);
   void RandomSpins(double prob);
     
   int SquareCell(int sig, int cx, int cy, int size);
@@ -432,7 +436,7 @@ private:
   void ConvertSpin(int x,int y,int xp,int yp);
   void ExchangeSpin(int x,int y,int xp,int yp);
     
-  void DetectLeftSideIsthmus(void);
+  void DetectSidesIsthmus(void);
   void SprayMedium(void);
   int CopyvProb(int DH,  double stiff, bool anneal);
   void FreezeAmoebae(void);
@@ -466,6 +470,7 @@ protected:
 
 private:
   int left_side_isthmus;
+  int right_side_isthmus;
   bool frozen;
   static const int nx[21], ny[21];
   static const int nbh_level[4];

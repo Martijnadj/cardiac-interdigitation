@@ -1323,6 +1323,10 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
   int edgeadjusting;
   int xn, yn; // neighbour cells
 
+  for (vector<Cell>::iterator c = cell->begin(); c != cell->end(); c++)
+    
+  
+
   if (frozen)
     return 0;
 
@@ -2353,7 +2357,7 @@ void CellularPotts::ConstructInitCells(Dish &beast)
     for (vector<Cell>::iterator c = cell->begin(); c != cell->end(); c++)
     {
       if (par.target_area >= 0)
-      {
+      { 
         c->SetTargetArea(par.target_area);
       }
       else
@@ -2362,6 +2366,98 @@ void CellularPotts::ConstructInitCells(Dish &beast)
       }
     }
   }
+}
+
+void CellularPotts::ConstructInitCellGrid(Dish &beast)
+{  
+
+  // Get the maximum cell ID (mostly equal to the cell number)
+  int loop = sizex * sizey;
+  int cells = 0;
+  int cells1 = 0;
+  int cells2 = 0;
+  for (int i = 0; i < loop; i++)
+  {
+    if (cells < sigma[0][i])
+      cells = sigma[0][i];
+  }
+
+
+  cerr << "[ cells = " << cells << "]\n";
+
+  // construct enough cells for the zygote.  "cells", contains the
+  // number of colours (excluding background).
+  {
+    for (int i = 0; i < cells; i++)
+    {
+      cell->push_back(Cell(beast));
+    }
+  }
+
+  // Set the area and target area of the cell
+  // makes use of the pointer to the Cell pointer of Dish
+  // which is a member of CellularPotts
+
+  MeasureCellSizes();
+  SetTypesWithMask();
+  
+
+  // set zygote_area to mean cell area.
+
+  int mean_area_1 = 0;
+  int mean_area_2 = 0;
+  for (vector<Cell>::iterator c = cell->begin(); c != cell->end(); c++)
+  {
+    if (c->getTau() == 1){
+      mean_area_1 += c->Area();
+      cells1++;
+    }
+    else if (c->getTau() == 2){
+      mean_area_2 += c->Area();
+      cells2++;
+      
+    }
+  }
+
+  if (cells1 != 0)
+    mean_area_1 /= cells1;
+  if (cells1 != 0) 
+    mean_area_2 /= cells2;
+
+  cout << "mean_area 1 = " << mean_area_1 << "\n";
+  cout << "mean_area 2 = " << mean_area_2 << "\n";
+  // set all cell areas to the mean area
+  {
+    for (vector<Cell>::iterator c = cell->begin(); c != cell->end(); c++)
+    {
+      if (c->getTau() == 1)
+        c->SetTargetArea(mean_area_1);
+      if (c->getTau() == 2)
+        c->SetTargetArea(mean_area_2);    
+    }
+  }
+}
+
+
+void CellularPotts::GrowCellGrid(Dish &beast){
+  int delta_x = 15;
+  int delta_y = 20;
+  int cell_number = 1;
+  bool added_cell = false;
+  for (int grid_x = 0; grid_x < sizex; grid_x += delta_x)
+    for (int grid_y = 0; grid_y < sizey; grid_y += delta_y){
+      for (int x = 0; x < delta_x; x++)
+        for (int y = 0; y < delta_y; y++){
+          if (grid_x+x < sizex && grid_y+y < sizey)
+            if (mask[grid_x+x][grid_y+y]){
+              added_cell = true;
+              sigma[grid_x+x][grid_y+y] = cell_number;
+            }        
+        }
+      if(added_cell)
+        cell_number++;
+      added_cell = false;
+    }
 }
 
 void CellularPotts::MeasureCellSizes(void)
@@ -2865,15 +2961,19 @@ int CellularPotts::GrowInCellsInMicropattern(int n_cells, int cell_size)
   return cellnum;
 }
 
-void CellularPotts::DetectLeftSideIsthmus(){
+void CellularPotts::DetectSidesIsthmus(){
   bool interrupted = false;
   for (int y = sizey/2; y < sizey; y++){
     interrupted = false;
     for (int x = sizex -1; x > 0; x--){
-      if(!mask[x][y] && mask[x-1][y] && !interrupted)
+      if(mask[x][y] && !mask[x-1][y] && !interrupted){
         interrupted = true;
+        right_side_isthmus = x-1;
+        cout << "right_side_isthmus = " << right_side_isthmus << endl;
+      }
       else if(!mask[x][y] && mask[x-1][y] && interrupted){
         left_side_isthmus = x;
+        cout << "left_side_isthmus = " << left_side_isthmus << endl;
         return;
       }    
     }      
@@ -3264,8 +3364,8 @@ void CellularPotts::SetRandomTypes(void)
 }
 
 void CellularPotts::SetTypesWithMask(void)
-{
-  DetectLeftSideIsthmus();
+{ 
+  DetectSidesIsthmus();
   int xcoord;
   int celltype;
 
@@ -3274,10 +3374,10 @@ void CellularPotts::SetTypesWithMask(void)
   for (;
        c != cell->end();
        c++)
-  {
+  { 
 
     int xcoord = c->getCenterX();
-    if (xcoord > left_side_isthmus)
+    if (xcoord > right_side_isthmus)
       celltype = 1;
     else
       celltype = 2;

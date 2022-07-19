@@ -3059,7 +3059,7 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, i
   PDEFIELD_TYPE y_new[ARRAY_SIZE];
   PDEFIELD_TYPE dydt[ARRAY_SIZE];
   PDEFIELD_TYPE current_time;
-  PDEFIELD_TYPE MaxTimeError = 1e-7;
+  PDEFIELD_TYPE MaxTimeError = 5e-6;
   PDEFIELD_TYPE stepsize_overshot;
   bool overshot = false;
   bool celltype2 = false;

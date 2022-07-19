@@ -714,3 +714,220 @@ total_area = 106606 pixels or 0.42642399999999997 mm^2
 
 --------------------------------------------------------------------------- 
 
+files/mask25.dat uses the following parameters:
+
+pixel_size = 0.003
+
+Left shape:
+L_shape = circle
+L_radius = 50 pixels or 0.15 mm 
+
+Isthmus: 
+I_length = 10 pixels or 0.03 mm 
+I_width = 25 pixels or 0.075 mm 
+
+Right shape: 
+R_shape = wedge
+R_angle = 90
+R_max_protrusion_left = 150 pixels or 0.45 mm 
+R_max_height = 400 pixels or 1.2 mm 
+R_width = 250 pixels or 0.75 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.015 mm 
+Offset_y = 5 pixels or 0.015 mm 
+
+This results in:
+x_max = 370 pixels or 1.11 mm 
+y_max = 410 pixels or 1.23 mm 
+
+total_area = 106606 pixels or 0.959454 mm^2 
+
+--------------------------------------------------------------------------- 
+
+files/mask26.dat uses the following parameters:
+
+pixel_size = 0.003
+
+Left shape:
+L_shape = circle
+L_radius = 200 pixels or 0.6 mm 
+
+Isthmus: 
+I_length = 10 pixels or 0.03 mm 
+I_width = 100 pixels or 0.3 mm 
+
+Right shape: 
+R_shape = wedge
+R_angle = 90
+R_max_protrusion_left = 150 pixels or 0.45 mm 
+R_max_height = 400 pixels or 1.2 mm 
+R_width = 250 pixels or 0.75 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.015 mm 
+Offset_y = 5 pixels or 0.015 mm 
+
+This results in:
+x_max = 670 pixels or 2.0100000000000002 mm 
+y_max = 410 pixels or 1.23 mm 
+
+total_area = 225679 pixels or 2.031111 mm^2 
+
+--------------------------------------------------------------------------- 
+
+files/mask27.dat uses the following parameters:
+
+pixel_size = 0.003
+
+Left shape:
+L_shape = circle
+L_radius = 200 pixels or 0.6 mm 
+
+Isthmus: 
+I_length = 10 pixels or 0.03 mm 
+I_width = 100 pixels or 0.3 mm 
+
+Right shape: 
+R_shape = wedge
+R_angle = 90
+R_max_protrusion_left = 150 pixels or 0.45 mm 
+R_max_height = 400 pixels or 1.2 mm 
+R_width = 250 pixels or 0.75 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.015 mm 
+Offset_y = 5 pixels or 0.015 mm 
+
+This results in:
+x_max = 670 pixels or 2.0100000000000002 mm 
+y_max = 410 pixels or 1.23 mm 
+
+total_area = 225679 pixels or 2.031111 mm^2 
+
+--------------------------------------------------------------------------- 
+
+files/mask28.dat uses the following parameters:
+
+pixel_size = 0.003
+
+Left shape:
+L_shape = circle
+L_radius = 150 pixels or 0.45 mm 
+
+Isthmus: 
+I_length = 10 pixels or 0.03 mm 
+I_width = 100 pixels or 0.3 mm 
+
+Right shape: 
+R_shape = wedge
+R_angle = 90
+R_max_protrusion_left = 150 pixels or 0.45 mm 
+R_max_height = 500 pixels or 1.5 mm 
+R_width = 300 pixels or 0.9 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.015 mm 
+Offset_y = 5 pixels or 0.015 mm 
+
+This results in:
+x_max = 620 pixels or 1.86 mm 
+y_max = 510 pixels or 1.53 mm 
+
+total_area = 220401 pixels or 1.983609 mm^2 
+
+--------------------------------------------------------------------------- 
+
+files/mask29.dat uses the following parameters:
+
+pixel_size = 0.003
+
+Left shape:
+L_shape = circle
+L_radius = 150 pixels or 0.45 mm 
+
+Isthmus: 
+I_length = 150 pixels or 0.45 mm 
+I_width = 100 pixels or 0.3 mm 
+
+Right shape: 
+R_shape = wedge
+R_angle = 90
+R_max_protrusion_left = 150 pixels or 0.45 mm 
+R_max_height = 500 pixels or 1.5 mm 
+R_width = 300 pixels or 0.9 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.015 mm 
+Offset_y = 5 pixels or 0.015 mm 
+
+This results in:
+x_max = 760 pixels or 2.2800000000000002 mm 
+y_max = 510 pixels or 1.53 mm 
+
+total_area = 234401 pixels or 2.109609 mm^2 
+
+--------------------------------------------------------------------------- 
+
+files/mask30.dat uses the following parameters:
+
+pixel_size = 0.003
+
+Left shape:
+L_shape = circle
+L_radius = 150 pixels or 0.45 mm 
+
+Isthmus: 
+I_length = 150 pixels or 0.45 mm 
+I_width = 100 pixels or 0.3 mm 
+
+Right shape: 
+R_shape = wedge
+R_angle = 90
+R_max_protrusion_left = 150 pixels or 0.45 mm 
+R_max_height = 500 pixels or 1.5 mm 
+R_width = 300 pixels or 0.9 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.015 mm 
+Offset_y = 5 pixels or 0.015 mm 
+
+This results in:
+x_max = 760 pixels or 2.2800000000000002 mm 
+y_max = 510 pixels or 1.53 mm 
+
+total_area = 234401 pixels or 2.109609 mm^2 
+
+--------------------------------------------------------------------------- 
+
+files/mask31.dat uses the following parameters:
+
+pixel_size = 0.003
+
+Left shape:
+L_shape = circle
+L_radius = 100 pixels or 0.3 mm 
+
+Isthmus: 
+I_length = 150 pixels or 0.45 mm 
+I_width = 100 pixels or 0.3 mm 
+
+Right shape: 
+R_shape = wedge
+R_angle = 90
+R_max_protrusion_left = 150 pixels or 0.45 mm 
+R_max_height = 400 pixels or 1.2 mm 
+R_width = 250 pixels or 0.75 mm 
+
+Offset: 
+Offset_x = 5 pixels or 0.015 mm 
+Offset_y = 5 pixels or 0.015 mm 
+
+This results in:
+x_max = 610 pixels or 1.83 mm 
+y_max = 410 pixels or 1.23 mm 
+
+total_area = 145686 pixels or 1.311174 mm^2 
+
+--------------------------------------------------------------------------- 
+

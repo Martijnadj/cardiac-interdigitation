@@ -38,6 +38,10 @@ class Parameter {
   double lambda;
   double lambda2;
   char * Jtable;
+  int celltype1_length;
+  int celltype1_width;
+  int celltype2_length;
+  int celltype2_width;
   int conn_diss;
   int ref_adhesive_area;
   int area_constraint_type;

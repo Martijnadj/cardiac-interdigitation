@@ -39,6 +39,13 @@ Parameter::Parameter() {
   target_length = 60;
   lambda = 50;
   lambda2 = 5.0;
+
+  //For initializing cell grid
+  celltype1_width = 3;
+  celltype1_length = 20;
+  celltype2_width = 3;
+  celltype2_length = 4;
+
   Jtable = strdup("J.dat");
   conn_diss = 2000;
   cluster_connectivity = false;
@@ -169,6 +176,12 @@ void Parameter::Read(const char *filename) {
 
   area_constraint_type = igetpar(fp, "area_constraint_type",0, true);
   lambda2 = fgetpar(fp, "lambda2", 5.0, true);
+
+  celltype1_width = igetpar(fp, "celltype1_width", 3, true);
+  celltype1_length= igetpar(fp, "celltype1_length", 20, true);
+  celltype2_width = igetpar(fp, "celltype2_width", 3, true);
+  celltype2_length = igetpar(fp, "celltype2_length", 4, true);
+
   Jtable = sgetpar(fp, "Jtable", "J.dat", true);
   conn_diss = igetpar(fp, "conn_diss", 2000, true);
   cluster_connectivity = bgetpar(fp, "cluster_connectivity", false, true);
@@ -282,12 +295,6 @@ void Parameter::Write(ostream &os) const {
 
   os << " T = " << T << endl;
   os << " target_area = " << target_area << endl;
-  os << " target_length = " << target_length << endl;
-  os << " lambda = " << lambda << endl;
-  os << " lambda2 = " << lambda2 << endl;
-  if (Jtable) 
-    os << " Jtable = " << Jtable << endl;
-  os << " conn_diss = " << conn_diss << endl;
   os << " ref_adhesive_area = " << ref_adhesive_area << endl;
   os << " target_length = " << target_length << endl;
   os << " lambda = " << lambda << endl;
@@ -295,6 +302,12 @@ void Parameter::Write(ostream &os) const {
   os << " lambda2 = " << lambda2 << endl;
   if (Jtable)
     os << " Jtable = " << Jtable << endl;
+
+  os << " celltype1_width = " << celltype1_width << endl;
+  os << " celltype1_length = " << celltype1_length << endl;
+  os << " celltype2_width = " << celltype2_width << endl;
+  os << " celltype2_length = " << celltype2_length << endl;
+
   os << " conn_diss = " << conn_diss << endl;
   os << " cluster_connectivity = " << cluster_connectivity << endl;
   os << " vecadherinknockout = " << sbool(vecadherinknockout) << endl;

@@ -2436,18 +2436,42 @@ void CellularPotts::ConstructInitCellGrid(Dish &beast)
         c->SetTargetArea(mean_area_2);    
     }
   }
+  ResetTargetLengths();
 }
 
 
 void CellularPotts::GrowCellGrid(Dish &beast){
-  int delta_x = 15;
-  int delta_y = 20;
+  DetectSidesIsthmus();
+  int delta_x1 = par.celltype1_length;
+  int delta_y1 = par.celltype1_width;
+  int delta_x2 = par.celltype2_length;
+  int delta_y2 = par.celltype2_width;
+
+  cout << "delta_x1 = " << delta_x1 << endl;
+  cout << "delta_y1 = " << delta_y1 << endl;
+  cout << "delta_x2 = " << delta_x2 << endl;
+  cout << "delta_y2 = " << delta_y2 << endl;
+
   int cell_number = 1;
   bool added_cell = false;
-  for (int grid_x = 0; grid_x < sizex; grid_x += delta_x)
-    for (int grid_y = 0; grid_y < sizey; grid_y += delta_y){
-      for (int x = 0; x < delta_x; x++)
-        for (int y = 0; y < delta_y; y++){
+  for (int grid_x = 0; grid_x < right_side_isthmus; grid_x += delta_x2)
+    for (int grid_y = 0; grid_y < sizey; grid_y += delta_y2){
+      for (int x = 0; x < delta_x2; x++)
+        for (int y = 0; y < delta_y2; y++){
+          if (grid_x+x < right_side_isthmus && grid_y+y < sizey)
+            if (mask[grid_x+x][grid_y+y]){
+              added_cell = true;
+              sigma[grid_x+x][grid_y+y] = cell_number;
+            }        
+        }
+      if(added_cell)
+        cell_number++;
+      added_cell = false;
+    }
+  for (int grid_x = right_side_isthmus; grid_x < sizex; grid_x += delta_x1)
+    for (int grid_y = 0; grid_y < sizey; grid_y += delta_y1){
+      for (int x = 0; x < delta_x1; x++)
+        for (int y = 0; y < delta_y1; y++){
           if (grid_x+x < sizex && grid_y+y < sizey)
             if (mask[grid_x+x][grid_y+y]){
               added_cell = true;
@@ -2969,11 +2993,9 @@ void CellularPotts::DetectSidesIsthmus(){
       if(mask[x][y] && !mask[x-1][y] && !interrupted){
         interrupted = true;
         right_side_isthmus = x-1;
-        cout << "right_side_isthmus = " << right_side_isthmus << endl;
       }
       else if(!mask[x][y] && mask[x-1][y] && interrupted){
         left_side_isthmus = x;
-        cout << "left_side_isthmus = " << left_side_isthmus << endl;
         return;
       }    
     }      
@@ -3346,7 +3368,12 @@ void CellularPotts::ResetTargetLengths(void)
   ++c;
   for (; c != cell->end(); c++)
   {
-    c->SetTargetLength(par.target_length);
+    if (c->getTau() == 1){
+      c->SetTargetLength(par.celltype1_length);
+    }
+    else if (c->getTau() == 2){
+      c->SetTargetLength(par.celltype2_length);
+    }
   }
 }
 

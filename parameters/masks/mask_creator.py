@@ -4,7 +4,7 @@ import os
 import math
 from os import path
 
-pixel_size = 0.002
+pixel_size = 0.003
 #in millimeters
 
 #paramaters for mask, see sketch.jpg for clarification
@@ -12,13 +12,13 @@ pixel_size = 0.002
 #Left shape
 L_shape = "circle"
 #Choose either "circle" or "rectangle"
-L_radius = 50
+L_radius = 100
 L_width = 1200
 L_height = 2500
 
 #Isthmus
-I_length = 10
-I_width = 25
+I_length = 120
+I_width = 100
 
 
 #Right shape

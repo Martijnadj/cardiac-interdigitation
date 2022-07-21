@@ -3312,21 +3312,22 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   }
   cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
   cudaDeviceSynchronize();
+  int number_of_measurements = 10;
+  int measure_loc;
   ofstream myfile;
-  myfile.open ("stimulus.txt", std::ios_base::app);
-  myfile << thetime << ",";
-  for (int i = 0; i < layers; i++)
-    myfile << PDEvars[int(sizey*10.5)+sizex*sizey*i] << ",";
-  myfile << endl;
-  myfile.close();
-
-  myfile.open ("end.txt", std::ios_base::app);
-  myfile << thetime << ",";
-  for (int i = 0; i < layers; i++)
-    myfile << PDEvars[sizex*sizey-int(sizey*10.5)+sizex*sizey*i] << ",";
-  myfile << endl;
-  myfile.close();
-
+  char fname[200];
+  for (int measurement = 1; measurement <= number_of_measurements; measurement++){ 
+    //evenly spread out measurement locations between (0.5 + 10)*sizey and (sizex-11 + 0.5)*sizey
+    measure_loc = int ((0.5 + int(10 * (number_of_measurements-measurement)/(number_of_measurements-1) + (sizex-11)*(measurement-1)/(number_of_measurements-1)))*sizey);  
+    sprintf(fname,"location_%03d.txt",measurement);
+    myfile.open(fname, std::ios_base::app);
+    
+    myfile << thetime << ",";
+      for (int i = 0; i < layers; i++)
+        myfile << PDEvars[measure_loc+sizex*sizey*i] << ",";
+    myfile << endl;
+    myfile.close();
+  }
 
   cout << "PDEvars["<< int(sizey*10.5)<< "] = " << PDEvars[int(sizey*10.5)] << 
   ", PDEvars["<< sizex*sizey-int(sizey*10.5)<< "] = " << PDEvars[sizex*sizey-int(sizey*10.5)] << " and time = " << thetime << endl;

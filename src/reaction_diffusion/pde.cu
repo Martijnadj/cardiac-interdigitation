@@ -3423,7 +3423,7 @@ __device__ void derivsGrandi(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIELD_
 
   for (int i = 0; i < 41; i++){
     RATES[i] = RATES[i] * 1000; //convert from ms to s
-
+  }
 }
 
 __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers, PDEFIELD_TYPE thetime, PDEFIELD_TYPE stepsize, PDEFIELD_TYPE* yout, PDEFIELD_TYPE *yerr, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){

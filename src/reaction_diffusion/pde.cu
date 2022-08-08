@@ -150,7 +150,7 @@ Numerical recipes : the art of scientific computing (3rd ed.).
 #include "graph.hpp"
 #include <cusparse.h>
 #include <cuda_profiler_api.h>
-#define ARRAY_SIZE 33
+#define ARRAY_SIZE 41
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -316,6 +316,7 @@ void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
   */
 
   //Mackelar2009
+  /*
   PDEinit1[0] = -74.031982;
   PDEinit1[1] = 130.022096;
   PDEinit1[2] = 8.516766;
@@ -346,9 +347,54 @@ void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
   PDEinit1[27] = 0.431547;
   PDEinit1[28] = 0.470055;
   PDEinit1[29] = 0.002814;
-  PDEinit1[30] = 0;
-  PDEinit1[31] = 0;
-  PDEinit1[32] = 0;
+  for (int j = 30; j < ARRAY_SIZE; j++)
+    PDEinit1[j] = 0;
+  */
+
+  //Grandi2011
+  PDEinit1[0] = -7.34336366728778671e+01;
+  PDEinit1[1] =  3.94923428392655786e-03;
+  PDEinit1[2] =  1.35538532457244482e-01;
+  PDEinit1[3] =  1.03674364292988680e-01;
+  PDEinit1[4] =  1.90759804527589089e-01;
+  PDEinit1[5] =  1.35640688636079511e-02;
+  PDEinit1[6] =  2.14063418881809235e-02;
+  PDEinit1[7] =  4.45327242854324807e-03;
+  PDEinit1[8] =  1.27856586024588575e-01;
+  PDEinit1[9] =  5.69999505293381902e-03;
+  PDEinit1[10] =  1.83143535034222225e-02;
+  PDEinit1[11] =  2.10808768153058460e-04;
+  PDEinit1[12] =  3.25814677291117296e-04;
+  PDEinit1[13] =  2.33018340557575125e-04;
+  PDEinit1[14] =  3.61396062660070427e+00;
+  PDEinit1[15] =  7.88607791910409195e-01;
+  PDEinit1[16] =  9.15153381546177336e+00;
+  PDEinit1[17] =  9.15182798281732346e+00;
+  PDEinit1[18] =  5.02305826642838293e-01;
+  PDEinit1[19] =  1.13337536953687845e+00;
+  PDEinit1[20] =  7.02128101897185673e-04;
+  PDEinit1[21] =  2.16850216379767157e-05;
+  PDEinit1[22] =  9.98384427312367095e-01;
+  PDEinit1[23] =  4.49572164109603364e-02;
+  PDEinit1[24] =  3.28512098597005947e-02;
+  PDEinit1[25] = 120.0;
+  PDEinit1[26] =  1.31290096227093382e-03;
+  PDEinit1[27] =  7.49436760722081534e-03;
+  PDEinit1[28] =  9.15199678386256998e+00;
+  PDEinit1[29] =  3.93548562883350357e-04;
+  PDEinit1[30] =  9.58234428284286399e-01;
+  PDEinit1[31] =  3.15482710277587786e-01;
+  PDEinit1[32] =  2.48034071360795916e-01;
+  PDEinit1[33] =  1.89326933812916480e-02;
+  PDEinit1[34] =  3.79829335413739144e-02;
+  PDEinit1[35] =  1.01974216400706526e-02;
+  PDEinit1[36] =  1.37939236359928058e-03;
+  PDEinit1[37] =  9.45874848392074696e-01;
+  PDEinit1[38] =  5.01323282772066123e-07;
+  PDEinit1[39] =  2.01567245823636694e-06;
+  PDEinit1[40] =  8.00819151705148946e-01;
+  for (int j = 41; j < ARRAY_SIZE; j++)
+    PDEinit1[j] = 0;
   
   //Fabbri-Severi 2017
   PDEinit2[0] = -47.787168;
@@ -384,6 +430,8 @@ void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
   PDEinit2[30] = 0.709051;
   PDEinit2[31] = 0.1162;
   PDEinit2[32] = 0.00277;
+  for (int j = 33; j < ARRAY_SIZE; j++)
+    PDEinit2[j] = 0;
 
   
 
@@ -402,6 +450,7 @@ void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
       //  PDEvars[i] = 100000000;
     }
   }
+  
   
 
 
@@ -1817,7 +1866,7 @@ __device__ void derivsFitzHughNagumo(PDEFIELD_TYPE current_time, PDEFIELD_TYPE* 
 
 }
 
-__device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIELD_TYPE* RATES, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
+__device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIELD_TYPE* RATES, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor, int id){
   /*
    There are a total of 101 entries in the algebraic variable array.
    There are a total of 33 entries in each of the rate and state variable arrays.
@@ -2357,12 +2406,12 @@ __device__ void derivsFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDE
   ALGEBRAIC[83] =  (ALGEBRAIC[80]+ALGEBRAIC[81]+ALGEBRAIC[82])*(1.00000 - CONSTANTS_FS[106])*1.00000*CONSTANTS_FS[105];
   ALGEBRAIC[98] = (CONSTANTS_FS[9]>0.00000 ?  CONSTANTS_FS[90]*CONSTANTS_FS[89]*(ALGEBRAIC[9] - CONSTANTS_FS[96])*(1.00000+exp((ALGEBRAIC[9]+20.0000)/20.0000))*STATES[32] : 0.00000);
   ALGEBRAIC[85] =  CONSTANTS_FS[85]*STATES[24]*STATES[25]*(ALGEBRAIC[9] - CONSTANTS_FS[96]);
-  ALGEBRAIC[100] = ALGEBRAIC[59]+ALGEBRAIC[89]+ALGEBRAIC[95]+ALGEBRAIC[87]+ALGEBRAIC[61]+ALGEBRAIC[75]+ALGEBRAIC[79]+ALGEBRAIC[83]+ALGEBRAIC[84]+ALGEBRAIC[98]+ALGEBRAIC[85];
+  ALGEBRAIC[100] = I_f_factor*ALGEBRAIC[59]+I_Kr_factor*ALGEBRAIC[89]+ALGEBRAIC[95]+ALGEBRAIC[87]+ALGEBRAIC[61]+ALGEBRAIC[75]+ALGEBRAIC[79]+ALGEBRAIC[83]+ALGEBRAIC[84]+ALGEBRAIC[98]+ALGEBRAIC[85];
   RATES[0] = - ALGEBRAIC[100]/CONSTANTS_FS[3];
 
 }
 
-__device__ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIELD_TYPE* RATES, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
+__device__ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIELD_TYPE* RATES, PDEFIELD_TYPE pacing_interval, int id){
 
 
   /*
@@ -2712,7 +2761,673 @@ __device__ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIEL
   RATES[25] = (ALGEBRAIC[68] - ALGEBRAIC[66])/( 2.00000*CONSTANTS_M[46]*CONSTANTS_M[2]) -  31.0000*ALGEBRAIC[69];
 
 }
+
+__device__ void derivsGrandi(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIELD_TYPE* RATES, PDEFIELD_TYPE pacing_interval, int id){
+
+
+ /*
+   There are a total of 120 entries in the algebraic variable array.
+   There are a total of 41 entries in each of the rate and state variable arrays.
+   There are a total of 137 entries in the constant variable array.
+ */
+  /*
+  * CONSTANTS_G[0] is Bmax_CaM in component buffca (mM).
+  * CONSTANTS_G[128] is Bmax_SLhighj in component buffca (mM).
+  * CONSTANTS_G[133] is Bmax_SLhighsl in component buffca (mM).
+  * CONSTANTS_G[129] is Bmax_SLlowj in component buffca (mM).
+  * CONSTANTS_G[134] is Bmax_SLlowsl in component buffca (mM).
+  * CONSTANTS_G[1] is Bmax_SR in component buffca (mM).
+  * CONSTANTS_G[2] is Bmax_TnChigh in component buffca (mM).
+  * CONSTANTS_G[3] is Bmax_TnClow in component buffca (mM).
+  * CONSTANTS_G[4] is Bmax_myosin in component buffca (mM).
+  * STATES[20] is CaM in component buffca (mM).
+  * ALGEBRAIC[35] is J_CaB_cytosol in component buffca (mM_per_ms).
+  * ALGEBRAIC[33] is J_CaB_jntion in component buffca (mM_per_ms).
+  * ALGEBRAIC[34] is J_CaB_sl in component buffca (mM_per_ms).
+  * STATES[1] is Myoc in component buffca (mM).
+  * STATES[2] is Myom in component buffca (mM).
+  * STATES[3] is SLH_jn in component buffca (mM).
+  * STATES[4] is SLH_sl in component buffca (mM).
+  * STATES[5] is SLL_jn in component buffca (mM).
+  * STATES[6] is SLL_sl in component buffca (mM).
+  * STATES[7] is SRB in component buffca (mM).
+  * STATES[8] is TnCHc in component buffca (mM).
+  * STATES[9] is TnCHm in component buffca (mM).
+  * STATES[10] is TnCL in component buffca (mM).
+  * CONSTANTS_G[5] is koff_cam in component buffca (mS_per_uF).
+  * CONSTANTS_G[6] is koff_myoca in component buffca (mS_per_uF).
+  * CONSTANTS_G[7] is koff_myomg in component buffca (mS_per_uF).
+  * CONSTANTS_G[8] is koff_slh in component buffca (mS_per_uF).
+  * CONSTANTS_G[9] is koff_sll in component buffca (mS_per_uF).
+  * CONSTANTS_G[10] is koff_sr in component buffca (mS_per_uF).
+  * CONSTANTS_G[11] is koff_tnchca in component buffca (mS_per_uF).
+  * CONSTANTS_G[12] is koff_tnchmg in component buffca (mS_per_uF).
+  * CONSTANTS_G[102] is koff_tncl in component buffca (mS_per_uF).
+  * CONSTANTS_G[13] is kon_cam in component buffca (per_mM_per_ms).
+  * CONSTANTS_G[14] is kon_myoca in component buffca (per_mM_per_ms).
+  * CONSTANTS_G[15] is kon_myomg in component buffca (per_mM_per_ms).
+  * CONSTANTS_G[16] is kon_slh in component buffca (per_mM_per_ms).
+  * CONSTANTS_G[17] is kon_sll in component buffca (per_mM_per_ms).
+  * CONSTANTS_G[18] is kon_sr in component buffca (per_mM_per_ms).
+  * CONSTANTS_G[19] is kon_tnchca in component buffca (per_mM_per_ms).
+  * CONSTANTS_G[20] is kon_tnchmg in component buffca (per_mM_per_ms).
+  * CONSTANTS_G[21] is kon_tncl in component buffca (per_mM_per_ms).
+  * CONSTANTS_G[123] is Vjn in component geom (liter).
+  * CONSTANTS_G[126] is Vmyo in component geom (liter).
+  * CONSTANTS_G[130] is Vsl in component geom (liter).
+  * STATES[11] is Ca_i in component calcium (mM).
+  * VOI is time in component engine (s).
+  * CONSTANTS_G[22] is Mg_i in component ion (mM).
+  * STATES[12] is Ca_jn in component calcium (mM).
+  * STATES[13] is Ca_sl in component calcium (mM).
+  * CONSTANTS_G[23] is ISO in component cell (dimensionless).
+  * CONSTANTS_G[24] is Bmax_Na_jn in component buffna (mM).
+  * CONSTANTS_G[25] is Bmax_Na_sl in component buffna (mM).
+  * STATES[14] is NaB_jn in component buffna (mM).
+  * STATES[15] is NaB_sl in component buffna (mM).
+  * CONSTANTS_G[26] is koff_na in component buffna (mS_per_uF).
+  * CONSTANTS_G[27] is kon_na in component buffna (per_mM_per_ms).
+  * STATES[16] is Na_jn in component sodium (mM).
+  * STATES[17] is Na_sl in component sodium (mM).
+  * STATES[18] is Ca_sr in component calcium (mM).
+  * STATES[19] is Csqn in component calcium (mM).
+  * ALGEBRAIC[82] is ICa_tot_jn in component calcium (A_per_F).
+  * ALGEBRAIC[89] is ICa_tot_sl in component calcium (A_per_F).
+  * CONSTANTS_G[28] is JCa_slmyo in component geom (m3_per_s).
+  * CONSTANTS_G[131] is Vsr in component geom (liter).
+  * ALGEBRAIC[87] is J_serca in component ryr (mM_per_ms).
+  * CONSTANTS_G[29] is C in component cell (farad).
+  * CONSTANTS_G[30] is JCa_jnsl in component geom (m3_per_s).
+  * CONSTANTS_G[31] is F in component phys (C_per_mol).
+  * ALGEBRAIC[83] is J_SRCarel in component ryr (mM_per_ms).
+  * ALGEBRAIC[85] is J_SR_leak in component ryr (mM_per_ms).
+  * CONSTANTS_G[135] is Bmax_Csqn in component calcium_Csqn (mM).
+  * CONSTANTS_G[32] is koff_csqn in component calcium_Csqn (mS_per_uF).
+  * CONSTANTS_G[33] is kon_csqn in component calcium_Csqn (per_mM_per_ms).
+  * ALGEBRAIC[81] is ICaB_jn in component icab (A_per_F).
+  * ALGEBRAIC[37] is ICaL_Ca_jn in component ical (A_per_F).
+  * ALGEBRAIC[64] is INaCa_jn in component inaca (A_per_F).
+  * ALGEBRAIC[75] is IpCa_jn in component ipca (A_per_F).
+  * ALGEBRAIC[86] is ICaB_sl in component icab (A_per_F).
+  * ALGEBRAIC[39] is ICaL_Ca_sl in component ical (A_per_F).
+  * ALGEBRAIC[68] is INaCa_sl in component inaca (A_per_F).
+  * ALGEBRAIC[77] is IpCa_sl in component ipca (A_per_F).
+  * CONSTANTS_G[34] is AF in component cell (dimensionless).
+  * CONSTANTS_G[35] is RA in component cell (dimensionless).
+  * CONSTANTS_G[36] is JNa_jnsl in component geom (m3_per_s).
+  * CONSTANTS_G[37] is JNa_slmyo in component geom (m3_per_s).
+  * CONSTANTS_G[103] is Vcell in component geom (liter).
+  * CONSTANTS_G[38] is cell_length in component geom (um).
+  * CONSTANTS_G[39] is cell_radius in component geom (um).
+  * CONSTANTS_G[40] is pi in component geom (dimensionless).
+  * ALGEBRAIC[88] is ICaB in component icab (A_per_F).
+  * CONSTANTS_G[41] is gCaB in component icab (mS_per_uF).
+  * CONSTANTS_G[42] is Fjn in component junc (dimensionless).
+  * STATES[0] is V in component membrane (mV).
+  * ALGEBRAIC[80] is ECa_jn in component nernst (mV).
+  * CONSTANTS_G[127] is Fsl in component junc (dimensionless).
+  * ALGEBRAIC[84] is ECa_sl in component nernst (mV).
+  * ALGEBRAIC[50] is ICaL in component ical (A_per_F).
+  * ALGEBRAIC[40] is ICaL_Ca in component ical (A_per_F).
+  * ALGEBRAIC[42] is ICaL_K in component ical (A_per_F).
+  * ALGEBRAIC[48] is ICaL_Na in component ical (A_per_F).
+  * ALGEBRAIC[44] is ICaL_Na_jn in component ical (A_per_F).
+  * ALGEBRAIC[46] is ICaL_Na_sl in component ical (A_per_F).
+  * CONSTANTS_G[43] is Q10CaL in component ical (dimensionless).
+  * STATES[21] is d in component ical (dimensionless).
+  * STATES[22] is f in component ical (dimensionless).
+  * STATES[23] is fCaB_jn in component ical (dimensionless).
+  * STATES[24] is fCaB_sl in component ical (dimensionless).
+  * CONSTANTS_G[44] is f_conducting in component ical (dimensionless).
+  * CONSTANTS_G[45] is fcaCaMSL in component ical (dimensionless).
+  * CONSTANTS_G[46] is fcaCaj in component ical (dimensionless).
+  * ALGEBRAIC[36] is ibarca_jn in component ical (uA_per_cm2).
+  * ALGEBRAIC[38] is ibarca_sl in component ical (uA_per_cm2).
+  * ALGEBRAIC[41] is ibark in component ical (uA_per_cm2).
+  * ALGEBRAIC[43] is ibarna_jn in component ical (uA_per_cm2).
+  * ALGEBRAIC[45] is ibarna_sl in component ical (uA_per_cm2).
+  * CONSTANTS_G[105] is pCa in component ical (cm_per_s).
+  * CONSTANTS_G[47] is pCa_max in component ical (cm_per_s).
+  * CONSTANTS_G[106] is pK in component ical (cm_per_s).
+  * CONSTANTS_G[48] is pK_max in component ical (cm_per_s).
+  * CONSTANTS_G[107] is pNa in component ical (cm_per_s).
+  * CONSTANTS_G[49] is pNa_max in component ical (cm_per_s).
+  * CONSTANTS_G[50] is Fjn_CaL in component junc (dimensionless).
+  * CONSTANTS_G[132] is Q in component phys (dimensionless).
+  * CONSTANTS_G[108] is Fsl_CaL in component junc (dimensionless).
+  * ALGEBRAIC[0] is ical_d_inf in component ical_d (dimensionless).
+  * ALGEBRAIC[14] is ical_d_tau in component ical_d (ms).
+  * ALGEBRAIC[1] is ical_f_inf in component ical_f (dimensionless).
+  * ALGEBRAIC[15] is ical_f_tau in component ical_f (ms).
+  * CONSTANTS_G[51] is Ca_o in component ion (mM).
+  * CONSTANTS_G[109] is FRT in component phys (per_mV).
+  * CONSTANTS_G[52] is K_o in component ion (mM).
+  * STATES[25] is K_i in component potassium (mM).
+  * CONSTANTS_G[53] is Na_o in component ion (mM).
+  * ALGEBRAIC[47] is IClB in component iclb (A_per_F).
+  * CONSTANTS_G[54] is gClB in component iclb (mS_per_uF).
+  * CONSTANTS_G[125] is ECl in component nernst (mV).
+  * CONSTANTS_G[55] is GClCa in component iclca (mS_per_uF).
+  * ALGEBRAIC[52] is IClCa in component iclca (A_per_F).
+  * ALGEBRAIC[49] is IClCa_jn in component iclca (A_per_F).
+  * ALGEBRAIC[51] is IClCa_sl in component iclca (A_per_F).
+  * CONSTANTS_G[56] is KdClCa in component iclca (mM).
+  * ALGEBRAIC[95] is IK1 in component ik1 (A_per_F).
+  * CONSTANTS_G[110] is gK1 in component ik1 (mS_per_uF).
+  * CONSTANTS_G[57] is gK1_max in component ik1 (mS_per_uF).
+  * ALGEBRAIC[94] is ik1_inf in component ik1 (dimensionless).
+  * ALGEBRAIC[91] is EK in component nernst (mV).
+  * ALGEBRAIC[92] is ik1_inf_a in component ik1_ik1_inf (mS_per_uF).
+  * ALGEBRAIC[93] is ik1_inf_b in component ik1_ik1_inf (mS_per_uF).
+  * ALGEBRAIC[98] is IKp in component ikp (A_per_F).
+  * ALGEBRAIC[96] is IKp_jn in component ikp (A_per_F).
+  * ALGEBRAIC[97] is IKp_sl in component ikp (A_per_F).
+  * CONSTANTS_G[58] is gKp in component ikp (mS_per_uF).
+  * ALGEBRAIC[53] is kp in component ikp (dimensionless).
+  * ALGEBRAIC[99] is IKr in component ikr (A_per_F).
+  * CONSTANTS_G[111] is gKr in component ikr (mS_per_uF).
+  * CONSTANTS_G[59] is gKr_max in component ikr (mS_per_uF).
+  * ALGEBRAIC[54] is rr in component ikr (dimensionless).
+  * STATES[26] is xr in component ikr (dimensionless).
+  * ALGEBRAIC[2] is ikr_xr_inf in component ikr_xr (dimensionless).
+  * ALGEBRAIC[16] is ikr_xr_tau in component ikr_xr (ms).
+  * ALGEBRAIC[55] is EKs in component iks (mV).
+  * ALGEBRAIC[58] is IKs in component iks (A_per_F).
+  * ALGEBRAIC[56] is IKs_jn in component iks (A_per_F).
+  * ALGEBRAIC[57] is IKs_sl in component iks (A_per_F).
+  * CONSTANTS_G[112] is gKs_jn in component iks (mS_per_uF).
+  * CONSTANTS_G[60] is gKs_max in component iks (mS_per_uF).
+  * CONSTANTS_G[113] is gKs_sl in component iks (mS_per_uF).
+  * CONSTANTS_G[61] is pNaK in component iks (dimensionless).
+  * STATES[27] is xs in component iks (dimensionless).
+  * STATES[28] is Na_i in component sodium (mM).
+  * ALGEBRAIC[3] is iks_xs_inf in component iks_xs (dimensionless).
+  * ALGEBRAIC[17] is iks_xs_tau in component iks_xs (ms).
+  * ALGEBRAIC[100] is IKur in component ikur (A_per_F).
+  * CONSTANTS_G[114] is gKur in component ikur (mS_per_uF).
+  * CONSTANTS_G[62] is gKur_max in component ikur (mS_per_uF).
+  * STATES[29] is ikur_r in component ikur (dimensionless).
+  * STATES[30] is s in component ikur (dimensionless).
+  * ALGEBRAIC[4] is ikur_r_inf in component ikur_ikur_r (dimensionless).
+  * ALGEBRAIC[18] is ikur_r_tau in component ikur_ikur_r (ms).
+  * ALGEBRAIC[5] is ikur_s_inf in component ikur_s (dimensionless).
+  * ALGEBRAIC[19] is ikur_s_tau in component ikur_s (ms).
+  * ALGEBRAIC[108] is INa in component ina (A_per_F).
+  * ALGEBRAIC[103] is INa_jn in component ina (A_per_F).
+  * ALGEBRAIC[107] is INa_sl in component ina (A_per_F).
+  * CONSTANTS_G[115] is gNa in component ina (mS_per_uF).
+  * CONSTANTS_G[63] is gNa_max in component ina (mS_per_uF).
+  * STATES[31] is h in component ina (dimensionless).
+  * STATES[32] is j in component ina (dimensionless).
+  * STATES[33] is m in component ina (dimensionless).
+  * ALGEBRAIC[102] is ENa_jn in component nernst (mV).
+  * ALGEBRAIC[106] is ENa_sl in component nernst (mV).
+  * ALGEBRAIC[27] is ina_h_inf in component ina_h (dimensionless).
+  * ALGEBRAIC[30] is ina_h_tau in component ina_h (ms).
+  * ALGEBRAIC[28] is ina_j_inf in component ina_j (dimensionless).
+  * ALGEBRAIC[31] is ina_j_tau in component ina_j (ms).
+  * ALGEBRAIC[8] is ina_m_inf in component ina_m (dimensionless).
+  * ALGEBRAIC[22] is ina_m_tau in component ina_m (ms).
+  * ALGEBRAIC[6] is ina_h_a in component ina_h (mS_per_uF).
+  * ALGEBRAIC[20] is ina_h_b in component ina_h (mS_per_uF).
+  * ALGEBRAIC[7] is ina_j_a in component ina_j (mS_per_uF).
+  * ALGEBRAIC[21] is ina_j_b in component ina_j (mS_per_uF).
+  * ALGEBRAIC[110] is INaB in component inab (A_per_F).
+  * ALGEBRAIC[104] is INaB_jn in component inab (A_per_F).
+  * ALGEBRAIC[109] is INaB_sl in component inab (A_per_F).
+  * CONSTANTS_G[64] is gNaB in component inab (mS_per_uF).
+  * ALGEBRAIC[70] is INaCa in component inaca (A_per_F).
+  * CONSTANTS_G[116] is IbarNCX in component inaca (A_per_F).
+  * CONSTANTS_G[65] is IbarNCX_max in component inaca (A_per_F).
+  * ALGEBRAIC[59] is Ka_jn in component inaca (dimensionless).
+  * ALGEBRAIC[60] is Ka_sl in component inaca (dimensionless).
+  * CONSTANTS_G[66] is Kdact in component inaca (mM).
+  * CONSTANTS_G[67] is KmCai in component inaca (mM).
+  * CONSTANTS_G[68] is KmCao in component inaca (mM).
+  * CONSTANTS_G[69] is KmNai in component inaca (mM).
+  * CONSTANTS_G[70] is KmNao in component inaca (mM).
+  * CONSTANTS_G[71] is Q10NCX in component inaca (dimensionless).
+  * CONSTANTS_G[72] is ksat in component inaca (dimensionless).
+  * CONSTANTS_G[73] is nu in component inaca (dimensionless).
+  * ALGEBRAIC[61] is s1_jn in component inaca_INaCa_jn (mol4_per_m12).
+  * ALGEBRAIC[62] is s2_jn in component inaca_INaCa_jn (mol4_per_m12).
+  * ALGEBRAIC[63] is s3_jn in component inaca_INaCa_jn (mol4_per_m12).
+  * ALGEBRAIC[65] is s1_sl in component inaca_INaCa_sl (mol4_per_m12).
+  * ALGEBRAIC[66] is s2_sl in component inaca_INaCa_sl (mol4_per_m12).
+  * ALGEBRAIC[67] is s3_sl in component inaca_INaCa_sl (mol4_per_m12).
+  * ALGEBRAIC[73] is INaK in component inak (A_per_F).
+  * ALGEBRAIC[71] is INaK_jn in component inak (A_per_F).
+  * ALGEBRAIC[72] is INaK_sl in component inak (A_per_F).
+  * CONSTANTS_G[74] is IbarNaK in component inak (A_per_F).
+  * CONSTANTS_G[75] is KmKo in component inak (mM).
+  * CONSTANTS_G[117] is KmNaip in component inak (mM).
+  * ALGEBRAIC[69] is fnak in component inak (dimensionless).
+  * CONSTANTS_G[118] is sigma in component inak (dimensionless).
+  * ALGEBRAIC[112] is INaL in component inal (A_per_F).
+  * ALGEBRAIC[105] is INaL_jn in component inal (A_per_F).
+  * ALGEBRAIC[111] is INaL_sl in component inal (A_per_F).
+  * CONSTANTS_G[119] is gNaL in component inal (mS_per_uF).
+  * CONSTANTS_G[76] is gNaL_max in component inal (mS_per_uF).
+  * STATES[34] is hl in component inal (dimensionless).
+  * STATES[35] is ml in component inal (dimensionless).
+  * ALGEBRAIC[9] is inal_hl_inf in component inal_hl (dimensionless).
+  * CONSTANTS_G[77] is inal_hl_tau in component inal_hl (ms).
+  * ALGEBRAIC[10] is inal_ml_a in component inal_ml (mS_per_uF).
+  * ALGEBRAIC[23] is inal_ml_b in component inal_ml (mS_per_uF).
+  * CONSTANTS_G[78] is Cl_i in component ion (mM).
+  * CONSTANTS_G[79] is Cl_o in component ion (mM).
+  * CONSTANTS_G[80] is IbarSLCaP in component ipca (A_per_F).
+  * ALGEBRAIC[79] is IpCa in component ipca (A_per_F).
+  * CONSTANTS_G[81] is KmPCa in component ipca (mM).
+  * CONSTANTS_G[82] is Q10SLCaP in component ipca (dimensionless).
+  * ALGEBRAIC[74] is ipca_IpCa_jn_a in component ipca_IpCa_jn (dimensionless).
+  * CONSTANTS_G[104] is ipca_IpCa_jn_b in component ipca_IpCa_jn (dimensionless).
+  * ALGEBRAIC[76] is ipca_IpCa_sl_a in component ipca_IpCa_sl (dimensionless).
+  * CONSTANTS_G[124] is ipca_IpCa_sl_b in component ipca_IpCa_sl (dimensionless).
+  * ALGEBRAIC[101] is Ito in component ito (A_per_F).
+  * CONSTANTS_G[120] is gto in component ito (mS_per_uF).
+  * CONSTANTS_G[83] is gto_max in component ito (mS_per_uF).
+  * STATES[36] is x in component ito (dimensionless).
+  * STATES[37] is y in component ito (dimensionless).
+  * ALGEBRAIC[11] is ito_x_inf in component ito_x (dimensionless).
+  * ALGEBRAIC[24] is ito_x_tau in component ito_x (ms).
+  * ALGEBRAIC[12] is ito_y_inf in component ito_y (dimensionless).
+  * ALGEBRAIC[25] is ito_y_tau in component ito_y (ms).
+  * ALGEBRAIC[90] is ICa_tot in component membrane (A_per_F).
+  * ALGEBRAIC[78] is ICl_tot in component membrane (A_per_F).
+  * ALGEBRAIC[116] is INa_tot in component membrane (A_per_F).
+  * ALGEBRAIC[117] is I_tot in component membrane (A_per_F).
+  * ALGEBRAIC[114] is INa_tot_jn in component sodium (A_per_F).
+  * ALGEBRAIC[115] is INa_tot_sl in component sodium (A_per_F).
+  * ALGEBRAIC[113] is IK_tot in component potassium (A_per_F).
+  * ALGEBRAIC[119] is I_stim in component stimulus (A_per_F).
+  * CONSTANTS_G[84] is R in component phys (mJ_per_mol_per_K).
+  * CONSTANTS_G[85] is T in component phys (kelvin).
+  * CONSTANTS_G[86] is J_SR_leak_max in component ryr (mS_per_uF).
+  * CONSTANTS_G[121] is Kmf in component ryr (mM).
+  * CONSTANTS_G[87] is Kmr in component ryr (mM).
+  * CONSTANTS_G[88] is MaxSR in component ryr (dimensionless).
+  * CONSTANTS_G[89] is MinSR in component ryr (dimensionless).
+  * CONSTANTS_G[90] is Q10SRCaP in component ryr (dimensionless).
+  * ALGEBRAIC[13] is RI in component ryr (dimensionless).
+  * CONSTANTS_G[91] is Vmax_SRCaP in component ryr (mM_per_ms).
+  * CONSTANTS_G[92] is ec50SR in component ryr (mM).
+  * CONSTANTS_G[93] is hillSRCaP in component ryr (dimensionless).
+  * STATES[38] is i in component ryr (dimensionless).
+  * ALGEBRAIC[26] is kCaSR in component ryr (dimensionless).
+  * CONSTANTS_G[94] is kiCa in component ryr (per_mM_per_ms).
+  * ALGEBRAIC[29] is kiSRCa in component ryr (per_mM_per_ms).
+  * CONSTANTS_G[95] is kim in component ryr (mS_per_uF).
+  * CONSTANTS_G[122] is koCa in component ryr (per_mM2_per_ms).
+  * ALGEBRAIC[32] is koSRCa in component ryr (per_mM2_per_ms).
+  * CONSTANTS_G[96] is kom in component ryr (mS_per_uF).
+  * CONSTANTS_G[97] is ks in component ryr (mS_per_uF).
+  * STATES[39] is o in component ryr (dimensionless).
+  * STATES[40] is ryr_r in component ryr (dimensionless).
+  * CONSTANTS_G[98] is amplitude in component stimulus (A_per_F).
+  * ALGEBRAIC[118] is pace in component stimulus (dimensionless).
+  * CONSTANTS_G[99] is stim_duration in component stimulus (s).
+  * CONSTANTS_G[100] is stim_offset in component stimulus (s).
+  * CONSTANTS_G[101] is stim_period in component stimulus (s).
+  * RATES[20] is d/dt CaM in component buffca (mM).
+  * RATES[10] is d/dt TnCL in component buffca (mM).
+  * RATES[8] is d/dt TnCHc in component buffca (mM).
+  * RATES[9] is d/dt TnCHm in component buffca (mM).
+  * RATES[1] is d/dt Myoc in component buffca (mM).
+  * RATES[2] is d/dt Myom in component buffca (mM).
+  * RATES[7] is d/dt SRB in component buffca (mM).
+  * RATES[5] is d/dt SLL_jn in component buffca (mM).
+  * RATES[3] is d/dt SLH_jn in component buffca (mM).
+  * RATES[6] is d/dt SLL_sl in component buffca (mM).
+  * RATES[4] is d/dt SLH_sl in component buffca (mM).
+  * RATES[14] is d/dt NaB_jn in component buffna (mM).
+  * RATES[15] is d/dt NaB_sl in component buffna (mM).
+  * RATES[11] is d/dt Ca_i in component calcium (mM).
+  * RATES[12] is d/dt Ca_jn in component calcium (mM).
+  * RATES[13] is d/dt Ca_sl in component calcium (mM).
+  * RATES[18] is d/dt Ca_sr in component calcium (mM).
+  * RATES[19] is d/dt Csqn in component calcium (mM).
+  * RATES[21] is d/dt d in component ical (dimensionless).
+  * RATES[22] is d/dt f in component ical (dimensionless).
+  * RATES[23] is d/dt fCaB_jn in component ical (dimensionless).
+  * RATES[24] is d/dt fCaB_sl in component ical (dimensionless).
+  * RATES[26] is d/dt xr in component ikr (dimensionless).
+  * RATES[27] is d/dt xs in component iks (dimensionless).
+  * RATES[29] is d/dt ikur_r in component ikur (dimensionless).
+  * RATES[30] is d/dt s in component ikur (dimensionless).
+  * RATES[31] is d/dt h in component ina (dimensionless).
+  * RATES[32] is d/dt j in component ina (dimensionless).
+  * RATES[33] is d/dt m in component ina (dimensionless).
+  * RATES[34] is d/dt hl in component inal (dimensionless).
+  * RATES[35] is d/dt ml in component inal (dimensionless).
+  * RATES[36] is d/dt x in component ito (dimensionless).
+  * RATES[37] is d/dt y in component ito (dimensionless).
+  * RATES[0] is d/dt V in component membrane (mV).
+  * RATES[25] is d/dt K_i in component potassium (mM).
+  * RATES[38] is d/dt i in component ryr (dimensionless).
+  * RATES[39] is d/dt o in component ryr (dimensionless).
+  * RATES[40] is d/dt ryr_r in component ryr (dimensionless).
+  * RATES[28] is d/dt Na_i in component sodium (mM).
+  * RATES[16] is d/dt Na_jn in component sodium (mM).
+  * RATES[17] is d/dt Na_sl in component sodium (mM).
+  */
+
+  PDEFIELD_TYPE CONSTANTS_G[137];
+  PDEFIELD_TYPE ALGEBRAIC[120];
+
+  CONSTANTS_G[0] = 0.024;
+  CONSTANTS_G[1] = 0.0171;
+  CONSTANTS_G[2] = 0.14;
+  CONSTANTS_G[3] = 0.07;
+  CONSTANTS_G[4] = 0.14;
+  CONSTANTS_G[5] = 0.238;
+  CONSTANTS_G[6] = 0.00046;
+  CONSTANTS_G[7] = 5.7e-05;
+  CONSTANTS_G[8] = 0.03;
+  CONSTANTS_G[9] = 1.3;
+  CONSTANTS_G[10] = 0.06;
+  CONSTANTS_G[11] = 3.2e-05;
+  CONSTANTS_G[12] = 0.00333;
+  CONSTANTS_G[13] = 34.0;
+  CONSTANTS_G[14] = 13.8;
+  CONSTANTS_G[15] = 0.0157;
+  CONSTANTS_G[16] = 100.0;
+  CONSTANTS_G[17] = 100.0;
+  CONSTANTS_G[18] = 100.0;
+  CONSTANTS_G[19] = 2.37;
+  CONSTANTS_G[20] = 0.003;
+  CONSTANTS_G[21] = 32.7;
+  CONSTANTS_G[22] = 1.0;
+  CONSTANTS_G[23] = 0.0;
+  CONSTANTS_G[24] = 7.561;
+  CONSTANTS_G[25] = 1.65;
+  CONSTANTS_G[26] = 0.001;
+  CONSTANTS_G[27] = 0.0001;
+  CONSTANTS_G[28] =  3.72425607984805052e-12;
+  CONSTANTS_G[29] = 1.1e-10;
+  CONSTANTS_G[30] =  8.24130542277896849e-13;
+  CONSTANTS_G[31] = 96485.0;
+  CONSTANTS_G[32] = 65.0;
+  CONSTANTS_G[33] = 100.0;
+  CONSTANTS_G[34] = 0.0;
+  CONSTANTS_G[35] = 0.0;
+  CONSTANTS_G[36] =  1.83127823220607955e-14;
+  CONSTANTS_G[37] =  1.63862792221979433e-12;
+  CONSTANTS_G[38] = 100.0;
+  CONSTANTS_G[39] = 10.25;
+  CONSTANTS_G[40] =  3.14159265358979312e+00;
+  CONSTANTS_G[41] =  6.06430000000000033e-04;
+  CONSTANTS_G[42] = 0.11;
+  CONSTANTS_G[43] = 1.8;
+  CONSTANTS_G[44] = 1.0;
+  CONSTANTS_G[45] = 0.0;
+  CONSTANTS_G[46] = 0.0;
+  CONSTANTS_G[47] = 0.00027;
+  CONSTANTS_G[48] = 1.35e-07;
+  CONSTANTS_G[49] = 7.5e-09;
+  CONSTANTS_G[50] = 0.9;
+  CONSTANTS_G[51] = 1.8;
+  CONSTANTS_G[52] = 5.4;
+  CONSTANTS_G[53] = 140.0;
+  CONSTANTS_G[54] = 0.009;
+  CONSTANTS_G[55] = 0.0548;
+  CONSTANTS_G[56] = 0.1;
+  CONSTANTS_G[57] = 0.0525;
+  CONSTANTS_G[58] = 0.002;
+  CONSTANTS_G[59] = 0.035;
+  CONSTANTS_G[60] = 0.0035;
+  CONSTANTS_G[61] = 0.01833;
+  CONSTANTS_G[62] = 0.045;
+  CONSTANTS_G[63] = 23.0;
+  CONSTANTS_G[64] = 0.000597;
+  CONSTANTS_G[65] = 3.15;
+  CONSTANTS_G[66] = 0.000384;
+  CONSTANTS_G[67] = 0.00359;
+  CONSTANTS_G[68] = 1.3;
+  CONSTANTS_G[69] = 12.29;
+  CONSTANTS_G[70] = 87.5;
+  CONSTANTS_G[71] = 1.57;
+  CONSTANTS_G[72] = 0.27;
+  CONSTANTS_G[73] = 0.35;
+  CONSTANTS_G[74] = 1.26;
+  CONSTANTS_G[75] = 1.5;
+  CONSTANTS_G[76] = 0.0025;
+  CONSTANTS_G[77] = 600.0;
+  CONSTANTS_G[78] = 15.0;
+  CONSTANTS_G[79] = 150.0;
+  CONSTANTS_G[80] = 0.0471;
+  CONSTANTS_G[81] = 0.0005;
+  CONSTANTS_G[82] = 2.35;
+  CONSTANTS_G[83] = 0.165;
+  CONSTANTS_G[84] = 8314.0;
+  CONSTANTS_G[85] = 310.0;
+  CONSTANTS_G[86] = 5.348e-06;
+  CONSTANTS_G[87] = 1.7;
+  CONSTANTS_G[88] = 15.0;
+  CONSTANTS_G[89] = 1.0;
+  CONSTANTS_G[90] = 2.6;
+  CONSTANTS_G[91] = 0.0053114;
+  CONSTANTS_G[92] = 0.45;
+  CONSTANTS_G[93] = 1.787;
+  CONSTANTS_G[94] = 0.5;
+  CONSTANTS_G[95] = 0.005;
+  CONSTANTS_G[96] = 0.06;
+  CONSTANTS_G[97] = 25.0;
+  CONSTANTS_G[98] = 0; //-12.5;
+  CONSTANTS_G[99] = 5.0 / 1000; //ms to s
+  CONSTANTS_G[100] = 50.0 / 1000; //ms to s
+  CONSTANTS_G[101] = 1000.0 /1000; //ms to s
+  CONSTANTS_G[102] =  (1.00000+ 0.500000*CONSTANTS_G[23])*0.0196000;
+  CONSTANTS_G[103] =  ( ( CONSTANTS_G[40]*pow(CONSTANTS_G[39], 2.00000))*CONSTANTS_G[38])*1.00000e-15;
+  CONSTANTS_G[104] = pow( CONSTANTS_G[81]*1.00000, 1.60000);
+  CONSTANTS_G[105] =  ( (1.00000+ 0.500000*CONSTANTS_G[23])*(1.00000 -  0.500000*CONSTANTS_G[34]))*CONSTANTS_G[47];
+  CONSTANTS_G[106] =  ( (1.00000+ 0.500000*CONSTANTS_G[23])*(1.00000 -  0.500000*CONSTANTS_G[34]))*CONSTANTS_G[48];
+  CONSTANTS_G[107] =  ( (1.00000+ 0.500000*CONSTANTS_G[23])*(1.00000 -  0.500000*CONSTANTS_G[34]))*CONSTANTS_G[49];
+  CONSTANTS_G[108] = 1.00000 - CONSTANTS_G[50];
+  CONSTANTS_G[109] = (CONSTANTS_G[31]/CONSTANTS_G[84])/CONSTANTS_G[85];
+  CONSTANTS_G[110] =  ( (1.00000+CONSTANTS_G[34])* pow((CONSTANTS_G[52]/5.40000), 1.0 / 2))*CONSTANTS_G[57];
+  CONSTANTS_G[111] =  CONSTANTS_G[59]* pow((CONSTANTS_G[52]/5.40000), 1.0 / 2);
+  CONSTANTS_G[112] =  ((1.00000+CONSTANTS_G[34])+ 2.00000*CONSTANTS_G[23])*CONSTANTS_G[60];
+  CONSTANTS_G[113] =  ((1.00000+CONSTANTS_G[34])+ 2.00000*CONSTANTS_G[23])*CONSTANTS_G[60];
+  CONSTANTS_G[114] =  ( ( (1.00000 -  0.500000*CONSTANTS_G[34])*(1.00000+ 2.00000*CONSTANTS_G[23]))*(1.00000+ 0.200000*CONSTANTS_G[35]))*CONSTANTS_G[62];
+  CONSTANTS_G[115] =  CONSTANTS_G[63]*(1.00000 -  0.100000*CONSTANTS_G[34]);
+  CONSTANTS_G[116] =  (1.00000+ 0.400000*CONSTANTS_G[34])*CONSTANTS_G[65];
+  CONSTANTS_G[117] =  11.0000*(1.00000 -  0.250000*CONSTANTS_G[23]);
+  CONSTANTS_G[118] = (exp(CONSTANTS_G[53]/67.3000) - 1.00000)/7.00000;
+  CONSTANTS_G[119] =  CONSTANTS_G[76]*CONSTANTS_G[34];
+  CONSTANTS_G[120] =  (1.00000 -  0.700000*CONSTANTS_G[34])*CONSTANTS_G[83];
+  CONSTANTS_G[121] =  (2.50000 -  1.25000*CONSTANTS_G[23])*0.000246000;
+  CONSTANTS_G[122] =  ((10.0000+ 20.0000*CONSTANTS_G[34])+ ( 10.0000*CONSTANTS_G[23])*(1.00000 - CONSTANTS_G[34]))*1.00000;
+  CONSTANTS_G[136] = 0.00000;
+  CONSTANTS_G[123] =  ( 0.0539000*0.0100000)*CONSTANTS_G[103];
+  CONSTANTS_G[124] = pow( CONSTANTS_G[81]*1.00000, 1.60000);
+  CONSTANTS_G[125] =  (1.00000/CONSTANTS_G[109])*log(CONSTANTS_G[78]/CONSTANTS_G[79]);
+  CONSTANTS_G[126] =  0.650000*CONSTANTS_G[103];
+  CONSTANTS_G[127] = 1.00000 - CONSTANTS_G[42];
+  CONSTANTS_G[128] =  (( 0.00165000*CONSTANTS_G[126])/CONSTANTS_G[123])*0.100000;
+  CONSTANTS_G[129] =  (( 0.00460000*CONSTANTS_G[126])/CONSTANTS_G[123])*0.100000;
+  CONSTANTS_G[130] =  0.0200000*CONSTANTS_G[103];
+  CONSTANTS_G[131] =  0.0350000*CONSTANTS_G[103];
+  CONSTANTS_G[132] = (CONSTANTS_G[85] - 310.000)/10.0000;
+  CONSTANTS_G[133] =  (CONSTANTS_G[126]/CONSTANTS_G[130])*0.0134000;
+  CONSTANTS_G[134] =  (CONSTANTS_G[126]/CONSTANTS_G[130])*0.0374000;
+  CONSTANTS_G[135] =  (CONSTANTS_G[126]/CONSTANTS_G[131])*0.140000;
+
+
+  RATES[25] = CONSTANTS_G[136];
+  RATES[20] =  ( CONSTANTS_G[13]*STATES[11])*(CONSTANTS_G[0] - STATES[20]) -  CONSTANTS_G[5]*STATES[20];
+  RATES[23] =  ( ( 1.70000*STATES[12])*(1.00000 - STATES[23]) -  0.0119000*STATES[23])*1.00000;
+  RATES[24] =  ( ( 1.70000*STATES[13])*(1.00000 - STATES[24]) -  0.0119000*STATES[24])*1.00000;
+  RATES[28] =  (CONSTANTS_G[37]/CONSTANTS_G[126])*(STATES[17] - STATES[28]);
+  RATES[1] =  ( CONSTANTS_G[14]*STATES[11])*((CONSTANTS_G[4] - STATES[1]) - STATES[2]) -  CONSTANTS_G[6]*STATES[1];
+  ALGEBRAIC[9] = 1.00000/(1.00000+exp((STATES[0]+91.0000)/6.10000));
+  RATES[34] = (ALGEBRAIC[9] - STATES[34])/CONSTANTS_G[77];
+  RATES[2] =  ( CONSTANTS_G[15]*CONSTANTS_G[22])*((CONSTANTS_G[4] - STATES[1]) - STATES[2]) -  CONSTANTS_G[7]*STATES[2];
+  ALGEBRAIC[0] = 1.00000/(1.00000+exp(- ((STATES[0]+ 3.00000*CONSTANTS_G[23])+9.00000)/6.00000));
+  ALGEBRAIC[14] = ( ALGEBRAIC[0]*(1.00000 - exp(- ((STATES[0]+ 3.00000*CONSTANTS_G[23])+9.00000)/6.00000)))/( 0.0350000*((STATES[0]+ 3.00000*CONSTANTS_G[23])+9.00000));
+  if(!isfinite(ALGEBRAIC[14]))
+    ALGEBRAIC[14] = ALGEBRAIC[0]/0.0350000/6.00000 * exp(- ((STATES[0]+ 3.00000*CONSTANTS_G[23])+9.00000)/6.00000);
+  RATES[21] = (ALGEBRAIC[0] - STATES[21])/ALGEBRAIC[14];
+  ALGEBRAIC[1] = 1.00000/(1.00000+exp(((STATES[0]+ 3.00000*CONSTANTS_G[23])+30.0000)/7.00000))+0.200000/(1.00000+exp(((50.0000 - STATES[0]) -  3.00000*CONSTANTS_G[23])/20.0000));
+  ALGEBRAIC[15] = 1.00000/( 0.0197000*exp(- pow( 0.0337000*((STATES[0]+ 3.00000*CONSTANTS_G[23])+25.0000), 2.00000))+0.0200000);
+  RATES[22] = (ALGEBRAIC[1] - STATES[22])/ALGEBRAIC[15];
+  ALGEBRAIC[2] = 1.00000/(1.00000+exp(- (STATES[0]+10.0000)/5.00000));
+  ALGEBRAIC[16] = ( ((550.000)/(1.00000+exp((- 22.0000 - STATES[0])/9.00000)))*6.00000)/(1.00000+exp((STATES[0]+11.0000)/9.00000))+230.000/(1.00000+exp((STATES[0]+40.0000)/20.0000));
+  RATES[26] = (ALGEBRAIC[2] - STATES[26])/ALGEBRAIC[16];
+  ALGEBRAIC[3] = 1.00000/(1.00000+exp(- ((STATES[0]+ 40.0000*CONSTANTS_G[23])+3.80000)/14.2500));
+  ALGEBRAIC[17] = 990.100/(1.00000+exp(- ((STATES[0]+ 40.0000*CONSTANTS_G[23])+2.43600)/14.1200));
+  RATES[27] = (ALGEBRAIC[3] - STATES[27])/ALGEBRAIC[17];
+  ALGEBRAIC[4] = 1.00000/(1.00000+exp((STATES[0]+6.00000)/- 8.60000));
+  ALGEBRAIC[18] = 9.00000/(1.00000+exp((STATES[0]+5.00000)/12.0000))+0.500000;
+  RATES[29] = (ALGEBRAIC[4] - STATES[29])/ALGEBRAIC[18];
+  ALGEBRAIC[5] = 1.00000/(1.00000+exp((STATES[0]+7.50000)/10.0000));
+  ALGEBRAIC[19] = 590.000/(1.00000+exp((STATES[0]+60.0000)/10.0000))+3050.00;
+  RATES[30] = (ALGEBRAIC[5] - STATES[30])/ALGEBRAIC[19];
+  ALGEBRAIC[8] = 1.00000/pow(1.00000+exp(- (56.8600+STATES[0])/9.03000), 2.00000);
+  ALGEBRAIC[22] =  0.129200*exp(- pow((STATES[0]+45.7900)/15.5400, 2.00000))+ 0.0648700*exp(- pow((STATES[0] - 4.82300)/51.1200, 2.00000));
+  RATES[33] = (ALGEBRAIC[8] - STATES[33])/ALGEBRAIC[22];
+  ALGEBRAIC[10] = ( 0.320000*(STATES[0]+47.1300))/(1.00000 - exp( - 0.100000*(STATES[0]+47.1300)));
+  if(!isfinite(ALGEBRAIC[10]))
+    ALGEBRAIC[10] = ( 0.320000)/(0.100000*exp( - 0.100000*(STATES[0]+47.1300)));
+  ALGEBRAIC[23] =  0.0800000*exp(- STATES[0]/11.0000);
+  RATES[35] =  ALGEBRAIC[10]*(1.00000 - STATES[35]) -  ALGEBRAIC[23]*STATES[35];
+  ALGEBRAIC[11] = 1.00000/(1.00000+exp(- (STATES[0]+1.00000)/11.0000));
+  ALGEBRAIC[24] =  3.50000*exp(- pow(STATES[0]/30.0000, 2.00000))+1.50000;
+  RATES[36] = (ALGEBRAIC[11] - STATES[36])/ALGEBRAIC[24];
+  ALGEBRAIC[12] = 1.00000/(1.00000+exp((STATES[0]+40.5000)/11.5000));
+  ALGEBRAIC[25] =  25.6350*exp(- pow((STATES[0]+52.4500)/15.8827, 2.00000))+24.1400;
+  RATES[37] = (ALGEBRAIC[12] - STATES[37])/ALGEBRAIC[25];
+  RATES[3] =  ( CONSTANTS_G[16]*STATES[12])*(CONSTANTS_G[128] - STATES[3]) -  CONSTANTS_G[8]*STATES[3];
+  RATES[4] =  ( CONSTANTS_G[16]*STATES[13])*(CONSTANTS_G[133] - STATES[4]) -  CONSTANTS_G[8]*STATES[4];
+  ALGEBRAIC[27] = 1.00000/pow(1.00000+exp((STATES[0]+71.5500)/7.43000), 2.00000);
+  ALGEBRAIC[6] =  (STATES[0]>=- 40.0000 ? 0.00000 :  0.0570000*exp(- (STATES[0]+80.0000)/6.80000))*1.00000;
+  ALGEBRAIC[20] =  (STATES[0]>=- 40.0000 ? 0.770000/( 0.130000*(1.00000+exp(- (STATES[0]+10.6600)/11.1000))) :  2.70000*exp( 0.0790000*STATES[0])+ ( 3.10000*pow(10.0000, 5.00000))*exp( 0.348500*STATES[0]))*1.00000;
+  ALGEBRAIC[30] = 1.00000/(ALGEBRAIC[6]+ALGEBRAIC[20]);
+  RATES[31] = (ALGEBRAIC[27] - STATES[31])/ALGEBRAIC[30];
+  ALGEBRAIC[28] = 1.00000/pow(1.00000+exp((STATES[0]+71.5500)/7.43000), 2.00000);
+  ALGEBRAIC[7] =  (STATES[0]>=- 40.0000 ? 0.00000 :  (( ( ( - 2.54280*pow(10.0000, 4.00000))*exp( 0.244400*STATES[0]) -  ( 6.94800*pow(10.0000, - 6.00000))*exp( - 0.0439100*STATES[0]))*(STATES[0]+37.7800))/(1.00000+exp( 0.311000*(STATES[0]+79.2300))))*1.00000)*1.00000;
+  ALGEBRAIC[21] =  (STATES[0]>=- 40.0000 ? ( 0.600000*exp( 0.0570000*STATES[0]))/(1.00000+exp( - 0.100000*(STATES[0]+32.0000))) : ( 0.0242400*exp( - 0.0105200*STATES[0]))/(1.00000+exp( - 0.137800*(STATES[0]+40.1400))))*1.00000;
+  ALGEBRAIC[31] = 1.00000/(ALGEBRAIC[7]+ALGEBRAIC[21]);
+  RATES[32] = (ALGEBRAIC[28] - STATES[32])/ALGEBRAIC[31];
+  ALGEBRAIC[13] = ((1.00000 - STATES[40]) - STATES[39]) - STATES[38];
+  ALGEBRAIC[26] = CONSTANTS_G[88] - (CONSTANTS_G[88] - CONSTANTS_G[89])/(1.00000+pow(CONSTANTS_G[92]/STATES[18], 2.50000));
+  ALGEBRAIC[29] =  CONSTANTS_G[94]*ALGEBRAIC[26];
+  ALGEBRAIC[32] = CONSTANTS_G[122]/ALGEBRAIC[26];
+  RATES[38] = ( ( ALGEBRAIC[29]*STATES[12])*STATES[39] -  CONSTANTS_G[95]*STATES[38]) - ( CONSTANTS_G[96]*STATES[38] -  ( ALGEBRAIC[32]*pow(STATES[12], 2.00000))*ALGEBRAIC[13]);
+  RATES[39] = ( ( ALGEBRAIC[32]*pow(STATES[12], 2.00000))*STATES[40] -  CONSTANTS_G[96]*STATES[39]) - ( ( ALGEBRAIC[29]*STATES[12])*STATES[39] -  CONSTANTS_G[95]*STATES[38]);
+  RATES[40] = ( CONSTANTS_G[95]*ALGEBRAIC[13] -  ( ALGEBRAIC[29]*STATES[12])*STATES[40]) - ( ( ALGEBRAIC[32]*pow(STATES[12], 2.00000))*STATES[40] -  CONSTANTS_G[96]*STATES[39]);
+  RATES[5] =  ( CONSTANTS_G[17]*STATES[12])*(CONSTANTS_G[129] - STATES[5]) -  CONSTANTS_G[9]*STATES[5];
+  RATES[6] =  ( CONSTANTS_G[17]*STATES[13])*(CONSTANTS_G[134] - STATES[6]) -  CONSTANTS_G[9]*STATES[6];
+  RATES[7] =  ( CONSTANTS_G[18]*STATES[11])*(CONSTANTS_G[1] - STATES[7]) -  CONSTANTS_G[10]*STATES[7];
+  RATES[8] =  ( CONSTANTS_G[19]*STATES[11])*((CONSTANTS_G[2] - STATES[8]) - STATES[9]) -  CONSTANTS_G[11]*STATES[8];
+  RATES[9] =  ( CONSTANTS_G[20]*CONSTANTS_G[22])*((CONSTANTS_G[2] - STATES[8]) - STATES[9]) -  CONSTANTS_G[12]*STATES[9];
+  RATES[10] =  ( CONSTANTS_G[21]*STATES[11])*(CONSTANTS_G[3] - STATES[10]) -  CONSTANTS_G[102]*STATES[10];
+  RATES[14] =  ( CONSTANTS_G[27]*STATES[16])*(CONSTANTS_G[24] - STATES[14]) -  CONSTANTS_G[26]*STATES[14];
+  RATES[15] =  ( CONSTANTS_G[27]*STATES[17])*(CONSTANTS_G[25] - STATES[15]) -  CONSTANTS_G[26]*STATES[15];
+  RATES[19] =  ( CONSTANTS_G[33]*STATES[18])*(CONSTANTS_G[135] - STATES[19]) -  CONSTANTS_G[32]*STATES[19];
+  ALGEBRAIC[33] = RATES[5]+RATES[3];
+  ALGEBRAIC[80] =  ((1.00000/CONSTANTS_G[109])/2.00000)*log(CONSTANTS_G[51]/STATES[12]);
+  ALGEBRAIC[81] =  ( CONSTANTS_G[42]*CONSTANTS_G[41])*(STATES[0] - ALGEBRAIC[80]);
+  ALGEBRAIC[36] =  (( ( ( CONSTANTS_G[105]*4.00000)*( ( STATES[0]*CONSTANTS_G[31])*CONSTANTS_G[109]))*( ( 0.341000*STATES[12])*exp( ( 2.00000*STATES[0])*CONSTANTS_G[109]) -  0.341000*CONSTANTS_G[51]))/(exp( ( 2.00000*STATES[0])*CONSTANTS_G[109]) - 1.00000))*CONSTANTS_G[44];
+  if(!isfinite(ALGEBRAIC[36]))
+      ALGEBRAIC[36] =  (( ( ( CONSTANTS_G[105]*4.00000)*( (CONSTANTS_G[31])*CONSTANTS_G[109]))*( ( 0.341000*STATES[12])*exp( ( 2.00000*STATES[0])*CONSTANTS_G[109]) -  0.341000*CONSTANTS_G[51]) + ( ( CONSTANTS_G[105]*4.00000)*( ( STATES[0]*CONSTANTS_G[31])*CONSTANTS_G[109]))*( ( 0.341000*STATES[12] * 2.00000 * CONSTANTS_G[109])*exp( ( 2.00000*STATES[0])*CONSTANTS_G[109])))/(CONSTANTS_G[109]*2.00000*exp( ( 2.00000*STATES[0])*CONSTANTS_G[109])))*CONSTANTS_G[44];
+  ALGEBRAIC[37] =  ( ( ( ( ( CONSTANTS_G[50]*ALGEBRAIC[36])*STATES[21])*STATES[22])*((1.00000 - STATES[23])+CONSTANTS_G[46]))*pow(CONSTANTS_G[43], CONSTANTS_G[132]))*0.450000;
+  ALGEBRAIC[59] = 1.00000/(1.00000+pow(CONSTANTS_G[66]/STATES[12], 2.00000));
+  ALGEBRAIC[61] =  ( exp( ( CONSTANTS_G[73]*STATES[0])*CONSTANTS_G[109])*pow(STATES[16], 3.00000))*CONSTANTS_G[51];
+  ALGEBRAIC[62] =  ( exp( ( (CONSTANTS_G[73] - 1.00000)*STATES[0])*CONSTANTS_G[109])*pow(CONSTANTS_G[53], 3.00000))*STATES[12];
+  ALGEBRAIC[63] = ((( ( CONSTANTS_G[67]*pow(CONSTANTS_G[53], 3.00000))*(1.00000+pow(STATES[16]/CONSTANTS_G[69], 3.00000))+ ( pow(CONSTANTS_G[70], 3.00000)*STATES[12])*(1.00000+STATES[12]/CONSTANTS_G[67]))+ CONSTANTS_G[68]*pow(STATES[16], 3.00000))+ pow(STATES[16], 3.00000)*CONSTANTS_G[51])+ pow(CONSTANTS_G[53], 3.00000)*STATES[12];
+  ALGEBRAIC[64] = (( ( ( ( CONSTANTS_G[42]*CONSTANTS_G[116])*pow(CONSTANTS_G[71], CONSTANTS_G[132]))*ALGEBRAIC[59])*(ALGEBRAIC[61] - ALGEBRAIC[62]))/ALGEBRAIC[63])/(1.00000+ CONSTANTS_G[72]*exp( ( (CONSTANTS_G[73] - 1.00000)*STATES[0])*CONSTANTS_G[109]));
+  ALGEBRAIC[74] = pow( STATES[12]*1.00000, 1.60000);
+  ALGEBRAIC[75] = ( ( ( CONSTANTS_G[42]*pow(CONSTANTS_G[82], CONSTANTS_G[132]))*CONSTANTS_G[80])*ALGEBRAIC[74])/(ALGEBRAIC[74]+CONSTANTS_G[104]);
+  ALGEBRAIC[82] = ((ALGEBRAIC[37]+ALGEBRAIC[81])+ALGEBRAIC[75]) -  2.00000*ALGEBRAIC[64];
+  ALGEBRAIC[83] =  ( CONSTANTS_G[97]*STATES[39])*(STATES[18] - STATES[12]);
+  ALGEBRAIC[85] =  ( (1.00000+ 0.250000*CONSTANTS_G[34])*(STATES[18] - STATES[12]))*CONSTANTS_G[86];
+  RATES[12] = (((( - ALGEBRAIC[82]*CONSTANTS_G[29])/( ( CONSTANTS_G[123]*2.00000)*CONSTANTS_G[31])+ (CONSTANTS_G[30]/CONSTANTS_G[123])*(STATES[13] - STATES[12])) - ALGEBRAIC[33])+( ALGEBRAIC[83]*CONSTANTS_G[131])/CONSTANTS_G[123])+( ALGEBRAIC[85]*CONSTANTS_G[126])/CONSTANTS_G[123];
+  ALGEBRAIC[35] = (((((RATES[10]+RATES[8])+RATES[9])+RATES[20])+RATES[1])+RATES[2])+RATES[7];
+  ALGEBRAIC[87] = ( ( pow(CONSTANTS_G[90], CONSTANTS_G[132])*CONSTANTS_G[91])*(pow(STATES[11]/CONSTANTS_G[121], CONSTANTS_G[93]) - pow(STATES[18]/CONSTANTS_G[87], CONSTANTS_G[93])))/((1.00000+pow(STATES[11]/CONSTANTS_G[121], CONSTANTS_G[93]))+pow(STATES[18]/CONSTANTS_G[87], CONSTANTS_G[93]));
+  RATES[11] = (( - ALGEBRAIC[87]*CONSTANTS_G[131])/CONSTANTS_G[126] - ALGEBRAIC[35])+ (CONSTANTS_G[28]/CONSTANTS_G[126])*(STATES[13] - STATES[11]);
+  ALGEBRAIC[34] = RATES[6]+RATES[4];
+  ALGEBRAIC[84] =  ((1.00000/CONSTANTS_G[109])/2.00000)*log(CONSTANTS_G[51]/STATES[13]);
+  ALGEBRAIC[86] =  ( CONSTANTS_G[127]*CONSTANTS_G[41])*(STATES[0] - ALGEBRAIC[84]);
+  ALGEBRAIC[38] =  (( ( ( CONSTANTS_G[105]*4.00000)*( ( STATES[0]*CONSTANTS_G[31])*CONSTANTS_G[109]))*( ( 0.341000*STATES[13])*exp( ( 2.00000*STATES[0])*CONSTANTS_G[109]) -  0.341000*CONSTANTS_G[51]))/(exp( ( 2.00000*STATES[0])*CONSTANTS_G[109]) - 1.00000))*CONSTANTS_G[44];
+  if(!isfinite(ALGEBRAIC[38]))
+      ALGEBRAIC[38] =  (( ( ( CONSTANTS_G[105]*4.00000)*( (CONSTANTS_G[31])*CONSTANTS_G[109]))*( ( 0.341000*STATES[13])*exp( ( 2.00000*STATES[0])*CONSTANTS_G[109]) -  0.341000*CONSTANTS_G[51]) + ( ( CONSTANTS_G[105]*4.00000)*( ( STATES[0]*CONSTANTS_G[31])*CONSTANTS_G[109]))*( ( 0.341000*STATES[13] * 2.00000 * CONSTANTS_G[109])*exp( ( 2.00000*STATES[0])*CONSTANTS_G[109])))/(CONSTANTS_G[109]*2.00000*exp( ( 2.00000*STATES[0])*CONSTANTS_G[109])))*CONSTANTS_G[44];
+  ALGEBRAIC[39] =  ( ( ( ( ( CONSTANTS_G[108]*ALGEBRAIC[38])*STATES[21])*STATES[22])*((1.00000 - STATES[24])+CONSTANTS_G[45]))*pow(CONSTANTS_G[43], CONSTANTS_G[132]))*0.450000;
+  ALGEBRAIC[60] = 1.00000/(1.00000+pow(CONSTANTS_G[66]/STATES[13], 2.00000));
+  ALGEBRAIC[65] =  ( exp( ( CONSTANTS_G[73]*STATES[0])*CONSTANTS_G[109])*pow(STATES[17], 3.00000))*CONSTANTS_G[51];
+  ALGEBRAIC[66] =  ( exp( ( (CONSTANTS_G[73] - 1.00000)*STATES[0])*CONSTANTS_G[109])*pow(CONSTANTS_G[53], 3.00000))*STATES[13];
+  ALGEBRAIC[67] = ((( ( CONSTANTS_G[67]*pow(CONSTANTS_G[53], 3.00000))*(1.00000+pow(STATES[17]/CONSTANTS_G[69], 3.00000))+ ( pow(CONSTANTS_G[70], 3.00000)*STATES[13])*(1.00000+STATES[13]/CONSTANTS_G[67]))+ CONSTANTS_G[68]*pow(STATES[17], 3.00000))+ pow(STATES[17], 3.00000)*CONSTANTS_G[51])+ pow(CONSTANTS_G[53], 3.00000)*STATES[13];
+  ALGEBRAIC[68] = (( ( ( ( CONSTANTS_G[127]*CONSTANTS_G[116])*pow(CONSTANTS_G[71], CONSTANTS_G[132]))*ALGEBRAIC[60])*(ALGEBRAIC[65] - ALGEBRAIC[66]))/ALGEBRAIC[67])/(1.00000+ CONSTANTS_G[72]*exp( ( (CONSTANTS_G[73] - 1.00000)*STATES[0])*CONSTANTS_G[109]));
+  ALGEBRAIC[76] = pow( STATES[13]*1.00000, 1.60000);
+  ALGEBRAIC[77] = ( ( ( CONSTANTS_G[127]*pow(CONSTANTS_G[82], CONSTANTS_G[132]))*CONSTANTS_G[80])*ALGEBRAIC[76])/(ALGEBRAIC[76]+CONSTANTS_G[124]);
+  ALGEBRAIC[89] = ((ALGEBRAIC[39]+ALGEBRAIC[86])+ALGEBRAIC[77]) -  2.00000*ALGEBRAIC[68];
+  RATES[13] = ((( - ALGEBRAIC[89]*CONSTANTS_G[29])/( ( CONSTANTS_G[130]*2.00000)*CONSTANTS_G[31])+ (CONSTANTS_G[30]/CONSTANTS_G[130])*(STATES[12] - STATES[13]))+ (CONSTANTS_G[28]/CONSTANTS_G[130])*(STATES[11] - STATES[13])) - ALGEBRAIC[34];
+  RATES[18] = (ALGEBRAIC[87] - (( ALGEBRAIC[85]*CONSTANTS_G[126])/CONSTANTS_G[131]+ALGEBRAIC[83])) - RATES[19];
+  ALGEBRAIC[43] =  (( ( ( ( CONSTANTS_G[107]*STATES[0])*CONSTANTS_G[31])*CONSTANTS_G[109])*( ( 0.750000*STATES[16])*exp( STATES[0]*CONSTANTS_G[109]) -  0.750000*CONSTANTS_G[53]))/(exp( STATES[0]*CONSTANTS_G[109]) - 1.00000))*CONSTANTS_G[44];
+  if(!isfinite(ALGEBRAIC[43]))
+    ALGEBRAIC[43] = (( ( ( ( CONSTANTS_G[107])*CONSTANTS_G[31])*CONSTANTS_G[109])*( ( 0.750000*STATES[16])*exp( STATES[0]*CONSTANTS_G[109]) -  0.750000*CONSTANTS_G[53]) + ( ( ( CONSTANTS_G[107]*STATES[0])*CONSTANTS_G[31])*CONSTANTS_G[109])*( ( 0.750000*STATES[16]*CONSTANTS_G[109])*exp( STATES[0]*CONSTANTS_G[109])))/(CONSTANTS_G[109]*exp( STATES[0]*CONSTANTS_G[109])))*CONSTANTS_G[44];
+  ALGEBRAIC[44] =  ( ( ( ( ( CONSTANTS_G[50]*ALGEBRAIC[43])*STATES[21])*STATES[22])*((1.00000 - STATES[23])+CONSTANTS_G[46]))*pow(CONSTANTS_G[43], CONSTANTS_G[132]))*0.450000;
+  ALGEBRAIC[102] =  (1.00000/CONSTANTS_G[109])*log(CONSTANTS_G[53]/STATES[16]);
+  ALGEBRAIC[103] =  ( ( ( ( CONSTANTS_G[42]*CONSTANTS_G[115])*pow(STATES[33], 3.00000))*STATES[31])*STATES[32])*(STATES[0] - ALGEBRAIC[102]);
+  ALGEBRAIC[104] =  ( CONSTANTS_G[42]*CONSTANTS_G[64])*(STATES[0] - ALGEBRAIC[102]);
+  ALGEBRAIC[69] = 1.00000/((1.00000+ 0.124500*exp( ( - 0.100000*STATES[0])*CONSTANTS_G[109]))+ ( 0.0365000*CONSTANTS_G[118])*exp( - STATES[0]*CONSTANTS_G[109]));
+  ALGEBRAIC[71] = (( ( ( CONSTANTS_G[42]*CONSTANTS_G[74])*ALGEBRAIC[69])*CONSTANTS_G[52])/(1.00000+pow(CONSTANTS_G[117]/STATES[16], 4.00000)))/(CONSTANTS_G[52]+CONSTANTS_G[75]);
+  ALGEBRAIC[105] =  ( ( ( CONSTANTS_G[42]*CONSTANTS_G[119])*pow(STATES[35], 3.00000))*STATES[34])*(STATES[0] - ALGEBRAIC[102]);
+  ALGEBRAIC[114] = ((((ALGEBRAIC[103]+ALGEBRAIC[104])+ 3.00000*ALGEBRAIC[64])+ 3.00000*ALGEBRAIC[71])+ALGEBRAIC[44])+ALGEBRAIC[105];
+  RATES[16] = (( - ALGEBRAIC[114]*CONSTANTS_G[29])/( CONSTANTS_G[123]*CONSTANTS_G[31])+ (CONSTANTS_G[36]/CONSTANTS_G[123])*(STATES[17] - STATES[16])) - RATES[14];
+  ALGEBRAIC[45] =  (( ( ( ( CONSTANTS_G[107]*STATES[0])*CONSTANTS_G[31])*CONSTANTS_G[109])*( ( 0.750000*STATES[17])*exp( STATES[0]*CONSTANTS_G[109]) -  0.750000*CONSTANTS_G[53]))/(exp( STATES[0]*CONSTANTS_G[109]) - 1.00000))*CONSTANTS_G[44];
+   if(!isfinite(ALGEBRAIC[45]))
+    ALGEBRAIC[45] = (( ( ( ( CONSTANTS_G[107])*CONSTANTS_G[31])*CONSTANTS_G[109])*( ( 0.750000*STATES[17])*exp( STATES[0]*CONSTANTS_G[109]) -  0.750000*CONSTANTS_G[53]) + ( ( ( CONSTANTS_G[107]*STATES[0])*CONSTANTS_G[31])*CONSTANTS_G[109])*( ( 0.750000*STATES[17]*CONSTANTS_G[109])*exp( STATES[0]*CONSTANTS_G[109])))/(CONSTANTS_G[109]*exp( STATES[0]*CONSTANTS_G[109])))*CONSTANTS_G[44];
+  ALGEBRAIC[46] =  ( ( ( ( ( CONSTANTS_G[108]*ALGEBRAIC[45])*STATES[21])*STATES[22])*((1.00000 - STATES[24])+CONSTANTS_G[45]))*pow(CONSTANTS_G[43], CONSTANTS_G[132]))*0.450000;
+  ALGEBRAIC[106] =  (1.00000/CONSTANTS_G[109])*log(CONSTANTS_G[53]/STATES[17]);
+  ALGEBRAIC[107] =  ( ( ( ( CONSTANTS_G[127]*CONSTANTS_G[115])*pow(STATES[33], 3.00000))*STATES[31])*STATES[32])*(STATES[0] - ALGEBRAIC[106]);
+  ALGEBRAIC[109] =  ( CONSTANTS_G[127]*CONSTANTS_G[64])*(STATES[0] - ALGEBRAIC[106]);
+  ALGEBRAIC[72] = (( ( ( CONSTANTS_G[127]*CONSTANTS_G[74])*ALGEBRAIC[69])*CONSTANTS_G[52])/(1.00000+pow(CONSTANTS_G[117]/STATES[17], 4.00000)))/(CONSTANTS_G[52]+CONSTANTS_G[75]);
+  ALGEBRAIC[111] =  ( ( ( CONSTANTS_G[127]*CONSTANTS_G[119])*pow(STATES[35], 3.00000))*STATES[34])*(STATES[0] - ALGEBRAIC[106]);
+  ALGEBRAIC[115] = ((((ALGEBRAIC[107]+ALGEBRAIC[109])+ 3.00000*ALGEBRAIC[68])+ 3.00000*ALGEBRAIC[72])+ALGEBRAIC[46])+ALGEBRAIC[111];
+  RATES[17] = ((( - ALGEBRAIC[115]*CONSTANTS_G[29])/( CONSTANTS_G[130]*CONSTANTS_G[31])+ (CONSTANTS_G[36]/CONSTANTS_G[130])*(STATES[16] - STATES[17]))+ (CONSTANTS_G[37]/CONSTANTS_G[130])*(STATES[28] - STATES[17])) - RATES[15];
+  ALGEBRAIC[90] = ALGEBRAIC[82]+ALGEBRAIC[89];
+  ALGEBRAIC[47] =  CONSTANTS_G[54]*(STATES[0] - CONSTANTS_G[125]);
+  ALGEBRAIC[49] =  (( CONSTANTS_G[42]*CONSTANTS_G[55])/(1.00000+CONSTANTS_G[56]/STATES[12]))*(STATES[0] - CONSTANTS_G[125]);
+  ALGEBRAIC[51] =  (( CONSTANTS_G[127]*CONSTANTS_G[55])/(1.00000+CONSTANTS_G[56]/STATES[13]))*(STATES[0] - CONSTANTS_G[125]);
+  ALGEBRAIC[52] = ALGEBRAIC[49]+ALGEBRAIC[51];
+  ALGEBRAIC[78] = ALGEBRAIC[52]+ALGEBRAIC[47];
+  ALGEBRAIC[116] = ALGEBRAIC[114]+ALGEBRAIC[115];
+  ALGEBRAIC[41] =  (( ( ( ( CONSTANTS_G[106]*STATES[0])*CONSTANTS_G[31])*CONSTANTS_G[109])*( ( 0.750000*STATES[25])*exp( STATES[0]*CONSTANTS_G[109]) -  0.750000*CONSTANTS_G[52]))/(exp( STATES[0]*CONSTANTS_G[109]) - 1.00000))*CONSTANTS_G[44];
+  if(!isfinite(ALGEBRAIC[41]))
+    ALGEBRAIC[41] =  (( ( ( ( CONSTANTS_G[106])*CONSTANTS_G[31])*CONSTANTS_G[109])*( ( 0.750000*STATES[25])*exp( STATES[0]*CONSTANTS_G[109]) -  0.750000*CONSTANTS_G[52])+( ( ( CONSTANTS_G[106]*STATES[0])*CONSTANTS_G[31])*CONSTANTS_G[109])*( ( 0.750000*STATES[25]*CONSTANTS_G[109])*exp( STATES[0]*CONSTANTS_G[109])))/(CONSTANTS_G[109]*exp( STATES[0]*CONSTANTS_G[109])))*CONSTANTS_G[44];
+  ALGEBRAIC[42] =  ( ( ( ( ALGEBRAIC[41]*STATES[21])*STATES[22])*( CONSTANTS_G[50]*(CONSTANTS_G[46]+(1.00000 - STATES[23]))+ CONSTANTS_G[108]*(CONSTANTS_G[45]+(1.00000 - STATES[24]))))*pow(CONSTANTS_G[43], CONSTANTS_G[132]))*0.450000;
+  ALGEBRAIC[91] =  (1.00000/CONSTANTS_G[109])*log(CONSTANTS_G[52]/STATES[25]);
+  ALGEBRAIC[92] =  1.00000*(1.02000/(1.00000+exp( 0.238500*((STATES[0] - ALGEBRAIC[91]) - 59.2150))));
+  ALGEBRAIC[93] =  1.00000*(( 0.491240*exp( 0.0803200*((STATES[0]+5.47600) - ALGEBRAIC[91]))+exp( 0.0617500*((STATES[0] - ALGEBRAIC[91]) - 594.310)))/(1.00000+exp( - 0.514300*((STATES[0] - ALGEBRAIC[91])+4.75300))));
+  ALGEBRAIC[94] = ALGEBRAIC[92]/(ALGEBRAIC[92]+ALGEBRAIC[93]);
+  ALGEBRAIC[95] =  ( CONSTANTS_G[110]*ALGEBRAIC[94])*(STATES[0] - ALGEBRAIC[91]);
+  ALGEBRAIC[53] = 1.00000/(1.00000+exp(7.48800 - STATES[0]/5.98000));
+  ALGEBRAIC[96] =  ( ( CONSTANTS_G[42]*CONSTANTS_G[58])*ALGEBRAIC[53])*(STATES[0] - ALGEBRAIC[91]);
+  ALGEBRAIC[97] =  ( ( CONSTANTS_G[127]*CONSTANTS_G[58])*ALGEBRAIC[53])*(STATES[0] - ALGEBRAIC[91]);
+  ALGEBRAIC[98] = ALGEBRAIC[96]+ALGEBRAIC[97];
+  ALGEBRAIC[54] = 1.00000/(1.00000+exp((STATES[0]+74.0000)/24.0000));
+  ALGEBRAIC[99] =  ( ( CONSTANTS_G[111]*STATES[26])*ALGEBRAIC[54])*(STATES[0] - ALGEBRAIC[91]);
+  ALGEBRAIC[55] =  (1.00000/CONSTANTS_G[109])*log((CONSTANTS_G[52]+ CONSTANTS_G[61]*CONSTANTS_G[53])/(STATES[25]+ CONSTANTS_G[61]*STATES[28]));
+  ALGEBRAIC[56] =  ( ( CONSTANTS_G[42]*CONSTANTS_G[112])*pow(STATES[27], 2.00000))*(STATES[0] - ALGEBRAIC[55]);
+  ALGEBRAIC[57] =  ( ( CONSTANTS_G[127]*CONSTANTS_G[113])*pow(STATES[27], 2.00000))*(STATES[0] - ALGEBRAIC[55]);
+  ALGEBRAIC[58] = ALGEBRAIC[56]+ALGEBRAIC[57];
+  ALGEBRAIC[100] =  ( ( CONSTANTS_G[114]*STATES[29])*STATES[30])*(STATES[0] - ALGEBRAIC[91]);
+  ALGEBRAIC[73] = ALGEBRAIC[71]+ALGEBRAIC[72];
+  ALGEBRAIC[101] =  ( ( CONSTANTS_G[120]*STATES[36])*STATES[37])*(STATES[0] - ALGEBRAIC[91]);
+  ALGEBRAIC[113] = ((((((ALGEBRAIC[101]+ALGEBRAIC[99])+ALGEBRAIC[58])+ALGEBRAIC[95]) -  2.00000*ALGEBRAIC[73])+ALGEBRAIC[42])+ALGEBRAIC[98])+ALGEBRAIC[100];
+  ALGEBRAIC[117] = ((ALGEBRAIC[116]+ALGEBRAIC[78])+ALGEBRAIC[90])+ALGEBRAIC[113];
+  ALGEBRAIC[118] = ((VOI - CONSTANTS_G[100]) -  CONSTANTS_G[101]*floor((VOI - CONSTANTS_G[100])/CONSTANTS_G[101])<CONSTANTS_G[99] ? 1.00000 : 0.00000);
+  ALGEBRAIC[119] =  ALGEBRAIC[118]*CONSTANTS_G[98];
+  RATES[0] = - (ALGEBRAIC[117]+ALGEBRAIC[119]);
+
+  for (int i = 0; i < 41; i++){
+    RATES[i] = RATES[i] * 1000; //convert from ms to s
+
+}
+
 __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers, PDEFIELD_TYPE thetime, PDEFIELD_TYPE stepsize, PDEFIELD_TYPE* yout, PDEFIELD_TYPE *yerr, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
+  /*
   //Given values for n variables y[1..n] and their derivatives dydx[1..n] known at x, use
   //the fifth-order Dormand-Prince Runge-Kutta method to advance the solution over an interval h
   //and return the incremented variables as yout[1..n]. Also return an estimate of the local
@@ -2739,49 +3454,49 @@ __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers
   if (celltype2){
     for (i=0;i<layers;i++) //First step.
       ytemp[i]=y[i]+a21*stepsize*dydt[i];
-      derivsFabbriSeveri(thetime+c2*stepsize,ytemp,k2,pacing_interval,pacing_duration,pacing_strength,id);// Second step.
+      derivsFabbriSeveri(thetime+c2*stepsize,ytemp,k2,pacing_interval,id);// Second step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a31*dydt[i]+a32*k2[i]);
-    derivsFabbriSeveri(thetime+c3*stepsize,ytemp,k3,pacing_interval,pacing_duration,pacing_strength,id);  //Third step.
+    derivsFabbriSeveri(thetime+c3*stepsize,ytemp,k3,pacing_interval,id);  //Third step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a41*dydt[i]+a42*k2[i]+a43*k3[i]);
-    derivsFabbriSeveri(thetime+c4*stepsize,ytemp,k4,pacing_interval,pacing_duration,pacing_strength,id); //Fourth step.
+    derivsFabbriSeveri(thetime+c4*stepsize,ytemp,k4,pacing_interval,id); //Fourth step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a51*dydt[i]+a52*k2[i]+a53*k3[i]+a54*k4[i]);
-    derivsFabbriSeveri(thetime+c5*stepsize,ytemp,k5,pacing_interval,pacing_duration,pacing_strength,id); //Fifth step.
+    derivsFabbriSeveri(thetime+c5*stepsize,ytemp,k5,pacing_interval,id); //Fifth step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a61*dydt[i]+a62*k2[i]+a63*k3[i]+a64*k4[i]+a65*k5[i]);
     PDEFIELD_TYPE timeplusdt = thetime+stepsize;
-    derivsFabbriSeveri(timeplusdt,ytemp,k6,pacing_interval,pacing_duration,pacing_strength,id); //Sixth step.
+    derivsFabbriSeveri(timeplusdt,ytemp,k6,pacing_interval,id); //Sixth step.
     for (i=0;i<layers;i++) //Accumulate increments with proper weights.
       yout[i]=y[i]+stepsize*(a71*dydt[i]+a73*k3[i]+a74*k4[i]+a75*k5[i]+a76*k6[i]);
-    derivsFabbriSeveri(timeplusdt,yout,dydtnew,pacing_interval,pacing_duration,pacing_strength,id);
+    derivsFabbriSeveri(timeplusdt,yout,dydtnew,pacing_interval,id);
     for (i=0;i<layers;i++) //Estimate error as difference between fourth- and fifth-order methods.
       yerr[i]=stepsize*(e1*dydt[i]+e3*k3[i]+e4*k4[i]+e5*k5[i]+e6*k6[i]+e7*dydtnew[i]);
   }
   else{
     for (i=0;i<layers;i++) //First step.
       ytemp[i]=y[i]+a21*stepsize*dydt[i];
-    derivsMaleckar(thetime+c2*stepsize,ytemp, k2,pacing_interval,pacing_duration,pacing_strength, id);// Second step.
+    derivsMaleckar(thetime+c2*stepsize,ytemp, k2,pacing_interval, id);// Second step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a31*dydt[i]+a32*k2[i]);
-    derivsMaleckar(thetime+c3*stepsize,ytemp, k3,pacing_interval,pacing_duration,pacing_strength, id); //Third step.
+    derivsMaleckar(thetime+c3*stepsize,ytemp, k3,pacing_interval, id); //Third step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a41*dydt[i]+a42*k2[i]+a43*k3[i]);
-    derivsMaleckar(thetime+c4*stepsize,ytemp, k4,pacing_interval,pacing_duration,pacing_strength, id); //Fourth step.
+    derivsMaleckar(thetime+c4*stepsize,ytemp, k4,pacing_interval, id); //Fourth step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a51*dydt[i]+a52*k2[i]+a53*k3[i]+a54*k4[i]);
-    derivsMaleckar(thetime+c5*stepsize,ytemp, k5,pacing_interval,pacing_duration,pacing_strength, id); //Fifth step.
+    derivsMaleckar(thetime+c5*stepsize,ytemp, k5,pacing_interval, id); //Fifth step.
     for (i=0;i<layers;i++)
       ytemp[i]=y[i]+stepsize*(a61*dydt[i]+a62*k2[i]+a63*k3[i]+a64*k4[i]+a65*k5[i]);
     PDEFIELD_TYPE timeplusdt = thetime+stepsize;
-    derivsMaleckar(timeplusdt,ytemp, k6,pacing_interval,pacing_duration,pacing_strength, id); //Sixth step.
+    derivsMaleckar(timeplusdt,ytemp, k6,pacing_interval, id); //Sixth step.
     for (i=0;i<layers;i++) //Accumulate increments with proper weights.
       yout[i]=y[i]+stepsize*(a71*dydt[i]+a73*k3[i]+a74*k4[i]+a75*k5[i]+a76*k6[i]);
-    derivsMaleckar(timeplusdt,yout,dydtnew,pacing_interval,pacing_duration,pacing_strength, id);
+    derivsMaleckar(timeplusdt,yout,dydtnew,pacing_interval, id);
     for (i=0;i<layers;i++) //Estimate error as difference between fourth- and fifth-order methods.
       yerr[i]=stepsize*(e1*dydt[i]+e3*k3[i]+e4*k4[i]+e5*k5[i]+e6*k6[i]+e7*dydtnew[i]);
-  }
+  }*/
 }
 
 __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layers, PDEFIELD_TYPE *thetime, PDEFIELD_TYPE stepsize_try, PDEFIELD_TYPE eps, PDEFIELD_TYPE* yscal, PDEFIELD_TYPE* stepsize_did, PDEFIELD_TYPE* stepsize_next, PDEFIELD_TYPE dt, PDEFIELD_TYPE stepsize_min, bool overshot, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
@@ -2840,7 +3555,7 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
   }
 }
 
-__global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength){
+__global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
   /* Ordinary Differential Equation step Runge Kutta Adaptive
   Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
@@ -2858,7 +3573,7 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
   PDEFIELD_TYPE y_new[ARRAY_SIZE];
   PDEFIELD_TYPE dydt[ARRAY_SIZE];
   PDEFIELD_TYPE current_time;
-  PDEFIELD_TYPE MaxTimeError = 5e-6;
+  PDEFIELD_TYPE MaxTimeError = 1e-6;
   PDEFIELD_TYPE stepsize_overshot;
   bool overshot = false;
   bool celltype2 = false;
@@ -2887,15 +3602,15 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
       while(fabs(current_time - begin_time - dt)>MaxTimeError){
         overshot = false;
         if(celltype2)
-          derivsFabbriSeveri(current_time,y,dydt,pacing_interval,pacing_duration,pacing_strength, id);
+          derivsFabbriSeveri(current_time,y,dydt,pacing_interval, I_f_factor, I_Kr_factor, id);
         else 
-          derivsMaleckar(current_time,y,dydt,pacing_interval,pacing_duration,pacing_strength, id);
+          derivsGrandi(current_time,y,dydt,pacing_interval,id);
         if (stepsize+current_time > end_time+MaxTimeError){
           stepsize_overshot = stepsize; 
           stepsize=end_time - current_time;// If stepsize can overshoot, decrease.
           overshot = true;
         }
-        StepsizeControl(y,dydt,layers,&current_time,stepsize,eps,yscal,&stepsize_did,&stepsize_next, dt, stepsize_min, overshot, celltype2, pacing_interval,pacing_duration,pacing_strength,id);
+        //StepsizeControl(y,dydt,layers,&current_time,stepsize,eps,yscal,&stepsize_did,&stepsize_next, dt, stepsize_min, overshot, celltype2, pacing_interval,pacing_duration,pacing_strength,id);
 
         if (fabs(current_time - begin_time - dt)<MaxTimeError) { //Are we done?
           for (i=0;i<layers;i++) {
@@ -3043,7 +3758,7 @@ __global__ void ODEstepRL_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE dtt, PDEFIELD_TYP
   }
 }
 
-__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength){
+__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
   /* Ordinary Differential Equation step Runge Kutta Adaptive
   Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
@@ -3052,14 +3767,14 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, i
   scaled. On output, y and x are replaced by their new values, hdid is the stepsize that was
   actually accomplished, and hnext is the estimated next stepsize. derivs is the user-supplied
   routine that computes the right-hand side derivatives. */
-  PDEFIELD_TYPE dtt = 1e-5;
+  PDEFIELD_TYPE dtt = 5e-6;
   PDEFIELD_TYPE begin_time,stepsize_next,stepsize_did,stepsize, end_time;
   PDEFIELD_TYPE yscal[ARRAY_SIZE];
   PDEFIELD_TYPE y[ARRAY_SIZE];
   PDEFIELD_TYPE y_new[ARRAY_SIZE];
   PDEFIELD_TYPE dydt[ARRAY_SIZE];
   PDEFIELD_TYPE current_time;
-  PDEFIELD_TYPE MaxTimeError = 5e-6;
+  PDEFIELD_TYPE MaxTimeError = 5e-7;
   PDEFIELD_TYPE stepsize_overshot;
   bool overshot = false;
   bool celltype2 = false;
@@ -3087,9 +3802,9 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, i
 
         overshot = false;
         if (celltype2)
-          derivsFabbriSeveri(current_time,y,dydt,pacing_interval,pacing_duration,pacing_strength, id);
+          derivsFabbriSeveri(current_time,y,dydt,pacing_interval, I_f_factor, I_Kr_factor, id);
         else 
-          derivsMaleckar(current_time,y,dydt,pacing_interval,pacing_duration,pacing_strength, id);
+          derivsGrandi(current_time,y,dydt,pacing_interval, id);
         //derivsFitzHughNagumo(current_time,y,dydt,celltype2, sigmafield, pacing_interval,pacing_duration,pacing_strength, id, FHN_interval_beats, FHN_pulse_duration, FHN_pulse_strength,  a, b, tau, FHN_a, FHN_b, FHN_tau);
         current_time += dtt;
         if (fabs(current_time - begin_time - dt) < MaxTimeError) { //Are we done?
@@ -3166,7 +3881,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     //Do an ODE step of size dt/2
     //ODEstepRL_Paci<<<nr_blocks, par.threads_per_core>>>(dt/2, dtt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
     //ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
-    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
+    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, par.eps, pacing_interval, par.I_f_factor, par.I_Kr_factor);
     //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_alt_PDEvars);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
@@ -3176,13 +3891,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
 
     
-    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 1.\n";
         exit(1);
       }
-    }*/
+    }
     //for (int i = 0; i < layers; i++)
     //cout << "After first FE step, alt_PDEvars["<< 6355 + sizex*sizey*i << "] = " << alt_PDEvars[6355 + sizex*sizey*i] << endl;
     
@@ -3217,13 +3932,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     
 
     
-    /*cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 2.\n";
         exit(1);
       }
-    }*/
+    }
 
     //cout << "After first FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
     
@@ -3235,7 +3950,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     //Do an ODE step of size dt/2
     //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_PDEvars);
     //ODEstepRL_Paci<<<nr_blocks, par.threads_per_core>>>(dt/2, dtt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
-    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
+    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, par.eps, pacing_interval, par.I_f_factor, par.I_Kr_factor);
     //ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
@@ -3245,13 +3960,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
       
     
-    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 3.\n";
         exit(1);
       }
-    }*/
+    }
       
       
     //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
@@ -3298,13 +4013,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     
       //increase time by dt/2
     thetime = thetime + dt/2; 
-    /*cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 4.\n";
         exit(1);
       }
-    }*/
+    }
     //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     //cout << "After first ADI step, PDEvars[23885] = " << PDEvars[23885] << endl;
 

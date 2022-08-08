@@ -133,6 +133,9 @@ class Parameter {
   double FHN_start_0;
   double FHN_start_1;
 
+  double I_f_factor;
+  double I_Kr_factor;
+
  private:
 };
 

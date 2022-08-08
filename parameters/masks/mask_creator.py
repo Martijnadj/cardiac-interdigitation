@@ -12,13 +12,13 @@ pixel_size = 0.003
 #Left shape
 L_shape = "circle"
 #Choose either "circle" or "rectangle"
-L_radius = 100
+L_radius = 200
 L_width = 1200
 L_height = 2500
 
 #Isthmus
 I_length = 120
-I_width = 100
+I_width = 200
 
 
 #Right shape
@@ -231,8 +231,8 @@ def construct_shape():
 	f.close()
 
 def create_image():
-	plt.xticks(np.arange(0,x_max,int(1/(pixel_size*5))), np.round(np.arange(0,pixel_size*x_max,1/5),3))
-	plt.yticks(np.arange(0,y_max,int(1/(pixel_size*5))), np.round(np.arange(0,pixel_size*y_max,1/5),3))
+	plt.xticks(np.arange(0,x_max,int(1/(pixel_size*5))), np.round(np.arange(0,pixel_size*(x_max+1),1/5),3))
+	plt.yticks(np.arange(0,y_max,int(1/(pixel_size*5))), np.round(np.arange(0,pixel_size*(y_max+1),1/5),3))
 	plt.xlabel('mm')
 	plt.ylabel('mm')
 	plt.imshow(mask.T, interpolation='nearest')

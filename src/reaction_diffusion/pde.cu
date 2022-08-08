@@ -3891,13 +3891,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
 
     
-    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 1.\n";
         exit(1);
       }
-    }
+    }*/
     //for (int i = 0; i < layers; i++)
     //cout << "After first FE step, alt_PDEvars["<< 6355 + sizex*sizey*i << "] = " << alt_PDEvars[6355 + sizex*sizey*i] << endl;
     
@@ -3931,14 +3931,14 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
     
 
-    
+    /*
     cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 2.\n";
         exit(1);
       }
-    }
+    }*/
 
     //cout << "After first FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
     
@@ -3960,13 +3960,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
       
     
-    cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 3.\n";
         exit(1);
       }
-    }
+    }*/
       
       
     //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
@@ -4013,13 +4013,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     
       //increase time by dt/2
     thetime = thetime + dt/2; 
-    cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    /*cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     for (int i=0; i < sizex*sizey; i++){
       if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
         cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 4.\n";
         exit(1);
       }
-    }
+    }*/
     //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     //cout << "After first ADI step, PDEvars[23885] = " << PDEvars[23885] << endl;
 

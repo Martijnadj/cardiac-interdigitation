@@ -3810,7 +3810,7 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, i
           derivsGrandi(current_time,y,dydt,pacing_interval, id);
         //derivsFitzHughNagumo(current_time,y,dydt,celltype2, sigmafield, pacing_interval,pacing_duration,pacing_strength, id, FHN_interval_beats, FHN_pulse_duration, FHN_pulse_strength,  a, b, tau, FHN_a, FHN_b, FHN_tau);
         current_time += dtt;
-        if (it = nr_of_iterations; it++) { //Are we done?
+        if (it == nr_of_iterations-1) { //Are we done?
           for (i=0;i<layers;i++) {
             alt_PDEvars[i*sizex*sizey + id] = y[i]+dtt*dydt[i];
           }

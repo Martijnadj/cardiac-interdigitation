@@ -3768,6 +3768,9 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, i
   actually accomplished, and hnext is the estimated next stepsize. derivs is the user-supplied
   routine that computes the right-hand side derivatives. */
   PDEFIELD_TYPE dtt = 5e-6;
+  int nr_of_iterations = round(dt/dtt);
+  if (fabs(dt/dtt - nr_of_iterations) > 0.001)
+    printf("dt and dtt do not divide properly!");
   PDEFIELD_TYPE begin_time,stepsize_next,stepsize_did,stepsize, end_time;
   PDEFIELD_TYPE yscal[ARRAY_SIZE];
   PDEFIELD_TYPE y[ARRAY_SIZE];
@@ -3798,7 +3801,7 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, i
       stepsize=next_stepsize[id];
       for (i=0;i<layers;i++)
         y[i]=PDEvars[i*sizex*sizey + id];
-      while(fabs(current_time - begin_time - dt)>MaxTimeError){
+      for (int it = 0; it < nr_of_iterations; it++){
 
         overshot = false;
         if (celltype2)
@@ -3807,7 +3810,7 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, i
           derivsGrandi(current_time,y,dydt,pacing_interval, id);
         //derivsFitzHughNagumo(current_time,y,dydt,celltype2, sigmafield, pacing_interval,pacing_duration,pacing_strength, id, FHN_interval_beats, FHN_pulse_duration, FHN_pulse_strength,  a, b, tau, FHN_a, FHN_b, FHN_tau);
         current_time += dtt;
-        if (fabs(current_time - begin_time - dt) < MaxTimeError) { //Are we done?
+        if (it = nr_of_iterations; it++) { //Are we done?
           for (i=0;i<layers;i++) {
             alt_PDEvars[i*sizex*sizey + id] = y[i]+dtt*dydt[i];
           }

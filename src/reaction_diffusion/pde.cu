@@ -315,7 +315,7 @@ void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
   PDEinit[1] = FHN_1;
   */
 
-  //Mackelar2009
+  //Maleckar2009
   /*
   PDEinit1[0] = -74.031982;
   PDEinit1[1] = 130.022096;

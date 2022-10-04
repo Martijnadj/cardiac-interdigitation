@@ -27,10 +27,13 @@ GRAPHICS = qt
 # Select the model to build by uncommenting it.
 # The actual sources of these models are in the
 # 'models' folder.
+<<<<<<< HEAD
 MODEL = micropatterns
+=======
+>>>>>>> origin/TST2.0
 #MODEL = vessel
 #MODEL = qPotts
-#MODEL = sorting
+MODEL = sorting
 #MODEL = Act_model
 # Enable or disable the profiling macros 
 # defined in util/profiler.h.

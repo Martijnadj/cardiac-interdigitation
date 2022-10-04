@@ -1306,7 +1306,7 @@ void CellularPotts::FreezeAmoebae(void)
 int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
 {
   int p;
-  double loop;
+  float loop;
   thetime++;
   int SumDH = 0;
 
@@ -1330,10 +1330,9 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
   if (frozen)
     return 0;
 
-  loop = sizeedgelist / n_nb;
-  for (int i = 0; i < loop; i++)
-  {
-    positionedge = (int)(RANDOM() * sizeedgelist); // take a entry of the edgelist
+  loop = static_cast<float>(sizeedgelist) / static_cast<float>(n_nb);
+  for (int i = 0; i < loop; i++){
+    positionedge = (int)(RANDOM()*sizeedgelist); // take a entry of the edgelist
     targetedge = orderedgelist[positionedge];
     targetsite = targetedge / n_nb;
     targetneighbour = (targetedge % n_nb) + 1;
@@ -1448,7 +1447,7 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
             if (edgelist[edgeadjusting] == -1 && sigma[xn][yn] != sigma[x][y])
             { // if we should add the edge to the edgelist, add it
               AddEdgeToEdgelist(edgeadjusting);
-              loop += (double)2 / n_nb;
+              loop += 2.0 / n_nb;
               numberofedges[x][y]++;
               numberofedges[xn][yn]++;
               if ((tau[xn][yn] == 1 && tau[x][y] == 2) || (tau[xn][yn] == 2 && tau[x][y] == 1)){
@@ -1473,7 +1472,7 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
             if (edgelist[edgeadjusting] != -1 && sigma[xn][yn] == sigma[x][y])
             { // if the sites have the same celltype and they have an edge, remove it
               RemoveEdgeFromEdgelist(edgeadjusting);
-              loop -= (double)2 / n_nb;
+              loop -= 2.0 / n_nb;
               numberofedges[x][y]--;
               numberofedges[xn][yn]--;
               if (numberofedges[x][y] == 0)
@@ -1595,71 +1594,11 @@ int CellularPotts::CounterEdge(int edge)
       yp = yp - sizey + 2;
   }
 
-  int neighbourlocation = xp - 1 + (yp - 1) * (par.sizex - 2);
-  switch (which_neighbour)
-  {
-  case 1:
-    counterneighbour = 3;
-    break;
-  case 2:
-    counterneighbour = 4;
-    break;
-  case 3:
-    counterneighbour = 1;
-    break;
-  case 4:
-    counterneighbour = 2;
-    break;
-  case 5:
-    counterneighbour = 7;
-    break;
-  case 6:
-    counterneighbour = 8;
-    break;
-  case 7:
-    counterneighbour = 5;
-    break;
-  case 8:
-    counterneighbour = 6;
-    break;
-  case 9:
-    counterneighbour = 11;
-    break;
-  case 10:
-    counterneighbour = 12;
-    break;
-  case 11:
-    counterneighbour = 9;
-    break;
-  case 12:
-    counterneighbour = 10;
-    break;
-  case 13:
-    counterneighbour = 17;
-    break;
-  case 14:
-    counterneighbour = 18;
-    break;
-  case 15:
-    counterneighbour = 19;
-    break;
-  case 16:
-    counterneighbour = 20;
-    break;
-  case 17:
-    counterneighbour = 13;
-    break;
-  case 18:
-    counterneighbour = 14;
-    break;
-  case 19:
-    counterneighbour = 15;
-    break;
-  case 20:
-    counterneighbour = 16;
-    break;
-  }
-  int counteredge = neighbourlocation * n_nb + counterneighbour - 1;
+
+  int neighbourlocation = xp-1 + (yp-1)*(par.sizex-2);
+  const int counterneighbourlist[20] = {3, 4, 1, 2, 7, 8, 5, 6, 11, 12, 9, 10, 17, 18, 19, 20, 13, 14, 15, 16};
+  counterneighbour = counterneighbourlist[ which_neighbour - 1 ];
+  int counteredge = neighbourlocation * n_nb + counterneighbour-1;
   return counteredge;
 }
 

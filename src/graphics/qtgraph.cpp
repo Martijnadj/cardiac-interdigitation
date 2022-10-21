@@ -60,6 +60,8 @@ QtGraphics::QtGraphics(int xfield, int yfield, const char *movie_file)
   pens = new QPen[256];
 	
   ReadColorTable(pens);
+
+  
  
   // Set background color of widget (i.e. the color outside the Pixmap that
   // will be shown after resizing the window)
@@ -74,6 +76,7 @@ QtGraphics::QtGraphics(int xfield, int yfield, const char *movie_file)
   mouse_button=Qt::NoButton;
   pixmap=new QPixmap(xfield,yfield);
   picture=new QPainter();
+  
   key=-1;
 }
 
@@ -97,10 +100,18 @@ void QtGraphics::PointAlpha(int alpha, int i, int j) {
   picture->drawPoint( i, j);
 }
 
-void QtGraphics::Rectangle(int colour, int i, int j) {
-  if (colour > col_num) return;  
+void QtGraphics::Rectangle(int colour, int i, int j, float alpha) { //alpha indicates transparency
+  if (colour > col_num) return;
+  picture->setOpacity(alpha);  
+  picture->fillRect(QRect(i*2, j*2, 2, 2), pens[colour].color());
+  picture->setOpacity(1);
+}
+
+void QtGraphics::Rectangle(int colour, int i, int j) { 
+  if (colour > col_num) return;
   picture->fillRect(QRect(i*2, j*2, 2, 2), pens[colour].color());
 }
+
 
 
 void QtGraphics::BeginScene(void) {

@@ -81,7 +81,6 @@ INIT {
 
 TIMESTEP { 
   try {
-
     static int i=0;
     cout <<"MCS: " << i << endl;
     static Dish *dish;
@@ -170,7 +169,7 @@ void Plotter::Plot()  {
   
   //Somewhere here show mask
   plotPDEDensity();
-  //plotCPMCellTypes();
+  plotCPMCellTypes();
   plotCPMLines(); 
   plotPDEContourLines();
   graphics->EndScene();

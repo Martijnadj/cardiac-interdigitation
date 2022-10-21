@@ -3596,7 +3596,8 @@ bool CellularPotts::plotPos(int x, int y, Graphics *graphics)
       return true;
     else
     {
-      graphics->Rectangle((*cell)[self].Colour(), x, y);
+      float opacity = 0.1; //0 is fully tranparent, 1 fully opaque
+      graphics->Rectangle((*cell)[self].Colour(), x, y, opacity);
       return false;
     }
   }

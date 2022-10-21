@@ -59,6 +59,8 @@ class Graphics {
 
   virtual void Rectangle( int colour, int x, int y)=0;
 
+  virtual void Rectangle( int colour, int x, int y, float alpha)=0;
+
   /*! \brief Draws a line (obviously... :-)
 
   \param x1, y1: First coordinate pair.

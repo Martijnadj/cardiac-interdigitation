@@ -4692,7 +4692,7 @@ __global__ void ODEstepRL_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE dtt, PDEFIELD_TYP
 }
 
 __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
-  PDEFIELD_TYPE dtt = 2e-5;
+  PDEFIELD_TYPE dtt = 1e-5;
   int nr_of_iterations = round(dt/dtt);
   if (fabs(dt/dtt - nr_of_iterations) > 0.001)
     printf("dt and dtt do not divide properly!");

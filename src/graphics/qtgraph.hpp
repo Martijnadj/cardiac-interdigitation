@@ -54,6 +54,7 @@ class QtGraphics : public QWidget, public Graphics {
  
   virtual void PointAlpha( int alpha, int i, int j);
   virtual void Rectangle(int colour, int i, int j);
+  virtual void Rectangle(int colour, int i, int j, float alpha);
   virtual void Arrow (int x1, int y1, int x2, int y2, int colour);
   
   virtual int GetXYCoo(int *X,int *Y);

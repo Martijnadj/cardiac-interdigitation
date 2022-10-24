@@ -178,7 +178,7 @@ public:
   }
     
   void SetBoundingBox(void);
-  void StoreMask(string filename);
+  void StoreMask();
 
   /*! Plot the cells according to their cell identity, not their type.
   The black lines are omitted.
@@ -308,6 +308,7 @@ public:
   int GrowInCells(int n_cells, int cell_size, int sx, int sy, int offset_x, int offset_y);
   int GrowInCellsInMicropattern(int n_cells, int cellsize);
   void GrowCellGrid(Dish &beast);
+  void GrowCellGridOnLayers(Dish &beast);
   void RandomSpins(double prob);
     
   int SquareCell(int sig, int cx, int cy, int size);
@@ -344,6 +345,7 @@ public:
   */
   void SetRandomTypes(void);
   void SetTypesWithMask(void);
+  void SetTypesWithDoubleMask(void);
   void SetUpTauMatrix(int sizex, int sizey);
 
   /*! Cells grow until twice their original target_length, then
@@ -389,7 +391,7 @@ public:
     return numberofedges;
   }
 
-  inline bool** getMask(){
+  inline int** getMask(){
     return mask;
   }
 
@@ -464,7 +466,7 @@ protected:
   int **tau;
   int **numberofedges;
   PDEFIELD_TYPE **couplingcoefficient;
-  bool **mask;
+  int **mask; //stores both primary and secondary mask (indicating which cell type can go where)
   int sizex;
   int sizey;
 

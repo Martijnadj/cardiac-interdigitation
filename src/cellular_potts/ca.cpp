@@ -99,7 +99,7 @@ CellularPotts::CellularPotts(vector<Cell> *cells,
   AllocateSigma(sx, sy);
   AllocateTau(sx, sy);
 
-  StoreMask(par.micropatternmask);
+  StoreMask();
 
   if (par.micropatternmask != string("None"))
   {
@@ -107,7 +107,7 @@ CellularPotts::CellularPotts(vector<Cell> *cells,
     {
       for (int y = 0; y < sizey; y++)
       {
-        if (mask[x][y] == false)
+        if (!mask[x][y])
         {
           sigma[x][y] = -1;
           tau[x][y] = -1;
@@ -161,7 +161,7 @@ CellularPotts::CellularPotts(void)
     {
       for (int y = 0; y < sizey; y++)
       {
-        if (mask[x][y] == false)
+        if (!mask[x][y])
         {
           sigma[x][y] = -1;
           tau[x][y] = -1;
@@ -331,11 +331,11 @@ void CellularPotts::AllocateMask(int sx, int sy)
   sizex = sx;
   sizey = sy;
 
-  mask = (bool **)malloc(sizex * sizeof(bool *));
+  mask = (int **)malloc(sizex * sizeof(int *));
   if (mask == NULL)
     MemoryWarning();
 
-  mask[0] = (bool *)malloc(sizex * sizey * sizeof(bool));
+  mask[0] = (int *)malloc(sizex * sizey * sizeof(int));
   if (mask[0] == NULL)
     MemoryWarning();
 
@@ -347,7 +347,7 @@ void CellularPotts::AllocateMask(int sx, int sy)
   /* Clear CA plane */
   {
     for (int i = 0; i < sizex * sizey; i++)
-      mask[0][i] = false;
+      mask[0][i] = 0;
   }
 }
 
@@ -415,20 +415,22 @@ void CellularPotts::InitializeEdgeList(void)
     x = pixel % (sizex - 2) + 1;
     y = pixel / (sizex - 2) + 1;
     c = sigma[x][y];
-    xp = nx[neighbour] + x;
-    yp = ny[neighbour] + y;
+    xp = nx[neighbour] + x; //which cell is the neighbour?
+    yp = ny[neighbour] + y; //which cell is the neighbour?
 
     if (par.micropatternmask != string("None"))
     {
-      if (mask[x][y] == false)
+      if (!mask[x][y])
         c = -1;
       if (xp <= 0 || yp <= 0 || xp >= sizex - 1 || yp >= sizey - 1)
         cp = -1;
-      else if (mask[xp][yp] == false)
+      else if (!mask[xp][yp])
         cp = -1;
       else
         cp = sigma[xp][yp];
     }
+
+
 
     else
     {
@@ -452,11 +454,13 @@ void CellularPotts::InitializeEdgeList(void)
         cp = sigma[xp][yp];
     }
     if (cp != c && cp != -1 && c != -1)
-    {
-      edgelist[k] = sizeedgelist;
-      orderedgelist[sizeedgelist] = k;
-      sizeedgelist++;
-      numberofedges[x][y]++;
+    { 
+      if(!par.second_layer || tau[x][y] == tau[xp][yp]){ //If we do not use a second layer, or if both cell types are equal)
+        edgelist[k] = sizeedgelist;
+        orderedgelist[sizeedgelist] = k;
+        sizeedgelist++;
+        numberofedges[x][y]++;
+      }
     }
   }
 }
@@ -769,7 +773,7 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield)
     }
     if (par.micropatternmask != string("None"))
     {
-      if (mask[xp2][yp2] == false)
+      if (!mask[xp2][yp2])
         neighsite = -1;
     }
     if (neighsite == -1)
@@ -1331,6 +1335,7 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
     return 0;
 
   loop = static_cast<float>(sizeedgelist) / static_cast<float>(n_nb);
+  cout << loop << endl;
   for (int i = 0; i < loop; i++){
     positionedge = (int)(RANDOM()*sizeedgelist); // take a entry of the edgelist
     targetedge = orderedgelist[positionedge];
@@ -1369,7 +1374,7 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
       CopyPDEvars(x, y, xp, yp, PDEfield);
       for (int j = 1; j <= n_nb; j++)
       {
-        xn = nx[j] + x;
+        xn = nx[j] + x; //Update the edgelist for all neighbours of x,y
         yn = ny[j] + y;
         edgeadjusting = targetsite * n_nb + j - 1;
 
@@ -1390,36 +1395,38 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
         {
           if (xn > 0 && yn > 0 && xn < sizex - 1 && yn < sizey - 1)
           { // if the neighbour site is within the lattice
-            if (mask[xn][yn] == true)
+            if (mask[xn][yn])
             { // and if it is within the micropattern
               if (edgelist[edgeadjusting] == -1 && sigma[xn][yn] != sigma[x][y])
-              { // if we should add the edge to the edgelist, add it
-                AddEdgeToEdgelist(edgeadjusting);
-                loop += (double)2 / n_nb;
-                numberofedges[x][y]++;
-                numberofedges[xn][yn]++;
-                if ((tau[xn][yn] == 1 && tau[x][y] == 2) || (tau[xn][yn] == 2 && tau[x][y] == 1)){
-                  couplingcoefficient[x][y] = par.couplingAtrialPM;
-                  couplingcoefficient[xn][yn] = par.couplingAtrialPM;
+                if(!par.second_layer || tau[x][y] == tau[xn][yn]) //We must either have no second layer, or if we do, both cell types need to be of the same type
+                { // if we should add the edge to the edgelist, add it
+                  AddEdgeToEdgelist(edgeadjusting);
+                  loop += (double)2 / n_nb;
+                  numberofedges[x][y]++;
+                  numberofedges[xn][yn]++;
+                  if ((tau[xn][yn] == 1 && tau[x][y] == 2) || (tau[xn][yn] == 2 && tau[x][y] == 1)){
+                    couplingcoefficient[x][y] = par.couplingAtrialPM;
+                    couplingcoefficient[xn][yn] = par.couplingAtrialPM;
+                  }
+                  else if (tau[xn][yn] == 0 || tau[x][y] == 0){
+                    couplingcoefficient[x][y] = par.couplingmedium;
+                    couplingcoefficient[xn][yn] = par.couplingmedium;
+                  }
+                  else if (tau[xn][yn] == 1){
+                    couplingcoefficient[x][y] = par.couplingAtrialAtrial;
+                    if (couplingcoefficient[xn][yn] != par.couplingAtrialPM)
+                      couplingcoefficient[xn][yn] = par.couplingAtrialAtrial;
+                  }
+                  else if (tau[xn][yn] == 2){
+                    couplingcoefficient[x][y] = par.couplingPMPM;
+                    if (couplingcoefficient[xn][yn] != par.couplingAtrialPM)
+                      couplingcoefficient[xn][yn] = par.couplingPMPM;
+                  }
+                  
                 }
-                else if (tau[xn][yn] == 0 || tau[x][y] == 0){
-                  couplingcoefficient[x][y] = par.couplingmedium;
-                  couplingcoefficient[xn][yn] = par.couplingmedium;
-                }
-                else if (tau[xn][yn] == 1){
-                  couplingcoefficient[x][y] = par.couplingAtrialAtrial;
-                  if (couplingcoefficient[xn][yn] != par.couplingAtrialPM)
-                    couplingcoefficient[xn][yn] = par.couplingAtrialAtrial;
-                }
-                else if (tau[xn][yn] == 2){
-                  couplingcoefficient[x][y] = par.couplingPMPM;
-                  if (couplingcoefficient[xn][yn] != par.couplingAtrialPM)
-                    couplingcoefficient[xn][yn] = par.couplingPMPM;
-                }
-                
-              }
-              if (edgelist[edgeadjusting] != -1 && sigma[xn][yn] == sigma[x][y])
-              { // if the sites have the same celltype and they have an edge, remove it
+              if (edgelist[edgeadjusting] != -1 && ((sigma[xn][yn] == sigma[x][y]) ||  (par.second_layer && tau[xn][yn] != tau[x][y])))
+              { // if the sites have the same cellnumber and they have an edge, remove it
+                //also remove the edge if we do have a second mask layer and the cells are of different celltype
                 RemoveEdgeFromEdgelist(edgeadjusting);
                 loop -= (double)2 / n_nb;
                 numberofedges[x][y]--;
@@ -2336,11 +2343,11 @@ void CellularPotts::ConstructInitCellGrid(Dish &beast)
   // Set the area and target area of the cell
   // makes use of the pointer to the Cell pointer of Dish
   // which is a member of CellularPotts
-
   MeasureCellSizes();
-  SetTypesWithMask();
-  
-
+  if (par.second_layer)
+    SetTypesWithDoubleMask();
+  else
+    SetTypesWithMask();
   // set zygote_area to mean cell area.
 
   int mean_area_1 = 0;
@@ -2357,14 +2364,10 @@ void CellularPotts::ConstructInitCellGrid(Dish &beast)
       
     }
   }
-
   if (cells1 != 0)
     mean_area_1 /= cells1;
-  if (cells1 != 0) 
+  if (cells2 != 0) 
     mean_area_2 /= cells2;
-
-  cout << "mean_area 1 = " << mean_area_1 << "\n";
-  cout << "mean_area 2 = " << mean_area_2 << "\n";
   // set all cell areas to the mean area
   {
     for (vector<Cell>::iterator c = cell->begin(); c != cell->end(); c++)
@@ -2421,6 +2424,49 @@ void CellularPotts::GrowCellGrid(Dish &beast){
         cell_number++;
       added_cell = false;
     }
+}
+
+void CellularPotts::GrowCellGridOnLayers(Dish &beast){
+  int delta_x1 = par.celltype1_length;
+  int delta_y1 = par.celltype1_width;
+  int delta_x2 = par.celltype2_length;
+  int delta_y2 = par.celltype2_width;
+
+  cout << "delta_x1 = " << delta_x1 << endl;
+  cout << "delta_y1 = " << delta_y1 << endl;
+  cout << "delta_x2 = " << delta_x2 << endl;
+  cout << "delta_y2 = " << delta_y2 << endl;
+
+  int cell_number = 1;
+  bool added_cell = false;
+  for (int grid_x = 0; grid_x < sizex; grid_x += delta_x1)
+    for (int grid_y = 0; grid_y < sizey; grid_y += delta_y1){
+      for (int x = 0; x < delta_x1; x++)
+        for (int y = 0; y < delta_y1; y++){
+          if(grid_x+x < sizex && grid_y+y < sizey)
+            if (mask[grid_x+x][grid_y+y] == 1){
+                added_cell = true;
+                sigma[grid_x+x][grid_y+y] = cell_number;
+              }        
+        }
+      if(added_cell)
+        cell_number++;
+      added_cell = false;
+    }
+  for (int grid_x = 0; grid_x < sizex; grid_x += delta_x2)
+    for (int grid_y = 0; grid_y < sizey; grid_y += delta_y2){
+      for (int x = 0; x < delta_x2; x++)
+        for (int y = 0; y < delta_y2; y++){
+          if(grid_x+x < sizex && grid_y+y < sizey)
+            if (mask[grid_x+x][grid_y+y] == 2){
+                added_cell = true;
+                sigma[grid_x+x][grid_y+y] = cell_number;
+              }        
+        }
+      if(added_cell)
+        cell_number++;
+      added_cell = false;
+    }  
 }
 
 void CellularPotts::MeasureCellSizes(void)
@@ -2778,7 +2824,7 @@ int CellularPotts::ThrowInCells(int n, int cellsize)
     {
       for (int y = 0; y < sizey; y++)
       {
-        if (mask[x][y] == false)
+        if (!mask[x][y])
         {
           sigma[x][y] = -1;
           tau[x][y] = -1;
@@ -3351,6 +3397,14 @@ void CellularPotts::SetTypesWithMask(void)
   }
 }
 
+void CellularPotts::SetTypesWithDoubleMask(void)
+{ 
+for (int x = 0; x < sizex; x++)
+  for (int y = 0; y < sizey; y++)
+    (*cell)[sigma[x][y]].setTau(mask[x][y]);
+}
+
+
 void CellularPotts::SetUpTauMatrix(int sizex, int sizey)
 {
   for (int x = 0; x < sizex; x++)
@@ -3643,11 +3697,11 @@ int **CellularPotts::get_annealed_sigma(int steps)
   return tmp_b;
 }
 
-void CellularPotts::StoreMask(string filename)
+void CellularPotts::StoreMask()
 {
   AllocateMask(sizex, sizey);
   // Create an input filestream
-  std::ifstream myFile(filename);
+  std::ifstream myFile(par.micropatternmask);
 
   // Make sure the file is open
   if (!myFile.is_open())
@@ -3676,6 +3730,41 @@ void CellularPotts::StoreMask(string filename)
       if (ss.peek() == ',')
         ss.ignore();
     }
-    mask[xcoord][ycoord] = true;
+    mask[xcoord][ycoord] = 1;
   }
+
+  if (par.second_layer){
+    // Create an input filestream
+    std::ifstream myFile(par.micropatternlayer2);
+
+    // Make sure the file is open
+    if (!myFile.is_open())
+      throw std::runtime_error("Could not open mask file");
+
+    // Read data, line by line
+    while (std::getline(myFile, line))
+    {
+      std::stringstream ss(line);
+      int colnr = 0;
+      // extract coordinates
+      while (ss >> val)
+      {
+        // Add the current integer to the 'colIdx' column's values vector
+
+        if (!colnr)
+          xcoord = val;
+        if (colnr)
+          ycoord = val;
+        colnr++;
+
+        // If the next token is a comma, ignore it and move on
+        if (ss.peek() == ',')
+          ss.ignore();
+      }
+      mask[xcoord][ycoord] = 2;
+    }
+
+
+  }
+  
 }

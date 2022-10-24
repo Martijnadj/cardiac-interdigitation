@@ -256,7 +256,7 @@ PDE::~PDE(void) {
 void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
   PDEFIELD_TYPE PDEinit1[ARRAY_SIZE];
   PDEFIELD_TYPE PDEinit2[ARRAY_SIZE];
-  bool* mask = cpm->getMask()[0];
+  int* mask = cpm->getMask()[0];
    //For Paci2018
   /*PDEinit[0] = -0.070;
   PDEinit[1] = 0.32;

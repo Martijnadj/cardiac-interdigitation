@@ -1335,7 +1335,6 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
     return 0;
 
   loop = static_cast<float>(sizeedgelist) / static_cast<float>(n_nb);
-  cout << loop << endl;
   for (int i = 0; i < loop; i++){
     positionedge = (int)(RANDOM()*sizeedgelist); // take a entry of the edgelist
     targetedge = orderedgelist[positionedge];
@@ -1543,14 +1542,15 @@ void CellularPotts::WriteData(void)
         }
       }
     }
-  // cout << "Red-red surface = " << RedRedSurface << endl;
-  // cout << "Red-yellow surface = " << RedYellowSurface << endl;
-  // cout << "Yellow-yellow surface = " << YellowYellowSurface << endl;
+  //cout << "Red-red surface = " << RedRedSurface << endl;
+ // cout << "Red-yellow surface = " << RedYellowSurface << endl;
+ // cout << "Yellow-yellow surface = " << YellowYellowSurface << endl;
 
-  ofstream myfile;
-  myfile.open("Data_original.txt", std::ofstream::out | std::ofstream::app);
-  myfile << RedYellowSurface << endl;
-  myfile.close();
+  //ofstream myfile;
+  //myfile.open("Data_original.txt", std::ofstream::out | std::ofstream::app);
+  //myfile << RedYellowSurface << endl;
+  //myfile.close();
+  Convexity();
 }
 
 void CellularPotts::RemoveEdgeFromEdgelist(int edge)
@@ -3504,6 +3504,186 @@ double CellularPotts::DrawConvexHull(Graphics *g, int color)
   delete[] p;
   delete[] hull;
   return hull_area;
+}
+
+void CellularPotts::CropSurface(int* bounds){
+  DetectSidesIsthmus();
+  int top = 0;
+  int bottom = sizey;
+  int left = sizex;
+  int right = 0;
+  for (int y = 0; y < sizey; y++){
+    if (mask[right_side_isthmus-1][y]){
+      if (y > top)
+        top = y;
+      if (y < bottom)
+        bottom = y;
+    }
+    for (int x = 0; x < sizex; x++){
+      if (tau[x][y] == 2 && x > right)
+        right = x;
+      if (tau[x][y] == 1 && x < left)
+        left = x;
+    }
+  }
+  bounds[0] = bottom;
+  bounds[1] = top;
+  bounds[2] = left;
+  bounds[3] = right;
+}
+
+double CellularPotts::Convexity(void){
+  //Compute the convexity (or concavity) at the surface between the two cell types
+  int bounds[4];
+  bounds[1] = 1;
+  CropSurface(bounds);
+  //for (int i = 0; i < 4; i++)
+  //  cout << "bounds[" << i << "] = " << bounds[i] << endl;
+  double compactness_1 = CompactnessPixelCorner(bounds, 1);
+  double compactness_2 = CompactnessPixelCorner(bounds, 2);
+  //cout << "Compactness celltype 1 = " << compactness_1 << endl;
+  //cout << "Compactness celltype 2 = " << compactness_2 << endl;
+  double convexity = compactness_2-compactness_1;
+  cout << "Convexity = " << convexity << endl;
+  return convexity;
+}
+
+double CellularPotts::CompactnessPixelCorner(int *bounds, int celltype)
+{
+  // Calculate compactness using the convex hull of the cells, including the corner points of pixels
+  // We use Andrew's Monotone Chain Algorithm (see hull.cpp)
+
+  // Step 1: calculate total cell area
+
+  double cell_area = 0;
+  for (int x = bounds[2]; x < bounds[3]+1; x++) //count only within the box
+    for (int y = bounds[0]; y < bounds[1]+1; y++)
+    {
+      if (tau[x][y] == celltype) //Only consider one celltype
+      {
+       cell_area++;
+      }
+    }
+
+  int np = 0;
+  // Step 2. Prepare data for 2D hull code
+
+  // Step 2a. Count number of corner points to determine size of array
+  
+  //First consider the left-most column, a corner point if there is a pixel (or to the bottom of it)
+  if (tau[bounds[2]][bounds[0]] == celltype) //bottom row separately
+    np++;
+  for (int y = bounds[0]+1; y < bounds[1]+1; y++)
+    if (tau[bounds[2]][y] == celltype || tau[bounds[2]][y-1] == celltype) //Only consider one celltype
+      //add corner point only if a pixel is present at this location or below it.
+      {
+        np++;
+      }
+  if (tau[bounds[2]][bounds[1]] == celltype) //add top-left most corner points if there is a pixel there
+    np++;
+
+
+  //Add all 'inner' corner points
+  for (int x = bounds[2]+1; x < bounds[3]+1; x++)
+  {
+    if (tau[x][bounds[0]] == celltype || tau[x-1][bounds[0]] == celltype)
+      np++; //special case for bottom row is required
+    for (int y = bounds[0]+1; y < bounds[1]+1; y++) //loop over all other rows
+    {
+      if (tau[x][y] == celltype || tau[x-1][y] == celltype || tau[x][y-1] == celltype ||tau[x-1][y-1] == celltype) //Only consider one celltype
+      //and add a corner point on the bottom left of the current pixel if one of the adjacent pixels is present
+      {
+        np++;
+      }
+    }
+    if (tau[x][bounds[1]] == celltype || tau[x-1][bounds[1]] == celltype)
+      np++;
+    //add the top-most corner point only if there is a pixel on the top row (or to the left of this pixel)
+  }
+
+  //Consider the right-most column separately, only add a corner point if there is a pixel in this column (or to the bottom of it)
+  if (tau[bounds[3]][bounds[0]] == celltype) //bottom row separately
+    np++;
+  for (int y = bounds[0]+1; y < bounds[1]+1; y++)
+    if (tau[bounds[3]][y] == celltype || tau[bounds[3]][y-1] == celltype) //Only consider one celltype
+      //add corner point only if a pixel is present at this location or below it.
+      {
+        np++;
+      }
+  if (tau[bounds[3]][bounds[1]] == celltype)
+    np++;
+
+  // Step 2b. Create array which will contain all corner points
+
+  
+  Point *p = new Point[np];
+
+  // Step 2c. Fill the array with all lattice points ordered, x-first.
+  int pc = 0;
+
+  //First consider the left-most column, a corner point if there is a pixel (or to the bottom of it)
+  if (tau[bounds[2]][bounds[0]] == celltype) //bottom row separately
+    p[pc++] = Point(bounds[2]-0.5, bounds[0]-0.5); 
+  for (int y = bounds[0]+1; y < bounds[1]+1; y++)
+    if (tau[bounds[2]][y] == celltype || tau[bounds[2]][y-1] == celltype) //Only consider one celltype
+      //add corner point only if a pixel is present at this location or below it.
+      {
+        p[pc++] = Point(bounds[2]-0.5, y-0.5);
+      }
+  if (tau[bounds[2]][bounds[1]] == celltype) //add top-left most corner points if there is a pixel there
+    p[pc++] = Point(bounds[2]-0.5, bounds[1]+0.5); 
+
+
+  //Add all 'inner' corner points
+  for (int x = bounds[2]+1; x < bounds[3]+1; x++)
+  {
+    if (tau[x][bounds[0]] == celltype || tau[x-1][bounds[0]] == celltype)
+      p[pc++] = Point(x-0.5, bounds[0]-0.5); //special case for bottom row is required 
+    for (int y = bounds[0]+1; y < bounds[1]+1; y++) //loop over all other rows
+    {
+      if (tau[x][y] == celltype || tau[x-1][y] == celltype || tau[x][y-1] == celltype ||tau[x-1][y-1] == celltype) //Only consider one celltype
+      //and add a corner point on the bottom left of the current pixel if one of the adjacent pixels is present
+      {
+        p[pc++] = Point(x-0.5, y-0.5); 
+      }
+    }
+    if (tau[x][bounds[1]] == celltype || tau[x-1][bounds[1]] == celltype)
+      p[pc++] = Point(x-0.5, bounds[1]+0.5);
+    //add the top-most corner point only if there is a pixel on the top row (or to the left of this pixel)
+  }
+
+  //Consider the right-most column separately, only add a corner point if there is a pixel in this column (or to the bottom of it)
+  if (tau[bounds[3]][bounds[0]] == celltype) //bottom row separately
+    p[pc++] = Point(bounds[3]+0.5, bounds[0]-0.5);
+  for (int y = bounds[0]+1; y < bounds[1]+1; y++)
+    if (tau[bounds[3]][y] == celltype || tau[bounds[3]][y-1] == celltype) //Only consider one celltype
+      //add corner point only if a pixel is present at this location or below it.
+      {
+        p[pc++] = Point(bounds[3]+0.5, y-0.5);
+      }
+  if (tau[bounds[3]][bounds[1]] == celltype)
+    p[pc++] = Point(bounds[3]+0.5, bounds[1]+0.5);
+
+  // Step 3: call 2D Hull code
+  Point *hull = new Point[np];
+  int nph = chainHull_2D(p, np, hull);
+
+  // Step 4: calculate area of convex hull
+
+  double hull_area = 0.;
+  for (int i = 0; i < nph - 1; i++)
+  { 
+    hull_area += hull[i].x * hull[i + 1].y - hull[i + 1].x * hull[i].y;
+  }
+  hull_area /= 2.;
+
+  delete[] p;
+  delete[] hull;
+
+  // return compactness
+  //cout << "cell_area = " << cell_area << endl;
+  //cout << "hull_area = " << hull_area << endl;
+  return cell_area / hull_area;
 }
 
 double CellularPotts::Compactness(double *res_compactness, double *res_area, double *res_cell_area)

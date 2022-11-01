@@ -751,14 +751,14 @@ void PDE::InitializeCuda(CellularPotts *cpm, int n_init_cells){
 
   
   //Needed for FHN variation
-  cout << "par.n_init_cells = " << n_init_cells << endl;
-  cout << "FHN_a[0] = " << FHN_a[0] << endl;
-  cudaMalloc((void**) &d_FHN_a, n_init_cells*sizeof(PDEFIELD_TYPE));
-  cudaMalloc((void**) &d_FHN_b, n_init_cells*sizeof(PDEFIELD_TYPE));
-  cudaMalloc((void**) &d_FHN_tau, n_init_cells*sizeof(PDEFIELD_TYPE));
-  cudaMemcpy(d_FHN_a, FHN_a, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_FHN_b, FHN_b, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_FHN_tau, FHN_tau, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
+  //cout << "par.n_init_cells = " << n_init_cells << endl;
+  //cout << "FHN_a[0] = " << FHN_a[0] << endl;
+  //cudaMalloc((void**) &d_FHN_a, n_init_cells*sizeof(PDEFIELD_TYPE));
+  //cudaMalloc((void**) &d_FHN_b, n_init_cells*sizeof(PDEFIELD_TYPE));
+  //cudaMalloc((void**) &d_FHN_tau, n_init_cells*sizeof(PDEFIELD_TYPE));
+  //cudaMemcpy(d_FHN_a, FHN_a, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
+  //cudaMemcpy(d_FHN_b, FHN_b, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
+  //cudaMemcpy(d_FHN_tau, FHN_tau, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
 
 }
 

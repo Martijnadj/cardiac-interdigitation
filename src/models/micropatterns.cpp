@@ -88,6 +88,7 @@ TIMESTEP {
         dish=new Dish();
         dish->PDEfield->InitializePDEs(dish->CPM);
     }
+    dish->CPM->WriteData();
 
      //uncomment for chemotaxis
     if (i>=par.relaxation) {
@@ -206,7 +207,11 @@ int main(int argc, char *argv[]) {
   extern Parameter par;
   try {  
     par.Read(argv[1]);
-    Seed(par.rseed);
+    long seed = Seed(par.rseed);
+    ofstream metadatafile;
+    metadatafile.open("metadata.txt", std::ofstream::out | std::ofstream::app);
+    metadatafile << "Random seed = " << seed << "\n";
+    metadatafile.close();
     start_graphics(argc, argv);
   } catch(const char* error) {
     std::cerr << error << std::endl;

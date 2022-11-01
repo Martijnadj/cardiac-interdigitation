@@ -1360,14 +1360,10 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
         yp = yp - sizey + 2;
     }
 
-    // connectivity dissipation:
-    H_diss = 0;
-    if (!ConnectivityPreservedP(x, y))
-      H_diss = par.conn_diss;
 
     D_H = DeltaH(x, y, xp, yp, PDEfield);
 
-    if ((p = CopyvProb(D_H, H_diss, anneal)) > 0)
+    if ((p = CopyvProb(D_H, H_diss, anneal)) > 0 && LocalConnectedness(x,y,sigma[x][y]) && LocalConnectedness(x,y,sigma[xp][yp]))
     {
       ConvertSpin(x, y, xp, yp); // sigma(x,y) will get the same value as sigma(xp,yp)
       CopyPDEvars(x, y, xp, yp, PDEfield);
@@ -1531,26 +1527,31 @@ void CellularPotts::WriteData(void)
         int x2, y2;
         x2 = x + nx[i];
         y2 = y + ny[i];
-        if (sigma[x][y] != sigma[x2][y2])
-        {
-          if ((*cell)[sigma[x][y]].getTau() == 1 && (*cell)[sigma[x2][y2]].getTau() == 1)
-            RedRedSurface++;
-          if ((*cell)[sigma[x][y]].getTau() == 2 && (*cell)[sigma[x2][y2]].getTau() == 1)
-            RedYellowSurface++;
-          if ((*cell)[sigma[x][y]].getTau() == 2 && (*cell)[sigma[x2][y2]].getTau() == 1)
-            YellowYellowSurface++;
-        }
+        if (mask[x][y] && mask[x2][y2])
+          if (sigma[x][y] != sigma[x2][y2])
+          {
+            if ((*cell)[sigma[x][y]].getTau() == 1 && (*cell)[sigma[x2][y2]].getTau() == 1)
+              RedRedSurface++;
+            if ((*cell)[sigma[x][y]].getTau() == 2 && (*cell)[sigma[x2][y2]].getTau() == 1)
+              RedYellowSurface++;
+            if ((*cell)[sigma[x][y]].getTau() == 2 && (*cell)[sigma[x2][y2]].getTau() == 2)
+              YellowYellowSurface++;
+          }
       }
     }
   //cout << "Red-red surface = " << RedRedSurface << endl;
  // cout << "Red-yellow surface = " << RedYellowSurface << endl;
  // cout << "Yellow-yellow surface = " << YellowYellowSurface << endl;
 
-  //ofstream myfile;
-  //myfile.open("Data_original.txt", std::ofstream::out | std::ofstream::app);
-  //myfile << RedYellowSurface << endl;
-  //myfile.close();
-  Convexity();
+  
+  double convexity = Convexity();
+  ofstream myfile;
+  myfile.open("Celltype_surface_data.txt", std::ofstream::out | std::ofstream::app);
+  myfile << RedRedSurface << endl;
+  myfile << RedYellowSurface << endl;
+  myfile << YellowYellowSurface << endl;
+  myfile << convexity << endl;
+  myfile.close();
 }
 
 void CellularPotts::RemoveEdgeFromEdgelist(int edge)
@@ -3149,10 +3150,39 @@ int CellularPotts::SquareCell(int sig, int cx, int cy, int size)
   return 1;
 }
 
+bool CellularPotts::LocalConnectedness(int x, int y, int s){
+
+  //Algorithm from Durand, M., & Guesnet, E. (2016). An efficient Cellular Potts Model algorithm that forbids cell fragmentation. Computer Physics Communications, 208, 54-63.
+  //Checks if cell sigma is locally connected at lattice point (x,y)
+   // Use local nx and ny in a cyclic order (starts at upper left corner)
+  const int cyc_nx[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
+  const int cyc_ny[8] = {0, -1, -1, -1, 0, 1, 1, 1};
+  //Is cell sigma at the start location?
+  bool connected_component = false;
+  int nr_connected_components = 0;
+  for (int i = 0; i <= 7; i++){
+    int s_nb = sigma[x + cyc_nx[i]][y + cyc_ny[i]];
+    if (s_nb == s && !connected_component){
+      connected_component = true;
+      nr_connected_components++;
+    }
+    else if (s_nb != s && connected_component){
+      connected_component = false;
+    }
+  }
+  bool looped = false;
+  if (sigma[x + cyc_nx[0]][y + cyc_ny[0]] == s && sigma[x + cyc_nx[7]][y + cyc_ny[7]] == s)
+    looped = true;
+  if ((nr_connected_components >= 2 && !looped) || nr_connected_components >= 3 && looped)
+    return false;
+  else
+    return true;
+}
+
 // Predicate returns true when connectivity is locally preserved
 // if the value of the central site would be changed
 bool CellularPotts::ConnectivityPreservedP(int x, int y)
-{
+{ 
   // Use local nx and ny in a cyclic order (starts at upper left corner)
   // first site is repeated, for easier looping
   const int cyc_nx[10] = {-1, -1, 0, 1, 1, 1, 0, -1, -1, -1};
@@ -3400,8 +3430,9 @@ void CellularPotts::SetTypesWithMask(void)
 void CellularPotts::SetTypesWithDoubleMask(void)
 { 
 for (int x = 0; x < sizex; x++)
-  for (int y = 0; y < sizey; y++)
-    (*cell)[sigma[x][y]].setTau(mask[x][y]);
+  for (int y = 0; y < sizey; y++){
+    if (mask[x][y] == 1 || mask[x][y] == 2)
+      (*cell)[sigma[x][y]].setTau(mask[x][y]);}
 }
 
 
@@ -3544,7 +3575,7 @@ double CellularPotts::Convexity(void){
   //cout << "Compactness celltype 1 = " << compactness_1 << endl;
   //cout << "Compactness celltype 2 = " << compactness_2 << endl;
   double convexity = compactness_2-compactness_1;
-  cout << "Convexity = " << convexity << endl;
+  //cout << "Convexity = " << convexity << endl;
   return convexity;
 }
 

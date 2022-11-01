@@ -138,6 +138,7 @@ long Randomize(void) {
   seed=abs((int)((seconds.count()*milliseconds.count())%655337));
   Seed(seed);
   fprintf(stderr,"Random seed is %d\n",seed);
+
   return seed;
 }
 

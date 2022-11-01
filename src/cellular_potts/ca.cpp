@@ -3157,23 +3157,28 @@ bool CellularPotts::LocalConnectedness(int x, int y, int s){
    // Use local nx and ny in a cyclic order (starts at upper left corner)
   const int cyc_nx[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
   const int cyc_ny[8] = {0, -1, -1, -1, 0, 1, 1, 1};
-  //Is cell sigma at the start location?
-  bool connected_component = false;
+  bool connected_component = false; 
+  //Currently in a connected component
   int nr_connected_components = 0;
+  //Total number of conncected components around x,y
   for (int i = 0; i <= 7; i++){
     int s_nb = sigma[x + cyc_nx[i]][y + cyc_ny[i]];
     if (s_nb == s && !connected_component){
+      //start of a connected component
       connected_component = true;
       nr_connected_components++;
     }
     else if (s_nb != s && connected_component){
+      //end of a conencted component
       connected_component = false;
     }
   }
   bool looped = false;
   if (sigma[x + cyc_nx[0]][y + cyc_ny[0]] == s && sigma[x + cyc_nx[7]][y + cyc_ny[7]] == s)
     looped = true;
+  //Check if the first and last element are connected
   if ((nr_connected_components >= 2 && !looped) || nr_connected_components >= 3 && looped)
+  //permit one more component when the first and last element are connected
     return false;
   else
     return true;
@@ -3579,7 +3584,7 @@ double CellularPotts::Convexity(void){
   return convexity;
 }
 
-double CellularPotts::CompactnessPixelCorner(int *bounds, int celltype)
+double CellularPotts::Compactness(int *bounds, int celltype)
 {
   // Calculate compactness using the convex hull of the cells, including the corner points of pixels
   // We use Andrew's Monotone Chain Algorithm (see hull.cpp)
@@ -3717,80 +3722,6 @@ double CellularPotts::CompactnessPixelCorner(int *bounds, int celltype)
   return cell_area / hull_area;
 }
 
-double CellularPotts::Compactness(double *res_compactness, double *res_area, double *res_cell_area)
-{
-  // Calculate compactness using the convex hull of the cells
-  // We use Andrew's Monotone Chain Algorithm (see hull.cpp)
-
-  // Step 1. Prepare data for 2D hull code
-
-  // count number of points to determine size of array
-  int np = 0;
-  for (int x = 1; x < sizex - 1; x++)
-    for (int y = 1; y < sizey - 1; y++)
-    {
-      if (sigma[x][y])
-      {
-        np++;
-      }
-    }
-
-  Point *p = new Point[np];
-
-  int pc = 0;
-  for (int x = 1; x < sizex - 1; x++)
-  {
-    for (int y = 1; y < sizey - 1; y++)
-    {
-      if (sigma[x][y])
-      {
-        p[pc++] = Point(x, y);
-      }
-    }
-  }
-
-  // Step 2: call 2D Hull code
-  Point *hull = new Point[np];
-  int nph = chainHull_2D(p, np, hull);
-
-  // Step 3: calculate area of convex hull
-  double hull_area = 0.;
-  for (int i = 0; i < nph - 1; i++)
-  {
-    hull_area += hull[i].x * hull[i + 1].y - hull[i + 1].x * hull[i].y;
-  }
-  hull_area /= 2.;
-
-  // Step 4: calculate total cell area
-  double cell_area = 0;
-
-  vector<Cell>::const_iterator c;
-
-  for ((c = cell->begin(), c++); c != cell->end(); c++)
-  {
-    cell_area += c->Area();
-  }
-
-  delete[] p;
-  delete[] hull;
-
-  // put intermediate results into optional pointers
-  if (res_compactness)
-  {
-    *res_compactness = cell_area / hull_area;
-  }
-  if (res_area)
-  {
-    *res_area = hull_area;
-  }
-  if (res_cell_area)
-  {
-    *res_cell_area = cell_area;
-  }
-
-  // return compactness
-  return cell_area / hull_area;
-}
 
 void CellularPotts::SetBoundingBox(void)
 {

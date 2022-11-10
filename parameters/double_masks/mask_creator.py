@@ -40,15 +40,15 @@ Offset_y = 5
 #Do we want a second layer to indicate the cell shapes?
 Second_layer = True
 B_type = "rectangle"
-#Choose either "ellipse", "triangule", "rectangle", "triangle_teeth" or "rectangle_teeth" for the boundary type
+#Choose either "ellipse", "triangle", "rectangle", "triangle_teeth" or "rectangle_teeth" for the boundary type
 B_ellipse_width = 100 #x-direction
-B_ellipse_height = 30 #y-direction -> smaller than isthmus width
-B_triangle_width = 80 #x-direction
+B_ellipse_height = 4 #y-direction -> smaller than isthmus width
+B_triangle_width = 4 #x-direction
 B_triangle_height = 116 #y-direction -> smaller than isthmus width
-B_rectangle_width = 0 #x-direction
-B_rectangle_height = 118 #y-direction -> smaller than isthmus width
+B_rectangle_width = 60 #x-direction
+B_rectangle_height = 2 #y-direction -> smaller than isthmus width
 B_convexity = "convex"
-#Convexity with respect to pacemaker cells, "convex" or "concave"
+#Convexity with respect to pacemaker cells, "convex" or "concave", only relevant for "ellipse", "triangle" and "rectangle"
 
 
 
@@ -109,6 +109,17 @@ def write_parameters_to_database():
 	f.write("y_max = " + str(y_max) + " pixels or " + str(y_max*pixel_size) + " mm \n\n")
 
 	f.write("total_area = " + str(total_area) + " pixels or " + str(total_area*pixel_size**2) + " mm^2 \n\n")
+	
+	if (Second_layer):
+		f.write("B_type = " + str(B_type) + "\n")
+		f.write("B_ellipse_width = " + str(B_ellipse_width) + "\n")
+		f.write("B_ellipse_height = " + str(B_ellipse_height) + "\n")
+		f.write("B_triangle_width = " + str(B_triangle_width) + "\n")
+		f.write("B_triangle_height = " + str(B_triangle_height) + "\n")
+		f.write("B_rectangle_width = " + str(B_rectangle_width) + "\n")
+		f.write("B_rectangle_height = " + str(B_rectangle_height) + "\n")
+		f.write("B_convexity = " + str(B_convexity) + "\n\n")	
+	
 	f.write("--------------------------------------------------------------------------- \n\n")
 	f.close()
 
@@ -136,7 +147,18 @@ def write_parameters_to_parameter_file():
 
 	f.write("total_area = " + str(total_area) + "\n")
 	f.write("pixel_size = " + str(pixel_size) + "\n")
+	
+	if (Second_layer):
+		f.write("B_type = " + str(B_type) + "\n")
+		f.write("B_ellipse_width = " + str(B_ellipse_width) + "\n")
+		f.write("B_ellipse_height = " + str(B_ellipse_height) + "\n")
+		f.write("B_triangle_width = " + str(B_triangle_width) + "\n")
+		f.write("B_triangle_height = " + str(B_triangle_height) + "\n")
+		f.write("B_rectangle_width = " + str(B_rectangle_width) + "\n")
+		f.write("B_rectangle_height = " + str(B_rectangle_height) + "\n")
+		f.write("B_convexity = " + str(B_convexity) + "\n")	
 	f.close()
+
 
 def find_max_xy():
 	global x_max
@@ -260,6 +282,7 @@ def construct_second_layer():
 				if (mask[x,y] and x < right_side_isthmus):
 					mask[x,y] = 2
 	if B_type == "ellipse":
+		print(B_type)
 		ellipse_centre_x = right_side_isthmus
 		ellipse_centre_y = y_max / 2
 		for x in range(x_max):
@@ -270,6 +293,7 @@ def construct_second_layer():
 					elif B_convexity ==	"concave": 
 						mask[x,y] = 1
 	if B_type == "triangle":
+		print(B_type)
 		if B_convexity == "convex":
 			for x in range(x_max):
 				for y in range(y_max):
@@ -281,6 +305,7 @@ def construct_second_layer():
 					if(x < right_side_isthmus and y >= ((right_side_isthmus-x)*(B_triangle_height/2 / B_triangle_width) + (y_max-B_triangle_height)/2) and y <= ((x-right_side_isthmus)*(B_triangle_height/2 / B_triangle_width) + (y_max+B_triangle_height)/2)):
 						mask[x,y] = 1
 	if B_type == "rectangle_teeth":
+		print(B_type)
 		mod_correction = ((B_rectangle_height-y_max)/2 % (2*B_rectangle_height)) #with this correction, (y_max/2+mod_correction)%(2*B_rectangle_height) always gives rectangle_heigth/2, which simplifies computations
 		for x in range(x_max):
 			for y in range(y_max):
@@ -289,6 +314,7 @@ def construct_second_layer():
 				elif ((y+mod_correction)%(2*B_rectangle_height) >= B_rectangle_height and mask[x,y] and x >= right_side_isthmus-B_rectangle_width and x < right_side_isthmus):
 					mask[x,y] = 1
 	if B_type == "rectangle":
+		print(B_type)
 		if B_convexity == "convex":
 			for x in range(x_max):
 				for y in range(y_max):
@@ -300,6 +326,7 @@ def construct_second_layer():
 					if(x >= right_side_isthmus-B_rectangle_width and x < right_side_isthmus and y <= (y_max+B_rectangle_height)/2 and y > (y_max-B_rectangle_height)/2):
 						mask[x,y] = 1
 	if B_type == "triangle_teeth":
+		print(B_type)
 		mod_correction = ((B_triangle_height-y_max)/2 % (2*B_triangle_height)) #with this correction, (y_max/2+mod_correction)%(2*B_triangle_height) always gives triangle_heigth/2, which simplifies computations
 		for y in range(y_max):
 			tri_mid = y + B_triangle_height/2 - (y+mod_correction)%(B_triangle_height) 

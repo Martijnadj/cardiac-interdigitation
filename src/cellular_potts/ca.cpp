@@ -496,8 +496,17 @@ void CellularPotts::InitializeCouplingCoefficient(void)
               couplingcoefficient[x+nx[i]][y+ny[i]]= par.couplingAtrialPM;
             }
           }
-        } 
+        }
+        if(par.second_layer){
+          for (int i = 1; i < n_nb; i++){
+            if ((tau[x][y] == 1 && tau[x+nx[i]][y+ny[i]] == 2) || (tau[x][y] == 2 && tau[x+nx[i]][y+ny[i]] == 1)){
+              couplingcoefficient[x][y] = par.couplingAtrialPM;
+              couplingcoefficient[x+nx[i]][y+ny[i]]= par.couplingAtrialPM;
+            } 
+          }
+        }
       }
+
     }
   }
 }
@@ -3575,8 +3584,8 @@ double CellularPotts::Convexity(void){
   CropSurface(bounds);
   //for (int i = 0; i < 4; i++)
   //  cout << "bounds[" << i << "] = " << bounds[i] << endl;
-  double compactness_1 = CompactnessPixelCorner(bounds, 1);
-  double compactness_2 = CompactnessPixelCorner(bounds, 2);
+  double compactness_1 = Compactness(bounds, 1);
+  double compactness_2 = Compactness(bounds, 2);
   //cout << "Compactness celltype 1 = " << compactness_1 << endl;
   //cout << "Compactness celltype 2 = " << compactness_2 << endl;
   double convexity = compactness_2-compactness_1;

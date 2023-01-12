@@ -54,6 +54,7 @@ class PDE {
   double bpm;
   double pacing_interval;
   PDEFIELD_TYPE dt;
+  PDEFIELD_TYPE ddt;
   PDEFIELD_TYPE min_stepsize;
   PDEFIELD_TYPE dx2;
   bool usePDEorAltPDE;

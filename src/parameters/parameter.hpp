@@ -60,6 +60,7 @@ class Parameter {
   double * secr_rate;
   double saturation;
   double dt;
+  double ddt;
   double min_stepsize;
   double dx;
   int pde_its;

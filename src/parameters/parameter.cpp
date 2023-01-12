@@ -66,6 +66,7 @@ Parameter::Parameter() {
   secr_rate[0] = 1.8e-4;
   saturation = 0;
   dt = 2.0;
+  ddt = 1e-6;
   min_stepsize = 1e-6;
   dx = 2.0e-6;
   pde_its = 15;
@@ -206,6 +207,7 @@ void Parameter::Read(const char *filename) {
   secr_rate = dgetparlist(fp, "secr_rate", n_chem, true);
   saturation = fgetpar(fp, "saturation", 0, true);
   dt = fgetpar(fp, "dt", 2.0, true);
+  ddt = fgetpar(fp, "ddt", 1e-6, true);
   min_stepsize = fgetpar(fp, "min_stepsize", 1e-6, true);
   dx = fgetpar(fp, "dx", 2.0e-6, true);
   pde_its = igetpar(fp, "pde_its", 15, true);
@@ -335,6 +337,7 @@ void Parameter::Write(ostream &os) const {
   os << " secr_rate = "<< secr_rate[0] << endl;
   os << " saturation = " << saturation << endl;
   os << " dt = " << dt << endl;
+  os << " ddt = " << ddt << endl;
   os << " min_stepsize = " << min_stepsize << endl;
   os << " dx = " << dx << endl;
   os << " pde_its = " << pde_its << endl;

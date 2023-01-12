@@ -39,14 +39,14 @@ Offset_y = 5
 #Boundary type
 #Do we want a second layer to indicate the cell shapes?
 Second_layer = True
-B_type = "rectangle"
+B_type = "rectangle_teeth"
 #Choose either "ellipse", "triangle", "rectangle", "triangle_teeth" or "rectangle_teeth" for the boundary type
 B_ellipse_width = 100 #x-direction
 B_ellipse_height = 4 #y-direction -> smaller than isthmus width
 B_triangle_width = 4 #x-direction
 B_triangle_height = 116 #y-direction -> smaller than isthmus width
-B_rectangle_width = 60 #x-direction
-B_rectangle_height = 2 #y-direction -> smaller than isthmus width
+B_rectangle_width = 16 #x-direction
+B_rectangle_height = 4 #y-direction -> smaller than isthmus width
 B_convexity = "convex"
 #Convexity with respect to pacemaker cells, "convex" or "concave", only relevant for "ellipse", "triangle" and "rectangle"
 

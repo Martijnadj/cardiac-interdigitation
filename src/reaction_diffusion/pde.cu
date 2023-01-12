@@ -4844,8 +4844,8 @@ __global__ void FlipSigns(int sizex, int sizey, int layers, PDEFIELD_TYPE* PDEva
 
 void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   //copy current couplingcoefficient matrix and celltype matrix from host to device
-  //PDEFIELD_TYPE ddt = 1e-5;
   couplingcoefficient = cpm->getCouplingCoefficient();
+  couplingcoefficient = cpm->getCouplingCoefficient_Gradient();
   //int** cellnumber = cpm -> getSigma(); 
   cudaError_t errSync;
   cudaError_t errAsync;

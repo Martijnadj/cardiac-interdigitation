@@ -117,6 +117,7 @@ public:
 
   void InitializeEdgeList(void); //Set the initial edgelist which are eligible to change
   void InitializeCouplingCoefficient(void); //Set the initial coupling coefficients
+  void InitializeCouplingCoefficient_Gradient(void); //Set the initial coupling coefficients
 
   // Keyword virtual means, that derived classed (cppvmCellularPotts) can override
   // this function and carry out the memory allocation in their preferred way
@@ -126,6 +127,7 @@ public:
   virtual void AllocateTau(int sx, int sy);
   virtual void AllocateNumberOfEdges(int sx, int sy);
   virtual void AllocateCouplingCoefficient(int sx, int sy);
+  virtual void AllocateCouplingCoefficient_Gradient(int sx, int sy);
   virtual void AllocateMask(int sx, int sy);
   
   virtual void InitializeMatrix(Dish &beast);
@@ -400,6 +402,10 @@ public:
     return couplingcoefficient;
   }
 
+  inline PDEFIELD_TYPE** getCouplingCoefficient_Gradient(){
+    return couplingcoefficient_gradient;
+  }
+
 
   bool plotPos(int x, int y, Graphics * graphics);
   void linePlotPos(int x, int y, Graphics * graphics);
@@ -468,6 +474,7 @@ protected:
   int **tau;
   int **numberofedges;
   PDEFIELD_TYPE **couplingcoefficient;
+  PDEFIELD_TYPE **couplingcoefficient_gradient;
   int **mask; //stores both primary and secondary mask (indicating which cell type can go where)
   int sizex;
   int sizey;

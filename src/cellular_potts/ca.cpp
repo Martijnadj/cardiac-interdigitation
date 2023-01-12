@@ -326,6 +326,32 @@ void CellularPotts::AllocateCouplingCoefficient(int sx, int sy)
   }
 }
 
+void CellularPotts::AllocateCouplingCoefficient_Gradient(int sx, int sy)
+{
+
+  sizex = sx;
+  sizey = sy;
+
+  couplingcoefficient_gradient = (PDEFIELD_TYPE **)malloc(sizex * sizeof(PDEFIELD_TYPE *));
+  if (couplingcoefficient_gradient == NULL)
+    MemoryWarning();
+
+  couplingcoefficient_gradient[0] = (PDEFIELD_TYPE *)malloc(sizex * sizey * sizeof(PDEFIELD_TYPE));
+  if (couplingcoefficient_gradient[0] == NULL)
+    MemoryWarning();
+
+  {
+    for (int i = 1; i < sizex; i++)
+      couplingcoefficient_gradient[i] = couplingcoefficient_gradient[i - 1] + sizey;
+  }
+
+  /* Clear coupling coeff plane */
+  {
+    for (int i = 0; i < sizex * sizey; i++)
+      couplingcoefficient_gradient[0][i] = 0;
+  }
+}
+
 void CellularPotts::AllocateMask(int sx, int sy)
 {
   sizex = sx;
@@ -511,6 +537,34 @@ void CellularPotts::InitializeCouplingCoefficient(void)
   }
 }
 
+void CellularPotts::InitializeCouplingCoefficient_Gradient(void)
+{ 
+  DetectSidesIsthmus();
+  bool written = false;
+  AllocateCouplingCoefficient_Gradient(par.sizex, par.sizey);
+  for (int x = 0; x < par.sizex; x++)
+  {
+    written = false;
+    for (int y = 0; y < par.sizey; y++)
+    {
+      if (mask[x][y]){
+        if (x < left_side_isthmus)
+          couplingcoefficient_gradient[x][y] = par.couplingPMPM;
+        else if (x > right_side_isthmus) 
+          couplingcoefficient_gradient[x][y] = par.couplingAtrialAtrial;
+        else{
+          int isthmus_length = right_side_isthmus - left_side_isthmus;
+          //couplingcoefficient_gradient[x][y] = (1.0-float(x - left_side_isthmus)/isthmus_length) * par.couplingPMPM + float(x - left_side_isthmus)/isthmus_length * par.couplingAtrialAtrial;
+          couplingcoefficient_gradient[x][y] = exp((1.0-float(x - left_side_isthmus)/isthmus_length) * log(par.couplingPMPM) + float(x - left_side_isthmus)/isthmus_length * log(par.couplingAtrialAtrial));
+          if (!written){
+            written = true;
+            cout << "couplingcoefficient_gradient[" << x << "][" << y << "] = "<< couplingcoefficient_gradient[x][y] << endl;
+          }
+        }
+      }
+    }  
+  }
+}
 double sat(double x)
 {
   return x / (par.saturation * x + 1.);

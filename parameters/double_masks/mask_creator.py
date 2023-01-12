@@ -269,6 +269,20 @@ def construct_base_shape():
 
 				
 	f.close()
+	
+def isthmus_atrial():
+	centre_circle_x = Offset_x + L_radius
+	centre_circle_y = y_max/2
+	f = open(mask_layer2_file_name, "w")
+	for x in range(x_max):
+		for y in range(y_max):
+			if ((math.sqrt((x-centre_circle_x)**2 + (y-centre_circle_y)**2) < L_radius)):
+				mask[x,y] = 2
+	for x in range(x_max):
+		for y in range(y_max):
+			if mask[x,y] == 2:
+				f.write(str(x) + "," + str(y) + "\n")	
+	f.close()
 
 def construct_second_layer():
 	f = open(mask_layer2_file_name, "w")
@@ -277,10 +291,10 @@ def construct_second_layer():
 		right_side_isthmus = Offset_x + L_width + I_length
 	elif (L_shape == "circle"):
 		right_side_isthmus = Offset_x + 2*L_radius + I_length
-		for x in range(x_max):
-			for y in range(y_max):
-				if (mask[x,y] and x < right_side_isthmus):
-					mask[x,y] = 2
+	for x in range(x_max):
+		for y in range(y_max):
+			if (mask[x,y] and x < right_side_isthmus):
+				mask[x,y] = 2
 	if B_type == "ellipse":
 		print(B_type)
 		ellipse_centre_x = right_side_isthmus
@@ -360,7 +374,8 @@ find_max_xy()
 mask = np.zeros ((x_max,y_max))
 construct_base_shape()
 if (Second_layer):
-	construct_second_layer()
+	isthmus_atrial()
+	#construct_second_layer()
 create_image()
 write_parameters_to_database()
 write_parameters_to_parameter_file()

@@ -17,7 +17,7 @@ L_width = 1200
 L_height = 2500
 
 #Isthmus
-I_length = 150
+I_length = 500
 I_width = 120
 
 

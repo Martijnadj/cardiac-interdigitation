@@ -302,7 +302,8 @@ class PDE {
   
 
   //2d arrays containing the upperdiagonals, lower diagonals and diagonals and vectors B for all rows and columns to solve AX=B equations
-  PDEFIELD_TYPE *lowerH, *upperH, *diagH, *BH, *lowerV, *upperV, *diagV, *BV, *XH, *next_stepsize; 
+  PDEFIELD_TYPE *lowerH, *upperH, *diagH, *BH, *lowerV, *upperV, *diagV, *BV, *XH, *next_stepsize;
+  PDEFIELD_TYPE *copy_for_SF; 
 
  
  
@@ -337,6 +338,13 @@ private:
   static const int nx[9], ny[9];
   int PDEsteps;
   float thetime;
+
+  bool SF_tracker_start = false;
+  bool SF_tracker_end = false;
+  int SF_counter = 0; //counts how many times I_m has been below 0 consecutively
+  PDEFIELD_TYPE SF_start_time;
+  PDEFIELD_TYPE Q_thr;
+  PDEFIELD_TYPE Q_tot = 0;
 
   inline double Z(double k, int steps);
 

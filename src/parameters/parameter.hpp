@@ -124,18 +124,6 @@ class Parameter {
   double couplingPMPM;
   double couplingoffmask;
 
-  double FHN_interval_beats;
-  double FHN_pulse_duration;
-  double FHN_pulse_strength;
-  double FHN_a;
-  double FHN_b;
-  double FHN_tau;
-  double FHN_a_diff_perc;
-  double FHN_b_diff_perc;
-  double FHN_tau_diff_perc;
-  double FHN_start_0;
-  double FHN_start_1;
-
   double I_f_factor;
   double I_Kr_factor;
 

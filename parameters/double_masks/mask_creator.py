@@ -4,7 +4,7 @@ import os
 import math
 from os import path
 
-pixel_size = 0.003
+pixel_size = 0.0025
 #in millimeters
 
 #paramaters for mask, see sketch.jpg for clarification
@@ -12,25 +12,25 @@ pixel_size = 0.003
 #Left shape
 L_shape = "circle"
 #Choose either "circle" or "rectangle"
-L_radius = 100
+L_radius = 2000
 L_width = 1200
 L_height = 2500
 
 #Isthmus
-I_length = 500
-I_width = 120
+I_length = 1500
+I_width = 1200
 
 
 #Right shape
 R_shape = "wedge"
-R_radius = 250
+R_radius = 125
 #Choose either "circle" or "wedge"
 R_angle = 90
 #between 0 and 180
 R_max_protrusion_left = 150
 #smaller than I_length
-R_max_height = 400
-R_width = 245
+R_max_height = 6000
+R_width = 3000
 
 #Offset
 Offset_x = 5
@@ -44,7 +44,7 @@ B_type = "rectangle_teeth"
 B_ellipse_width = 100 #x-direction
 B_ellipse_height = 4 #y-direction -> smaller than isthmus width
 B_triangle_width = 4 #x-direction
-B_triangle_height = 116 #y-direction -> smaller than isthmus width
+B_triangle_height = 16 #y-direction -> smaller than isthmus width
 B_rectangle_width = 16 #x-direction
 B_rectangle_height = 4 #y-direction -> smaller than isthmus width
 B_convexity = "convex"
@@ -360,8 +360,8 @@ def construct_second_layer():
 	f.close()	
 
 def create_image():
-	plt.xticks(np.arange(0,x_max,int(1/(pixel_size*5))), np.round(np.arange(0,pixel_size*(x_max+1),1/5),3))
-	plt.yticks(np.arange(0,y_max,int(1/(pixel_size*5))), np.round(np.arange(0,pixel_size*(y_max+1),1/5),3))
+	plt.xticks(np.arange(0,x_max,int(1/(pixel_size*0.5))), np.round(np.arange(0,pixel_size*(x_max+1),10*1/5),3))
+	plt.yticks(np.arange(0,y_max,int(1/(pixel_size*0.5))), np.round(np.arange(0,pixel_size*(y_max+1),10*1/5),3))
 	plt.xlabel('mm')
 	plt.ylabel('mm')
 	plt.imshow(mask.T, interpolation='nearest')
@@ -374,12 +374,11 @@ find_max_xy()
 mask = np.zeros ((x_max,y_max))
 construct_base_shape()
 if (Second_layer):
-	isthmus_atrial()
-	#construct_second_layer()
+	#isthmus_atrial()
+	construct_second_layer()
 create_image()
 write_parameters_to_database()
 write_parameters_to_parameter_file()
-
 
 
 

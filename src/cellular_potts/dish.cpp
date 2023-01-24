@@ -43,7 +43,6 @@ using namespace std;
 
 Dish::Dish() {
     ConstructorBody();
-
     if (par.load_mcds){
       ImportMultiCellDS(par.mcds_input);
     }

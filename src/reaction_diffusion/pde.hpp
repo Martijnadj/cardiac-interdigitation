@@ -345,6 +345,8 @@ private:
   PDEFIELD_TYPE SF_start_time;
   PDEFIELD_TYPE Q_thr;
   PDEFIELD_TYPE Q_tot = 0;
+  int temp_counter = 0;
+  double Q_tot_store[5000];
 
   inline double Z(double k, int steps);
 

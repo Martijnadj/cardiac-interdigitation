@@ -185,12 +185,7 @@ PDE::PDE(const int l, const int sx, const int sy) {
   pacing_interval = 1/(bpm/60);
   PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
   alt_PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
-
   copy_for_SF = new PDEFIELD_TYPE[ARRAY_SIZE]; //for SF computation
-
-  FHN_a = new PDEFIELD_TYPE[par.n_init_cells+1]; //+1 is needed because sigma has length (n+1)
-  FHN_b = new PDEFIELD_TYPE[par.n_init_cells+1];
-  FHN_tau = new PDEFIELD_TYPE[par.n_init_cells+1];
   min_stepsize = par.min_stepsize;
   btype = 1;
   dx2 = par.dx*par.dx;
@@ -454,6 +449,9 @@ void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
       //  PDEvars[i] = 100000000;
     }
   }
+  /*cout << "Celltype of interest = " << celltypes[int(406.5 * 410)] << endl;
+  for (int k = 0; k < ARRAY_SIZE; k++)
+    cout << "pos[" << k  << "] = " << PDEvars[int(406.5 * 410)+k*sizex*sizey] << endl;*/
   
   
 
@@ -714,6 +712,7 @@ void PDE::ODEstepCL(CellularPotts *cpm, int repeat){
 }
 
 void PDE::InitializeCuda(CellularPotts *cpm, int n_init_cells){
+  cout << "Start cuda init" << endl;
   //AllocateTridiagonalvars(sizex, sizey);
 
   cudaMalloc((void**) &d_couplingcoefficient, sizex*sizey*sizeof(PDEFIELD_TYPE));
@@ -763,6 +762,7 @@ void PDE::InitializeCuda(CellularPotts *cpm, int n_init_cells){
   //cudaMemcpy(d_FHN_a, FHN_a, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
   //cudaMemcpy(d_FHN_b, FHN_b, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
   //cudaMemcpy(d_FHN_tau, FHN_tau, n_init_cells*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
+  cout << "End cuda init" << endl;
 
 }
 
@@ -779,7 +779,6 @@ void PDE::InitializePDEs(CellularPotts *cpm){
   int** celltypes = cpm->getTau();
   //InitializePDEvars(cpm, par.FHN_start_0, par.FHN_start_1);
   InitializePDEvars(cpm, celltypes[0]);
-  InitializeFHNvarsCells(par.n_init_cells+1, FHN_a, FHN_b, FHN_tau, par.FHN_a_diff_perc, par.FHN_b_diff_perc, par.FHN_tau_diff_perc, par.FHN_a, par.FHN_b, par.FHN_tau);
   InitializeCuda(cpm, par.n_init_cells+1);
   InitializeLastStepsize<<<par.number_of_cores, par.threads_per_core>>>(min_stepsize, next_stepsize, sizex, sizey);
   cudaDeviceSynchronize();
@@ -5249,7 +5248,7 @@ void ComputeQthr(PDEFIELD_TYPE* y, PDEFIELD_TYPE t_A, PDEFIELD_TYPE ddt, PDEFIEL
 void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   //copy current couplingcoefficient matrix and celltype matrix from host to device
   couplingcoefficient = cpm->getCouplingCoefficient();
-  //couplingcoefficient = cpm->getCouplingCoefficient_Gradient();
+  couplingcoefficient = cpm->getCouplingCoefficient_Gradient();
   //int** cellnumber = cpm -> getSigma(); 
   cudaError_t errSync;
   cudaError_t errAsync;
@@ -5265,7 +5264,13 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   PDEFIELD_TYPE Cm_maleckar = 50; //in nF
   PDEFIELD_TYPE Q_factor = 50e-9;
   PDEFIELD_TYPE I_m;
-  int SF_locator = 410 * 361.5;
+  int SF_locator = 310 * 325.5;
+  //int SF_locator = 405.5 * 410;
+  cout << "SF_locator = " << SF_locator << endl;
+  cout << "sigmafield[SF_locator] = " << sigmafield[0][SF_locator] << endl;
+  cout << "celltype[SF_locator] = " << celltype[0][SF_locator] << endl;
+  //int SF_locator = 405.5 * 410;
+  //SF_locator = 0;
 
 
 
@@ -5274,12 +5279,15 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   cout << "PDEvars[SF_locator] = " << PDEvars[SF_locator] << endl;
   
   
-  if (PDEvars[SF_locator] > -70 && thetime > 0.05 && !SF_tracker_start){
+  if (PDEvars[SF_locator] > -70 && thetime > 0.05 &&  !SF_tracker_start){
     SF_tracker_start = true;
     SF_start_time = thetime;
-    for (int k = 0; k < ARRAY_SIZE; k++)
+    for (int k = 0; k < ARRAY_SIZE; k++){
       copy_for_SF[k] = PDEvars[SF_locator + sizex*sizey*k];
+      cout << "PDEvars[" << k << "] = " << copy_for_SF[k] << endl;
+    }
   }
+
   
   for (int iteration = 0; iteration < repeat; iteration++){
       //cout << "Iteration = " << iteration << endl;
@@ -5442,6 +5450,50 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       Q_tot += (PDEvars[SF_locator] - alt_PDEvars[SF_locator])*Q_factor;
       I_m += (PDEvars[SF_locator] - alt_PDEvars[SF_locator])*Q_factor;
       cout << "I_m = " << I_m << endl;
+      Q_tot_store[temp_counter] = Q_tot;
+      temp_counter++;
+      cout << "counter = " << temp_counter << endl;
+      if (PDEvars[SF_locator] < -70){
+        cout << "final counter = " << temp_counter << endl;
+        int stepper = temp_counter/4;
+        int current_loc = temp_counter/2;
+        double SF_lower;
+        double SF_upper;
+        ofstream Q_tot_file;
+        ofstream Q_thr_file;
+        ofstream time_file;
+        Q_tot_file.open("../Q_tot.txt", std::ios_base::app);
+        Q_thr_file.open("../Q_thr.txt", std::ios_base::app);
+        time_file.open("../time_file.txt", std::ios_base::app);
+        while (stepper != 0){
+          ComputeQthr(copy_for_SF, current_loc*ddt, ddt, Q_thr);
+          SF_lower = Q_tot_store[current_loc]/Q_thr;
+
+          Q_tot_file << Q_tot_store[current_loc] << endl;
+          Q_thr_file << Q_thr << endl;
+          time_file << current_loc*ddt << endl;
+
+          ComputeQthr(copy_for_SF, (current_loc+1)*ddt, ddt, Q_thr);
+          SF_upper = Q_tot_store[current_loc+1]/Q_thr;
+
+          Q_tot_file << Q_tot_store[current_loc+1] << endl;
+          Q_thr_file << Q_thr << endl;
+          time_file << (current_loc+1)*ddt << endl;
+
+          if(SF_lower < SF_upper)
+            current_loc += stepper;
+          else 
+            current_loc -= stepper;
+          stepper /= 2;
+          if (stepper == 0){
+            if (SF_lower < SF_upper)
+              cout << "SF = " << SF_upper << endl;
+            else
+              cout << "SF = " << SF_lower << endl;
+          }
+        }
+        exit(1);
+      }
       if (I_m < 0)
         SF_counter++;
       else 

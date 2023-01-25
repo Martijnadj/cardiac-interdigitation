@@ -101,11 +101,9 @@ Parameter::Parameter() {
   opencl_pref_platform = 0;
   colortable = strdup("../data/default.ctb");
 
-  initial_E_m = -70;
-  initial_n = 0.5;
-  initial_m = 0.25;
-  initial_h = 0.08;
-  eps = 1e-8;
+  SF_one_pixel = false;
+  SF_x = 0;
+  SF_y = 0;
 
 
   beats_per_minute = 60;
@@ -248,11 +246,10 @@ void Parameter::Read(const char *filename) {
   start_level = fgetpar(fp, "start_level", 1, true);
   colortable = sgetpar(fp, "colortable", "../data/default.ctb", true);
 
-  initial_E_m = fgetpar(fp, "initial_E_m", -70, true);
-  initial_n = fgetpar(fp, "initial_n", 0.5, true);
-  initial_m = fgetpar(fp, "initial_m", 0.25, true);
-  initial_h = fgetpar(fp, "initial_h", 0.08, true);
-  eps = fgetpar(fp, "eps", 1e-8, true);
+  SF_one_pixel = bgetpar(fp, "SF_one_pixel", false, true);
+  SF_x = igetpar(fp, "SF_x",0, true);
+  SF_y = igetpar(fp, "SF_y", 0, true);
+
 
 
   beats_per_minute = fgetpar(fp, "beats_per_minute", 60, true);
@@ -365,12 +362,9 @@ void Parameter::Write(ostream &os) const {
     os << " datadir = " << datadir << endl;
   os << " colortable = " << colortable << endl;
 
-  os << " initial_E_m = " << initial_E_m << endl;
-  os << " initial_n = " << initial_n << endl;
-  os << " initial_m = " << initial_m << endl;
-  os << " initial_h = " << initial_h<< endl;
-  os << " eps = " << eps << endl;
-
+  os << " SF_one_pixel = " << SF_one_pixel << endl;
+  os << " SF_x = " << SF_x << endl;
+  os << " SF_y = " << SF_y << endl;
 
   os << " beats_per_minute" << beats_per_minute << endl;
   os << " pacing_duration" << pacing_duration << endl;

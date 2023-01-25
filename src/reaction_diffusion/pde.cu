@@ -5056,7 +5056,7 @@ __global__ void ODEstepRL_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_TYP
   }
 }
 
-__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor, int SF_locator, bool SF_tracker_start){
+__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor, int SF_locator, bool SF_tracker_start){
   //PDEFIELD_TYPE ddt = 2e-7; //for couplingcoefficient 1e-4 
   //PDEFIELD_TYPE ddt = 1e-6; //for couplingcoefficient 1e-5
   int nr_of_iterations = round(dt/ddt);
@@ -5264,13 +5264,8 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   PDEFIELD_TYPE Cm_maleckar = 50; //in nF
   PDEFIELD_TYPE Q_factor = 50e-9;
   PDEFIELD_TYPE I_m;
-  int SF_locator = 310 * 325.5;
-  //int SF_locator = 405.5 * 410;
-  cout << "SF_locator = " << SF_locator << endl;
-  cout << "sigmafield[SF_locator] = " << sigmafield[0][SF_locator] << endl;
-  cout << "celltype[SF_locator] = " << celltype[0][SF_locator] << endl;
-  //int SF_locator = 405.5 * 410;
-  //SF_locator = 0;
+  int SF_locator = par.sizey * par.SF_x + par.SF_y;
+  SF_locator = 0;
 
 
 
@@ -5279,7 +5274,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   cout << "PDEvars[SF_locator] = " << PDEvars[SF_locator] << endl;
   
   
-  if (PDEvars[SF_locator] > -70 && thetime > 0.05 &&  !SF_tracker_start){
+  if (PDEvars[SF_locator] > -70 && thetime > 0.05 &&  !SF_tracker_start && par.SF_one_pixel){
     SF_tracker_start = true;
     SF_start_time = thetime;
     for (int k = 0; k < ARRAY_SIZE; k++){
@@ -5304,7 +5299,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     //Do an ODE step of size dt/2
     //ODEstepRL_Paci<<<nr_blocks, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
     //ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
-    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, par.eps, pacing_interval, par.I_f_factor, par.I_Kr_factor, SF_locator, SF_tracker_start);
+    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, pacing_interval, par.I_f_factor, par.I_Kr_factor, SF_locator, SF_tracker_start);
     //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_alt_PDEvars);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
@@ -5384,7 +5379,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     //Do an ODE step of size dt/2
     //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_PDEvars);
     //ODEstepRL_Paci<<<nr_blocks, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
-    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, par.eps, pacing_interval, par.I_f_factor, par.I_Kr_factor, SF_locator, SF_tracker_start);
+    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, pacing_interval, par.I_f_factor, par.I_Kr_factor, SF_locator, SF_tracker_start);
     //ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
     errSync  = cudaGetLastError();
     errAsync = cudaDeviceSynchronize();
@@ -5492,7 +5487,6 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
               cout << "SF = " << SF_lower << endl;
           }
         }
-        exit(1);
       }
       if (I_m < 0)
         SF_counter++;

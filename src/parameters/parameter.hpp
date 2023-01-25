@@ -108,11 +108,10 @@ class Parameter {
   double start_level;
   char * colortable;
 
-  double initial_E_m;
-  double initial_n;
-  double initial_m;
-  double initial_h;
-  double eps;
+  //Compute SF for one pixel? And if so, what pixel.
+  bool SF_one_pixel;
+  int SF_x;
+  int SF_y;
 
   double beats_per_minute;
   double pacing_duration;

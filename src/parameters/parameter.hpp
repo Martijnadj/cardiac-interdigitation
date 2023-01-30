@@ -109,6 +109,7 @@ class Parameter {
   char * colortable;
 
   //Compute SF for one pixel? And if so, what pixel.
+  bool SF_all;
   bool SF_one_pixel;
   int SF_x;
   int SF_y;

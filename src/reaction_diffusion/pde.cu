@@ -185,7 +185,14 @@ PDE::PDE(const int l, const int sx, const int sy) {
   pacing_interval = 1/(bpm/60);
   PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
   alt_PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
-  copy_for_SF = new PDEFIELD_TYPE[ARRAY_SIZE]; //for SF computation
+  if (par.SF_one_pixel)
+    copy_for_SF = new PDEFIELD_TYPE[ARRAY_SIZE]; //for SF computation
+  if (par.SF_all){
+    SF_start_array = new bool[sizex*sizey];
+    SF_end_array = new bool[sizex*sizey];
+    SF_Q_tot_array = new PDEFIELD_TYPE[sizex*sizey];
+  }
+  SF_locator_one = par.sizey * par.SF_x + par.SF_y;
   min_stepsize = par.min_stepsize;
   btype = 1;
   dx2 = par.dx*par.dx;
@@ -775,12 +782,30 @@ __global__ void InitializeLastStepsize(PDEFIELD_TYPE min_stepsize, PDEFIELD_TYPE
 }
 
 
+void PDE::InitializeSFComputation(CellularPotts *cpm){
+  int** celltypes = cpm->getTau();
+  for (int i = 0; i < par.sizex*par.sizey; i++){
+    SF_Q_tot_array [i] = 0;
+    if (celltypes[0][i] == 1){
+      SF_start_array[i] = false;
+      SF_end_array[i] = false;
+    }
+    else{
+      SF_start_array[i] = true;
+      SF_end_array[i] = true;
+    }
+  }
+
+}
+
 void PDE::InitializePDEs(CellularPotts *cpm){
   int** celltypes = cpm->getTau();
   //InitializePDEvars(cpm, par.FHN_start_0, par.FHN_start_1);
   InitializePDEvars(cpm, celltypes[0]);
   InitializeCuda(cpm, par.n_init_cells+1);
-  InitializeLastStepsize<<<par.number_of_cores, par.threads_per_core>>>(min_stepsize, next_stepsize, sizex, sizey);
+  if (par.SF_all)
+    InitializeSFComputation(cpm);
+  //InitializeLastStepsize<<<par.number_of_cores, par.threads_per_core>>>(min_stepsize, next_stepsize, sizex, sizey);
   cudaDeviceSynchronize();
 }
 
@@ -5056,7 +5081,7 @@ __global__ void ODEstepRL_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_TYP
   }
 }
 
-__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor, int SF_locator, bool SF_tracker_start){
+__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
   //PDEFIELD_TYPE ddt = 2e-7; //for couplingcoefficient 1e-4 
   //PDEFIELD_TYPE ddt = 1e-6; //for couplingcoefficient 1e-5
   int nr_of_iterations = round(dt/ddt);
@@ -5262,26 +5287,11 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   
   int nr_blocks = sizex*sizey/par.threads_per_core + 1;
   PDEFIELD_TYPE Cm_maleckar = 50; //in nF
-  PDEFIELD_TYPE Q_factor = 50e-9;
   PDEFIELD_TYPE I_m;
-  int SF_locator = par.sizey * par.SF_x + par.SF_y;
-  SF_locator = 0;
+  bool afterdiffusion;
 
-
-
-  //int SF_locator = -1;
-
-  cout << "PDEvars[SF_locator] = " << PDEvars[SF_locator] << endl;
+  cuSFChecker();
   
-  
-  if (PDEvars[SF_locator] > -70 && thetime > 0.05 &&  !SF_tracker_start && par.SF_one_pixel){
-    SF_tracker_start = true;
-    SF_start_time = thetime;
-    for (int k = 0; k < ARRAY_SIZE; k++){
-      copy_for_SF[k] = PDEvars[SF_locator + sizex*sizey*k];
-      cout << "PDEvars[" << k << "] = " << copy_for_SF[k] << endl;
-    }
-  }
 
   
   for (int iteration = 0; iteration < repeat; iteration++){
@@ -5296,232 +5306,115 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-    //Do an ODE step of size dt/2
-    //ODEstepRL_Paci<<<nr_blocks, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
-    //ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
-    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, pacing_interval, par.I_f_factor, par.I_Kr_factor, SF_locator, SF_tracker_start);
-    //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_alt_PDEvars);
-    errSync  = cudaGetLastError();
-    errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-
-
-    if (SF_tracker_start && !SF_tracker_end){
-      cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    }
-    
-    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    for (int i=0; i < sizex*sizey; i++){
-      if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
-        cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 1.\n";
-        exit(1);
-      }
-    }*/
-    //for (int i = 0; i < layers; i++)
-    //cout << "After first FE step, alt_PDEvars["<< 6355 + sizex*sizey*i << "] = " << alt_PDEvars[6355 + sizex*sizey*i] << endl;
     
 
-     //Do a horizontal ADI sweep of size dt/2
-    InitializeHorizontalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BH, d_couplingcoefficient, d_alt_PDEvars);
-    errSync  = cudaGetLastError();
-    errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-    statusH = cusparseSgtsvInterleavedBatch(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, pbufferH);
-    if (statusH != CUSPARSE_STATUS_SUCCESS)
-    {
-      cout << statusH << endl;
-    }
-    NewPDEfieldH0<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, BH, d_PDEvars);    
-    errSync  = cudaGetLastError();
-    errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-    NewPDEfieldOthers<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, BV, d_PDEvars, d_alt_PDEvars); //////
-    errSync  = cudaGetLastError();
-      errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync)); 
-
-
-    if (SF_tracker_start && !SF_tracker_end){
-      cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-      Q_tot += (PDEvars[SF_locator] - alt_PDEvars[SF_locator])*Q_factor;
-      I_m = (PDEvars[SF_locator] - alt_PDEvars[SF_locator])*Q_factor;
-      
-    }
-
-    /*
-    cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    for (int i=0; i < sizex*sizey; i++){
-      if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
-        cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 2.\n";
-        exit(1);
-      }
-    }*/
-
-    //cout << "After first FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
+    cuODEstep();
+    afterdiffusion = false;
+    cuCopyVoltageForSF(afterdiffusion);
+  
     
-    //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    //cout << "After first ADI step, PDEvars[23885] = " << PDEvars[23885] << endl;
+
+    cuHorizontalADIstep();
+    afterdiffusion = true;
+    cuCopyVoltageForSF(afterdiffusion);
 
     //increase time by dt/2
     thetime = thetime + dt/2;  
-    //Do an ODE step of size dt/2
-    //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_PDEvars);
-    //ODEstepRL_Paci<<<nr_blocks, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
-    ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, pacing_interval, par.I_f_factor, par.I_Kr_factor, SF_locator, SF_tracker_start);
-    //ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
-    errSync  = cudaGetLastError();
-    errAsync = cudaDeviceSynchronize();
-    if (errSync != cudaSuccess) 
-      printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-    if (errAsync != cudaSuccess)
-      printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));  
-
+    cuODEstep();
+    afterdiffusion = false;
+    cuCopyVoltageForSF(afterdiffusion);
     
-    if (SF_tracker_start && !SF_tracker_end){
-      cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    }
-
-    /*cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    for (int i=0; i < sizex*sizey; i++){
-      if (!(alt_PDEvars[i]>-100000 && alt_PDEvars[i] < 100000)){
-        cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 3.\n";
-        exit(1);
-      }
-    }*/
-      
+    
+    cuVerticalADIstep();
+    afterdiffusion = true;
+    cuCopyVoltageForSF(afterdiffusion);
       
     //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     //cout << "After second FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
-
-
-
-
-
-
-
-   //Do a vertical ADI sweep of size dt/2
-   InitializeVerticalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BV, d_couplingcoefficient, d_alt_PDEvars);
-   errSync  = cudaGetLastError();
-   errAsync = cudaDeviceSynchronize();
-   if (errSync != cudaSuccess) 
-     printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-   if (errAsync != cudaSuccess)
-     printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-   statusV = cusparseSgtsvInterleavedBatch(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, pbufferV);
-   if (statusV != CUSPARSE_STATUS_SUCCESS)
-   {
-     cout << statusV << endl;
-   }
-   cudaDeviceSynchronize();
-   NewPDEfieldV0<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, BV, d_PDEvars); //////
-   errSync  = cudaGetLastError();
-   errAsync = cudaDeviceSynchronize();
-   if (errSync != cudaSuccess) 
-     printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-   if (errAsync != cudaSuccess)
-     printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-   NewPDEfieldOthers<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, BV, d_PDEvars, d_alt_PDEvars); //////
-   errSync  = cudaGetLastError();
-   errAsync = cudaDeviceSynchronize();
-   if (errSync != cudaSuccess) 
-     printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
-   if (errAsync != cudaSuccess)
-     printf("Async kernel error: %s\n", cudaGetErrorString(errAsync)); 
-
-    if (SF_tracker_start && !SF_tracker_end){
-      cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-      Q_tot += (PDEvars[SF_locator] - alt_PDEvars[SF_locator])*Q_factor;
-      I_m += (PDEvars[SF_locator] - alt_PDEvars[SF_locator])*Q_factor;
-      cout << "I_m = " << I_m << endl;
-      Q_tot_store[temp_counter] = Q_tot;
-      temp_counter++;
-      cout << "counter = " << temp_counter << endl;
-      if (PDEvars[SF_locator] < -70){
-        cout << "final counter = " << temp_counter << endl;
-        int stepper = temp_counter/4;
-        int current_loc = temp_counter/2;
-        double SF_lower;
-        double SF_upper;
-        ofstream Q_tot_file;
-        ofstream Q_thr_file;
-        ofstream time_file;
-        Q_tot_file.open("../Q_tot.txt", std::ios_base::app);
-        Q_thr_file.open("../Q_thr.txt", std::ios_base::app);
-        time_file.open("../time_file.txt", std::ios_base::app);
-        while (stepper != 0){
-          ComputeQthr(copy_for_SF, current_loc*ddt, ddt, Q_thr);
-          SF_lower = Q_tot_store[current_loc]/Q_thr;
-
-          Q_tot_file << Q_tot_store[current_loc] << endl;
-          Q_thr_file << Q_thr << endl;
-          time_file << current_loc*ddt << endl;
-
-          ComputeQthr(copy_for_SF, (current_loc+1)*ddt, ddt, Q_thr);
-          SF_upper = Q_tot_store[current_loc+1]/Q_thr;
-
-          Q_tot_file << Q_tot_store[current_loc+1] << endl;
-          Q_thr_file << Q_thr << endl;
-          time_file << (current_loc+1)*ddt << endl;
-
-          if(SF_lower < SF_upper)
-            current_loc += stepper;
-          else 
-            current_loc -= stepper;
-          stepper /= 2;
-          if (stepper == 0){
-            if (SF_lower < SF_upper)
-              cout << "SF = " << SF_upper << endl;
-            else
-              cout << "SF = " << SF_lower << endl;
-          }
-        }
-      }
-      if (I_m < 0)
-        SF_counter++;
-      else 
-        SF_counter = 0;
-      int required = 5;
-      if (SF_counter == required){ //if I_m has been below 0 for 'required' time steps
-        SF_tracker_end = true;
-        PDEFIELD_TYPE t_A = thetime-dt*(required-1) - SF_start_time;
-        PDEFIELD_TYPE Q_thr;
-        ComputeQthr(copy_for_SF, t_A, ddt, Q_thr);   
-        cout << "Q_tot = " << Q_tot << endl;
-        cout << "Q_thr = " << Q_thr << endl;
-        cout << "SF =  " << Q_tot / Q_thr << endl;
-      }
-    }
+    
+    if (SF_start_one && !SF_end_one && par.SF_one_pixel)
+      cuComputeSFOne();
+    
+    if (SF_in_progress && !SF_all_done && par.SF_all)
+      cuWriteSFData();
 
 
     
-      //increase time by dt/2
+    //increase time by dt/2
     thetime = thetime + dt/2; 
-    /*cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    for (int i=0; i < sizex*sizey; i++){
-      if (!(PDEvars[i]>-100000 && PDEvars[i] < 100000)){
-        cout << "Error at i = " << i << " with celltype " << celltype[i] << ". Abort 4.\n";
-        exit(1);
-      }
-    }*/
-    //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-    //cout << "After first ADI step, PDEvars[23885] = " << PDEvars[23885] << endl;
 
      
   }
   cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
   cudaDeviceSynchronize();
+
+  cuPDEVarsToFiles();
+
+  
+}
+
+void PDE::cuODEstep(){
+  //Do an ODE step of size dt/2
+  cudaError_t errSync;
+  cudaError_t errAsync;
+  //ODEstepRL_Paci<<<nr_blocks, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
+  //ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
+  ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, pacing_interval, par.I_f_factor, par.I_Kr_factor);
+  //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_alt_PDEvars);
+  cuErrorChecker(errSync, errAsync);
+}
+
+void PDE::cuHorizontalADIstep(){
+  //Do a horizontal ADI sweep of size dt/2
+  cudaError_t errSync;
+  cudaError_t errAsync;
+  InitializeHorizontalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BH, d_couplingcoefficient, d_alt_PDEvars);
+  cuErrorChecker(errSync, errAsync);
+  statusH = cusparseSgtsvInterleavedBatch(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, pbufferH);
+  if (statusH != CUSPARSE_STATUS_SUCCESS)
+  {
+    cout << statusH << endl;
+  }
+  NewPDEfieldH0<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, BH, d_PDEvars);    
+  cuErrorChecker(errSync, errAsync);
+  NewPDEfieldOthers<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, BV, d_PDEvars, d_alt_PDEvars); //////
+  cuErrorChecker(errSync, errAsync);
+
+}
+
+void PDE::cuVerticalADIstep(){
+  //Do a vertical ADI sweep of size dt/2
+  cudaError_t errSync;
+  cudaError_t errAsync;
+  InitializeVerticalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BV, d_couplingcoefficient, d_alt_PDEvars);
+  cuErrorChecker(errSync, errAsync);
+  statusV = cusparseSgtsvInterleavedBatch(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, pbufferV);
+  if (statusV != CUSPARSE_STATUS_SUCCESS)
+  {
+    cout << statusV << endl;
+  }
+  cudaDeviceSynchronize();
+  NewPDEfieldV0<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, BV, d_PDEvars); //////
+  errSync  = cudaGetLastError();
+  errAsync = cudaDeviceSynchronize();
+  if (errSync != cudaSuccess) 
+    printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+  if (errAsync != cudaSuccess)
+    printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
+  NewPDEfieldOthers<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, BV, d_PDEvars, d_alt_PDEvars); //////
+  cuErrorChecker(errSync, errAsync);
+}
+
+void PDE::cuErrorChecker(cudaError_t errSync, cudaError_t errAsync){
+  errSync  = cudaGetLastError();
+  errAsync = cudaDeviceSynchronize();
+  if (errSync != cudaSuccess) 
+    printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+  if (errAsync != cudaSuccess)
+    printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
+}
+
+void PDE::cuPDEVarsToFiles(){
   int number_of_measurements = 10;
   int measure_loc;
   ofstream myfile;
@@ -5546,6 +5439,127 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     exit(1);
   }
 }
+
+void PDE::cuSFChecker(){
+  //Check whether or not we should be doing SF computations, for one pixel or all pixels.
+
+  //int SF_locator_one = -1;
+  string file_loc_base = string(par.datadir) + "/Q_tot_data_";
+  string file_loc;
+  ofstream Q_tot_file;
+  
+  
+  //Keeps track of which pixels should START exporting data for SF computations
+  if (par.SF_all && !SF_all_done){
+    for (int i = 0; i < sizex*sizey; i++)
+      if (PDEvars[i] > -70 && thetime > 0.2 &&  !SF_start_array[i]){
+        SF_in_progress = true;
+        SF_start_array[i] = true;
+        file_loc = file_loc_base + to_string(i/par.sizey) + "_" + to_string(i%par.sizey) + ".txt";
+        Q_tot_file.open(file_loc, std::ios_base::app);
+        Q_tot_file << ddt << endl;
+        for (int j = 0; j < layers; j++)
+        Q_tot_file << PDEvars[i + j*sizex*sizey] << endl;
+        Q_tot_file.close();
+      }
+  }
+
+  //Keeps track of which pixels should STOP exporting data for SF computations
+  if (par.SF_all && SF_in_progress && !SF_all_done){
+    SF_all_done = true;
+    for (int i = 0; i < sizex*sizey; i++){
+      if (PDEvars[i] < -70 &&  SF_start_array[i] && celltype[0][i] == 1 && !SF_end_array[i]){
+        SF_in_progress = true;
+        SF_end_array[i] = true;
+      }
+      if (!SF_end_array[i])
+        SF_all_done = false;
+    }
+  }
+  
+  //Keeps track of the pixel for exporting data for SF for a single pixel
+  if (PDEvars[SF_locator_one] > -70 && thetime > 0.05 &&  !SF_start_one && par.SF_one_pixel){
+    SF_start_one = true;
+    for (int k = 0; k < ARRAY_SIZE; k++){
+      copy_for_SF[k] = PDEvars[SF_locator_one + sizex*sizey*k];
+      cout << "PDEvars[" << k << "] = " << copy_for_SF[k] << endl;
+    }
+  }
+
+}
+
+void PDE::cuCopyVoltageForSF(bool afterdiffusion){
+  PDEFIELD_TYPE Q_factor = 50e-9;
+  if (afterdiffusion){
+    //If SF computations need to happen, copy voltage from d_PDEvars
+    if (SF_in_progress && !SF_all_done && par.SF_all) {
+      cudaMemcpy(PDEvars, d_PDEvars, sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+      for (int i = 0; i < sizex*sizey; i++)
+        if (SF_start_array[i] && !SF_end_array[i])
+          SF_Q_tot_array[i] += (PDEvars[i] - alt_PDEvars[i])*Q_factor;
+
+    }
+    if (SF_start_one && !SF_end_one && par.SF_one_pixel){
+      cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+      Q_tot += (PDEvars[SF_locator_one] - alt_PDEvars[SF_locator_one])*Q_factor;
+    }
+  }
+  else{
+    //If SF computations need to happen, copy voltage from d_alt_PDEvars
+    if (SF_in_progress && !SF_all_done && par.SF_all) 
+      cudaMemcpy(alt_PDEvars, d_alt_PDEvars, sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    if (SF_start_one && !SF_end_one && par.SF_one_pixel){
+      cudaMemcpy(alt_PDEvars, d_alt_PDEvars, sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+    }
+  }
+}
+
+void PDE::cuComputeSFOne(){
+  Q_tot_store_one[t_A_counter] = Q_tot;
+  t_A_counter++;
+  cout << "counter = " << t_A_counter << endl;
+  if (PDEvars[SF_locator_one] < -70){
+    cout << "final counter = " << t_A_counter << endl;
+    int stepper = t_A_counter/4;
+    int current_loc = t_A_counter/2;
+    double SF_lower;
+    double SF_upper;
+    while (stepper != 0){
+      ComputeQthr(copy_for_SF, current_loc*ddt, ddt, Q_thr);
+      SF_lower = Q_tot_store_one[current_loc]/Q_thr;
+      ComputeQthr(copy_for_SF, (current_loc+1)*ddt, ddt, Q_thr);
+      SF_upper = Q_tot_store_one[current_loc+1]/Q_thr;
+      if(SF_lower < SF_upper)
+        current_loc += stepper;
+      else 
+        current_loc -= stepper;
+      stepper /= 2;
+      if (stepper == 0){
+        if (SF_lower < SF_upper)
+          cout << "SF = " << SF_upper << endl;
+        else
+          cout << "SF = " << SF_lower << endl;
+      }
+    }
+  }
+}
+
+void PDE::cuWriteSFData(){
+  ofstream Q_tot_file;
+  string file_loc_base = string(par.datadir) + "/Q_tot_data_";
+  string file_loc;
+  for (int i = 0; i < par.sizex*par.sizey; i++){
+    if (SF_start_array[i] && !SF_end_array[i]){
+      cout << "i = " << endl;
+      file_loc = file_loc_base + to_string(i/par.sizey) + "_" + to_string(i%par.sizey) + ".txt";
+      Q_tot_file.open(file_loc, std::ios_base::app);
+      Q_tot_file << SF_Q_tot_array[i] << endl;
+      Q_tot_file.close();
+    }
+  }
+}
+
+
 
 // public
 void PDE::Diffuse(int repeat) {

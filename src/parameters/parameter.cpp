@@ -101,6 +101,7 @@ Parameter::Parameter() {
   opencl_pref_platform = 0;
   colortable = strdup("../data/default.ctb");
 
+  SF_all = false;
   SF_one_pixel = false;
   SF_x = 0;
   SF_y = 0;
@@ -246,6 +247,7 @@ void Parameter::Read(const char *filename) {
   start_level = fgetpar(fp, "start_level", 1, true);
   colortable = sgetpar(fp, "colortable", "../data/default.ctb", true);
 
+  SF_all = bgetpar(fp, "SF_all", false, true);
   SF_one_pixel = bgetpar(fp, "SF_one_pixel", false, true);
   SF_x = igetpar(fp, "SF_x",0, true);
   SF_y = igetpar(fp, "SF_y", 0, true);
@@ -362,6 +364,7 @@ void Parameter::Write(ostream &os) const {
     os << " datadir = " << datadir << endl;
   os << " colortable = " << colortable << endl;
 
+  os << " SF_all = " << SF_all << endl;  
   os << " SF_one_pixel = " << SF_one_pixel << endl;
   os << " SF_x = " << SF_x << endl;
   os << " SF_y = " << SF_y << endl;

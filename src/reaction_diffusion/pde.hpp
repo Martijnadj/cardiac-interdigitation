@@ -175,6 +175,7 @@ class PDE {
   void InitializeFHNvarsCells(int nr_cells, PDEFIELD_TYPE* FHN_a, PDEFIELD_TYPE* FHN_b, PDEFIELD_TYPE* FHN_tau, PDEFIELD_TYPE FHN_a_var, PDEFIELD_TYPE FHN_b_var, PDEFIELD_TYPE FHN_tau_var, PDEFIELD_TYPE FHN_a_base, PDEFIELD_TYPE FHN_b_base, PDEFIELD_TYPE FHN_tau_base);
   void InitializePDEs(CellularPotts * cpm);
   void InitializeCuda(CellularPotts * cpm, int n_init_cells);
+  void InitializeSFComputation(CellularPotts *cpm);
   //void InitializePDEvars(CellularPotts * cpm, PDEFIELD_TYPE FHN_0, PDEFIELD_TYPE FHN_1);
   void InitializePDEvars(CellularPotts * cpm, int* celltypes);
  /* Function for the Act model. All the lattice sites within cells are "aged"
@@ -225,6 +226,15 @@ class PDE {
   //Secrete and diffuse functions accelerated using OpenCL
   void ODEstepCL(CellularPotts *cpm, int repeat);
   void cuPDEsteps(CellularPotts *cpm, int repeats);
+  void cuODEstep(void);
+  void cuHorizontalADIstep(void);
+  void cuVerticalADIstep(void);
+  void cuErrorChecker(cudaError_t errSync, cudaError_t errAsync);
+  void cuPDEVarsToFiles(void);
+  void cuSFChecker(void);
+  void cuCopyVoltageForSF(bool afterdiffusion);
+  void cuComputeSFOne(void);
+  void cuWriteSFData(void);
 
   /*! \brief Returns cumulative "simulated" time,
     i.e. number of time steps * dt. */
@@ -273,7 +283,11 @@ class PDE {
 
   protected:
 
-
+  bool* SF_start_array;
+  bool* SF_end_array;
+  PDEFIELD_TYPE* SF_Q_tot_array;
+  bool SF_all_done = false;
+  bool SF_in_progress = false;
   PDEFIELD_TYPE *PDEvars;
   PDEFIELD_TYPE *alt_PDEvars;
   PDEFIELD_TYPE *last_stepsize;
@@ -339,14 +353,14 @@ private:
   int PDEsteps;
   float thetime;
 
-  bool SF_tracker_start = false;
-  bool SF_tracker_end = false;
+  bool SF_start_one = false;
+  bool SF_end_one = false;
+  int SF_locator_one;
   int SF_counter = 0; //counts how many times I_m has been below 0 consecutively
-  PDEFIELD_TYPE SF_start_time;
   PDEFIELD_TYPE Q_thr;
   PDEFIELD_TYPE Q_tot = 0;
-  int temp_counter = 0;
-  double Q_tot_store[5000];
+  int t_A_counter = 0; //keeps track of t_A
+  double Q_tot_store_one[10000];
 
   inline double Z(double k, int steps);
 

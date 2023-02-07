@@ -371,7 +371,7 @@ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES,PDEFIELD_TYPE* RATE
 
 
 void ComputeQthr(PDEFIELD_TYPE* y, PDEFIELD_TYPE t_A, PDEFIELD_TYPE ddt, PDEFIELD_TYPE &Q_thr, int length){
-  cout << "t_A = " << t_A << endl;
+  //cout << "t_A = " << t_A << endl;
   PDEFIELD_TYPE activation_strength = 50;
   PDEFIELD_TYPE stepsize_activation = activation_strength/2;
   PDEFIELD_TYPE elapsed_time = 0;
@@ -380,7 +380,7 @@ void ComputeQthr(PDEFIELD_TYPE* y, PDEFIELD_TYPE t_A, PDEFIELD_TYPE ddt, PDEFIEL
 
 
   while(stepsize_activation > 1e-7){
-    cout << stepsize_activation << endl;
+    //cout << stepsize_activation << endl;
     for (int i = 0; i < length; i ++){
       y_copy[i] = y[i];
     }
@@ -415,7 +415,7 @@ void ComputeQthr(PDEFIELD_TYPE* y, PDEFIELD_TYPE t_A, PDEFIELD_TYPE ddt, PDEFIEL
 
 
 int main(int argc, char* argv[]) {
-    ofstream SF_file;
+	ofstream SF_file;
     SF_file.open("SF_file.txt", std::ios_base::app);
     int array_length = 39;
     int counter = 0;
@@ -426,13 +426,15 @@ int main(int argc, char* argv[]) {
     strcat(file_loc,argv[2]);
     strcat(file_loc,".txt");
     cout << file_loc << endl;
-
-    ifstream line_count(file_loc);
+	
+	ifstream line_count(file_loc);
     if (!line_count.is_open()){
         cout << "No SF available" << endl;
         SF_file << argv[1] << ", " << argv[2] << ", 0" <<  endl;
         throw runtime_error("Could not open mask file");
     }
+
+    
 
     
 
@@ -466,7 +468,7 @@ int main(int argc, char* argv[]) {
             else
                 Q_tot[counter-array_length] = val;
             counter++;
-            cout << "counter = " << counter << endl;
+            //cout << "counter = " << counter << endl;
         }
     }
 

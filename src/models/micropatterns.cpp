@@ -122,8 +122,9 @@ TIMESTEP {
       info->set_Paused();
     i++;}
 
-    if (!info->IsPaused()){
-      PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
+    if (!info->IsPaused()){ //added second condition for test
+      if (i < par.relaxation)
+        PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
     }  
 
     if ( i == par.mcs){

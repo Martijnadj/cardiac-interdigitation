@@ -4,7 +4,7 @@ import os
 import math
 from os import path
 
-pixel_size = 0.0025
+pixel_size = 0.025
 #in millimeters
 
 #paramaters for mask, see sketch.jpg for clarification

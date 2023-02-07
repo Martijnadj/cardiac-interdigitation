@@ -5271,9 +5271,11 @@ void ComputeQthr(PDEFIELD_TYPE* y, PDEFIELD_TYPE t_A, PDEFIELD_TYPE ddt, PDEFIEL
 
 
 void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
+  if (thetime == 0)
+    InitializeSFComputation(cpm);
   //copy current couplingcoefficient matrix and celltype matrix from host to device
   couplingcoefficient = cpm->getCouplingCoefficient();
-  couplingcoefficient = cpm->getCouplingCoefficient_Gradient();
+  //couplingcoefficient = cpm->getCouplingCoefficient_Gradient();
   //int** cellnumber = cpm -> getSigma(); 
   cudaError_t errSync;
   cudaError_t errAsync;
@@ -5290,11 +5292,11 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   PDEFIELD_TYPE I_m;
   bool afterdiffusion;
 
-  cuSFChecker();
   
 
   
   for (int iteration = 0; iteration < repeat; iteration++){
+      cuSFChecker();
       //cout << "Iteration = " << iteration << endl;
 
       //setup matrices for upperdiagonal, diagonal and lower diagonal for both the horizontal and vertical direction, since these remain the same during once MCS
@@ -5361,6 +5363,9 @@ void PDE::cuODEstep(){
   //ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
   ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, pacing_interval, par.I_f_factor, par.I_Kr_factor);
   //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_alt_PDEvars);
+
+  //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+  //cout << "After second FE step, alt_PDEvars[147780] = " << alt_PDEvars[147780] << endl;
   cuErrorChecker(errSync, errAsync);
 }
 
@@ -5379,6 +5384,9 @@ void PDE::cuHorizontalADIstep(){
   cuErrorChecker(errSync, errAsync);
   NewPDEfieldOthers<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, BV, d_PDEvars, d_alt_PDEvars); //////
   cuErrorChecker(errSync, errAsync);
+
+  //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+  //cout << "After second FE step, PDEvars[147780] = " << PDEvars[147780] << endl;
 
 }
 
@@ -5403,6 +5411,10 @@ void PDE::cuVerticalADIstep(){
     printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
   NewPDEfieldOthers<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, BV, d_PDEvars, d_alt_PDEvars); //////
   cuErrorChecker(errSync, errAsync);
+
+  //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
+  //cout << "After second FE step, PDEvars[147780] = " << PDEvars[147780] << endl;
+
 }
 
 void PDE::cuErrorChecker(cudaError_t errSync, cudaError_t errAsync){
@@ -5415,6 +5427,8 @@ void PDE::cuErrorChecker(cudaError_t errSync, cudaError_t errAsync){
 }
 
 void PDE::cuPDEVarsToFiles(){
+
+  /*
   int number_of_measurements = 10;
   int measure_loc;
   ofstream myfile;
@@ -5428,9 +5442,34 @@ void PDE::cuPDEVarsToFiles(){
       for (int i = 0; i < layers; i++)
         myfile << PDEvars[measure_loc+sizex*sizey*i] << ",";
     myfile << endl;
-    myfile.close();
-    
-  }
+    myfile.close();  
+  }*/
+
+  int measure_loc;
+  ofstream myfile;
+  char fname[200];
+  int measurement = 1;
+
+  measure_loc = int ((0.5 + 418)*sizey);  
+  sprintf(fname,"location_%03d.txt",measurement);
+  myfile.open(fname, std::ios_base::app);
+  myfile << thetime << ",";
+    for (int i = 0; i < layers; i++)
+      myfile << PDEvars[measure_loc+sizex*sizey*i] << ",";
+  myfile << endl;
+  myfile.close();
+
+  measurement++;
+
+  measure_loc = int ((0.5 + 543)*sizey);
+  sprintf(fname,"location_%03d.txt",measurement);
+  myfile.open(fname, std::ios_base::app);
+  myfile << thetime << ",";
+    for (int i = 0; i < layers; i++)
+      myfile << PDEvars[measure_loc+sizex*sizey*i] << ",";
+  myfile << endl;
+  myfile.close();
+
 
   cout << "PDEvars["<< int(sizey*10.5)<< "] = " << PDEvars[int(sizey*10.5)] << 
   ", PDEvars["<< sizex*sizey-int(sizey*10.5)<< "] = " << PDEvars[sizex*sizey-int(sizey*10.5)] << " and time = " << thetime << endl;
@@ -5468,7 +5507,7 @@ void PDE::cuSFChecker(){
   if (par.SF_all && SF_in_progress && !SF_all_done){
     SF_all_done = true;
     for (int i = 0; i < sizex*sizey; i++){
-      if (PDEvars[i] < -70 &&  SF_start_array[i] && celltype[0][i] == 1 && !SF_end_array[i]){
+      if ((PDEvars[i] < -70 || SF_Q_tot_array[i] < 0) &&  SF_start_array[i] && celltype[0][i] == 1 && !SF_end_array[i]){
         SF_in_progress = true;
         SF_end_array[i] = true;
       }
@@ -5550,7 +5589,6 @@ void PDE::cuWriteSFData(){
   string file_loc;
   for (int i = 0; i < par.sizex*par.sizey; i++){
     if (SF_start_array[i] && !SF_end_array[i]){
-      cout << "i = " << endl;
       file_loc = file_loc_base + to_string(i/par.sizey) + "_" + to_string(i%par.sizey) + ".txt";
       Q_tot_file.open(file_loc, std::ios_base::app);
       Q_tot_file << SF_Q_tot_array[i] << endl;

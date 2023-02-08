@@ -783,18 +783,24 @@ __global__ void InitializeLastStepsize(PDEFIELD_TYPE min_stepsize, PDEFIELD_TYPE
 
 
 void PDE::InitializeSFComputation(CellularPotts *cpm){
+  cout << "start init" << endl;
   int** celltypes = cpm->getTau();
+  cout << "Point 2" << endl;
   for (int i = 0; i < par.sizex*par.sizey; i++){
     SF_Q_tot_array [i] = 0;
+    cout << "i = " << i << " and therefore, x = " << i/par.sizey << " and y = " << i % par.sizey << endl;
     if (celltypes[0][i] == 1){
+      cout << "i = " << i << " and therefore, x = " << i/par.sizey << " and y = " << i % par.sizey << endl;
       SF_start_array[i] = false;
       SF_end_array[i] = false;
     }
     else{
+      cout << "i = " << i << " and therefore, x = " << i/par.sizey << " and y = " << i % par.sizey << endl;
       SF_start_array[i] = true;
       SF_end_array[i] = true;
     }
   }
+  cout << "end init" << endl;
 
 }
 
@@ -803,8 +809,9 @@ void PDE::InitializePDEs(CellularPotts *cpm){
   //InitializePDEvars(cpm, par.FHN_start_0, par.FHN_start_1);
   InitializePDEvars(cpm, celltypes[0]);
   InitializeCuda(cpm, par.n_init_cells+1);
-  if (par.SF_all)
+  if (par.SF_all){
     InitializeSFComputation(cpm);
+  }
   //InitializeLastStepsize<<<par.number_of_cores, par.threads_per_core>>>(min_stepsize, next_stepsize, sizex, sizey);
   cudaDeviceSynchronize();
 }
@@ -5271,7 +5278,7 @@ void ComputeQthr(PDEFIELD_TYPE* y, PDEFIELD_TYPE t_A, PDEFIELD_TYPE ddt, PDEFIEL
 
 
 void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
-  if (thetime == 0)
+  if (thetime == 0 && par.SF_all)
     InitializeSFComputation(cpm);
   //copy current couplingcoefficient matrix and celltype matrix from host to device
   couplingcoefficient = cpm->getCouplingCoefficient();

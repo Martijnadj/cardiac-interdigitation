@@ -86,12 +86,21 @@ TIMESTEP {
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
-        dish->PDEfield->InitializePDEs(dish->CPM);
+
     }
-    dish->CPM->WriteData();
+    if (i % 2000 == 1000){
+      dish->PDEfield->InitializePDEs(dish->CPM);
+      dish->CPM->WriteData();
+    }
+    if (i % 2000 == 0 && i > 0){
+      ofstream myfile;
+      myfile.open("Output_data.txt", std::ofstream::out | std::ofstream::app);
+      myfile << dish->PDEfield->Successful_activation << endl;
+      myfile.close();
+    }
 
      //uncomment for chemotaxis
-    if (i>=par.relaxation) {
+    if  (i % 2000 >= 1000) {
       if (par.useopencl){
         if(par.usecuda == true){
           dish->PDEfield->cuPDEsteps(dish->CPM, par.pde_its);
@@ -122,8 +131,7 @@ TIMESTEP {
       info->set_Paused();
     i++;}
 
-    if (!info->IsPaused()){ //added second condition for test
-      if (i < par.relaxation)
+    if (!info->IsPaused() && i % 2000 < 1000){ //added second condition for test
         PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
     }  
 

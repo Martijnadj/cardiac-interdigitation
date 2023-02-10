@@ -260,6 +260,7 @@ PDE::~PDE(void) {
 
 
 void PDE::InitializePDEvars(CellularPotts *cpm, int* celltypes){
+  Successful_activation = false;
   PDEFIELD_TYPE PDEinit1[ARRAY_SIZE];
   PDEFIELD_TYPE PDEinit2[ARRAY_SIZE];
   int* mask = cpm->getMask()[0];
@@ -788,14 +789,14 @@ void PDE::InitializeSFComputation(CellularPotts *cpm){
   cout << "Point 2" << endl;
   for (int i = 0; i < par.sizex*par.sizey; i++){
     SF_Q_tot_array [i] = 0;
-    cout << "i = " << i << " and therefore, x = " << i/par.sizey << " and y = " << i % par.sizey << endl;
+    //cout << "i = " << i << " and therefore, x = " << i/par.sizey << " and y = " << i % par.sizey << endl;
     if (celltypes[0][i] == 1){
-      cout << "i = " << i << " and therefore, x = " << i/par.sizey << " and y = " << i % par.sizey << endl;
+      //cout << "i = " << i << " and therefore, x = " << i/par.sizey << " and y = " << i % par.sizey << endl;
       SF_start_array[i] = false;
       SF_end_array[i] = false;
     }
     else{
-      cout << "i = " << i << " and therefore, x = " << i/par.sizey << " and y = " << i % par.sizey << endl;
+      //cout << "i = " << i << " and therefore, x = " << i/par.sizey << " and y = " << i % par.sizey << endl;
       SF_start_array[i] = true;
       SF_end_array[i] = true;
     }
@@ -5476,7 +5477,10 @@ void PDE::cuPDEVarsToFiles(){
       myfile << PDEvars[measure_loc+sizex*sizey*i] << ",";
   myfile << endl;
   myfile.close();
-
+  if (PDEvars[measure_loc] > 0){
+    //cout << "We have all data and can safely stop the simulation now" << endl;
+    //exit(0);
+  }
 
   cout << "PDEvars["<< int(sizey*10.5)<< "] = " << PDEvars[int(sizey*10.5)] << 
   ", PDEvars["<< sizex*sizey-int(sizey*10.5)<< "] = " << PDEvars[sizex*sizey-int(sizey*10.5)] << " and time = " << thetime << endl;

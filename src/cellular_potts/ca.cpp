@@ -1609,11 +1609,11 @@ void CellularPotts::WriteData(void)
   
   double convexity = Convexity();
   ofstream myfile;
-  myfile.open("Celltype_surface_data.txt", std::ofstream::out | std::ofstream::app);
-  myfile << RedRedSurface << endl;
-  myfile << RedYellowSurface << endl;
-  myfile << YellowYellowSurface << endl;
-  myfile << convexity << endl;
+  myfile.open("Output_data.txt", std::ofstream::out | std::ofstream::app);
+  myfile << RedRedSurface << ", ";
+  myfile << RedYellowSurface << ", ";
+  myfile << YellowYellowSurface << ", ";
+  myfile << convexity << ", ";
   myfile.close();
 }
 

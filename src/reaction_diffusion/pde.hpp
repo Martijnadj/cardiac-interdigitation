@@ -58,6 +58,7 @@ class PDE {
   PDEFIELD_TYPE min_stepsize;
   PDEFIELD_TYPE dx2;
   bool usePDEorAltPDE;
+  bool Successful_activation = false;
 
   /*! \brief Constructor for PDE object containing arbitrary number of planes.
   \param layers: Number of PDE planes

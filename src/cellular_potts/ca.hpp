@@ -371,7 +371,10 @@ public:
 
   void CropSurface(int* bounds); //Crop the surface between two cells
   double Convexity(void); //Compute the convexity (or concavity) at the surface between the two cell types
-  double Compactness(int* bounds, int celltype); //overload compactness by computing compactness within a certain cropped area. And considering a certain cell type       
+  double Compactness(int* bounds, int celltype); //overload compactness by computing compactness within a certain cropped area. And considering a certain cell type
+  int BoundaryLength(int start_x, int start_y, int end_x, int end_y);
+
+
   void RandomSigma(int n_cells);
   
   void MeasureCellSizes(void);

@@ -88,8 +88,8 @@ TIMESTEP {
         dish=new Dish();
 
     }
-    if (i % 1000 == 0&& i > 1){
-      dish->PDEfield->InitializePDEs(dish->CPM);
+    if (i % 1000 == 0 && i > 1){
+      //dish->PDEfield->InitializePDEs(dish->CPM);
       dish->CPM->WriteData();
     }
     if (i % 2000 == 0 && false){
@@ -131,7 +131,7 @@ TIMESTEP {
       info->set_Paused();
     i++;}
 
-    if (!info->IsPaused() && i % 2000 < 1000 or true){ //added second condition for test
+    if ((!info->IsPaused() && i % 2000 < 1000) or true){ //added second condition for test
         PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
     }  
 

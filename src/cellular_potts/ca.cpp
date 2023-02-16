@@ -1607,10 +1607,10 @@ void CellularPotts::WriteData(void)
  // cout << "Yellow-yellow surface = " << YellowYellowSurface << endl;
 
   
-  double convexity = Convexity();
+  //double convexity = Convexity();
   ofstream myfile;
-  //myfile.open("Output_data.txt", std::ofstream::out | std::ofstream::app);
-  myfile << BoundaryLength(right_side_isthmus+1, par.sizex-10, right_side_isthmus+1, 10) << endl;
+  myfile.open("Output_data.txt", std::ofstream::out | std::ofstream::app);
+  myfile << BoundaryLength(right_side_isthmus+1, par.sizey-10, right_side_isthmus+1, 10) << endl;
   //cout << "BoundaryLength = " << BoundaryLength(right_side_isthmus+1, par.sizey-10, right_side_isthmus+1, 10) << endl;
   //myfile << convexity << ", ";
   myfile.close();
@@ -3496,10 +3496,10 @@ void CellularPotts::SetTypesWithMask(void)
 
 void CellularPotts::SetTypesWithDoubleMask(void)
 { 
-for (int x = 0; x < sizex; x++)
-  for (int y = 0; y < sizey; y++){
-    if (mask[x][y] == 1 || mask[x][y] == 2)
-      (*cell)[sigma[x][y]].setTau(mask[x][y]);}
+  for (int x = 0; x < sizex; x++)
+    for (int y = 0; y < sizey; y++){
+      if (mask[x][y] == 1 || mask[x][y] == 2)
+        (*cell)[sigma[x][y]].setTau(mask[x][y]);}
 }
 
 
@@ -3818,23 +3818,26 @@ void CellularPotts::SetBoundingBox(void)
 }
 
 int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y){
+  cout << "Start boundary length" << endl;
   int loc_x = start_x;
   int loc_y = start_y;
   int MaxBoundaryLength = 0;
   int BoundaryLength = 0;
   char orientation = 'W';
   while (!(loc_x == end_x && loc_y == end_y)){
+    
     /*
     cout << "BL = " << BoundaryLength << endl;
     cout << "Max_BL " << MaxBoundaryLength << endl;
     cout << "Orientation = " << orientation << endl;  
     cout << "(" << loc_x << ", " << loc_y << ")" << endl;
     cout << "Orientation = " << orientation << endl;
-    cout << "Cell type at (" << loc_x << ", " << loc_y << ") = " << (*cell)[sigma[loc_x][loc_y]].getTau()  << endl;
-    cout << "Cell type at (" << loc_x-1 << ", " << loc_y << ") = " << (*cell)[sigma[loc_x-1][loc_y]].getTau()  << endl;
-    cout << "Cell type at (" << loc_x << ", " << loc_y-1 << ") = " << (*cell)[sigma[loc_x][loc_y-1]].getTau()  << endl;
-    cout << "Cell type at (" << loc_x-1 << ", " << loc_y-1 << ") = " << (*cell)[sigma[loc_x][loc_y]].getTau()  << endl;
+    cout << "Cell type at (" << loc_x << ", " << loc_y << ") = " << (*cell)[sigma[loc_x][loc_y]].getTau() <<  " and sigma = " << sigma[loc_x][loc_y] << endl;
+    cout << "Cell type at (" << loc_x-1 << ", " << loc_y << ") = " << (*cell)[sigma[loc_x-1][loc_y]].getTau() <<  " and sigma = " << sigma[loc_x-1][loc_y] << endl;
+    cout << "Cell type at (" << loc_x << ", " << loc_y-1 << ") = " << (*cell)[sigma[loc_x][loc_y-1]].getTau()  <<  " and sigma = " << sigma[loc_x][loc_y-1] << endl;
+    cout << "Cell type at (" << loc_x-1 << ", " << loc_y-1 << ") = " << (*cell)[sigma[loc_x-1][loc_y-1]].getTau()  <<  " and sigma = " << sigma[loc_x-1][loc_y-1] << endl;
     */
+    
     //North
     if (orientation == 'N'){
       if ((*cell)[sigma[loc_x-1][loc_y]].getTau() == 1){ //if cell to the left belongs to celltype 1
@@ -4165,5 +4168,5 @@ void CellularPotts::StoreMask()
 
 
   }
-  
+
 }

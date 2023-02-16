@@ -179,7 +179,10 @@ public:
 
   //! Get cell type of this Cell.
   inline int getTau(void) {
-    return tau;
+    if (sigma == -1 || sigma == 0)
+      return -1;
+    else
+      return tau;
   }
 
   inline double getCenterX(void) {

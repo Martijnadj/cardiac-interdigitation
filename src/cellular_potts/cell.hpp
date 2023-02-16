@@ -179,9 +179,6 @@ public:
 
   //! Get cell type of this Cell.
   inline int getTau(void) {
-    if (sigma == -1 || sigma == 0)
-      return -1;
-    else
       return tau;
   }
 

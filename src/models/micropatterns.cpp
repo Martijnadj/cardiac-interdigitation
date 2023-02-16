@@ -88,8 +88,17 @@ TIMESTEP {
         dish=new Dish();
 
     }
-    if (i % 1000 == 0 && i > 1){
-      //dish->PDEfield->InitializePDEs(dish->CPM);
+    if (i % 1000 == 0 && i >= par.relaxation){
+      if (i == 5000)
+        par.couplingAtrialAtrial = 2.5e-8;
+      if (i == 6000)
+        par.couplingAtrialAtrial = 2.6e-8;
+      if (i == 7000)
+        par.couplingAtrialAtrial = 2.9e-7;
+      if (i == 8000)
+        par.couplingAtrialAtrial = 3.0e-7;
+      dish->CPM->InitializeCouplingCoefficient();
+      dish->PDEfield->InitializePDEs(dish->CPM);
       dish->CPM->WriteData();
     }
     if (i % 2000 == 0 && false){
@@ -100,7 +109,7 @@ TIMESTEP {
     }
 
      //uncomment for chemotaxis
-    if  (i % 2000 >= 1000 && false) {
+    if  (i > par.relaxation) {
       if (par.useopencl){
         if(par.usecuda == true){
           dish->PDEfield->cuPDEsteps(dish->CPM, par.pde_its);
@@ -131,7 +140,7 @@ TIMESTEP {
       info->set_Paused();
     i++;}
 
-    if ((!info->IsPaused() && i % 2000 < 1000) or true){ //added second condition for test
+    if ((!info->IsPaused() && i  <= par.relaxation)){ //added second condition for test
         PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
     }  
 
@@ -139,7 +148,7 @@ TIMESTEP {
       dish->ExportMultiCellDS(par.mcds_output);
     }
 
-    if (par.store && !(i%par.storage_stride)) {
+    if (par.store && !(i%par.storage_stride) && i >= par.relaxation) {
       char fname[200];
       sprintf(fname,"%s/image%07d.png",par.datadir,i);
       PROFILE(plotter_2, plotter->Plot();)

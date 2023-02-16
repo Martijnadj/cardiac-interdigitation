@@ -3840,10 +3840,10 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
     
     //North
     if (orientation == 'N'){
-      if ((*cell)[sigma[loc_x-1][loc_y]].getTau() == 1){ //if cell to the left belongs to celltype 1
-        if ((*cell)[sigma[loc_x-1][loc_y+1]].getTau() == 1){ //if cell left forward also belongs to celltype 1
+      if (sigma[loc_x-1][loc_y] != -1 && (*cell)[sigma[loc_x-1][loc_y]].getTau() == 1){ //if cell to the left belongs to celltype 1
+        if (sigma[loc_x-1][loc_y+1] != -1 && (*cell)[sigma[loc_x-1][loc_y+1]].getTau() == 1){ //if cell left forward also belongs to celltype 1
           orientation = 'E'; //Rotate clockwise
-          if ((*cell)[sigma[loc_x][loc_y+1]].getTau() == 2){
+          if (sigma[loc_x][loc_y+1] != -1 && (*cell)[sigma[loc_x][loc_y+1]].getTau() == 2){
             BoundaryLength++; //If the pixel we were facing belonged to celltype 2, increase boundary length
           }
           else{ //Else, reset boundary length, keep track of the longest one
@@ -3857,7 +3857,7 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
         else{// move to the left instead
           loc_x = loc_x-1;
           loc_y = loc_y;
-          if ((*cell)[sigma[loc_x][loc_y+1]].getTau() == 2){
+          if (sigma[loc_x][loc_y+1] != -1 && (*cell)[sigma[loc_x][loc_y+1]].getTau() == 2){
             BoundaryLength++; //If the new pixel we are facing belongs to celltype 2, increase boundary length
           }
           else{ //Else, reset boundary length, keep track of the longest one
@@ -3870,7 +3870,7 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
       }
       else{ // If pixel to the left does not belong to celltype 1
         orientation = 'W'; //Rotate counterclockwise
-        if ((*cell)[sigma[loc_x-1][loc_y]].getTau() == 2){ //If new cell we face belongs to celltype 2, increase boundary length
+        if (sigma[loc_x-1][loc_y] != -1 && (*cell)[sigma[loc_x-1][loc_y]].getTau() == 2){ //If new cell we face belongs to celltype 2, increase boundary length
           BoundaryLength++;
         }
         else{ //Else, reset boundary length, keep track of the longest one
@@ -3883,10 +3883,10 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
 
     //East
     else if (orientation == 'E'){
-      if ((*cell)[sigma[loc_x][loc_y+1]].getTau() == 1){ //if cell to the left belongs to celltype 1
-        if ((*cell)[sigma[loc_x+1][loc_y+1]].getTau() == 1){ //if cell left forward also belongs to celltype 1
+      if (sigma[loc_x][loc_y+1] != -1 && (*cell)[sigma[loc_x][loc_y+1]].getTau() == 1){ //if cell to the left belongs to celltype 1
+        if (sigma[loc_x+1][loc_y+1] != -1 && (*cell)[sigma[loc_x+1][loc_y+1]].getTau() == 1){ //if cell left forward also belongs to celltype 1
           orientation = 'S'; //Rotate clockwise
-          if ((*cell)[sigma[loc_x+1][loc_y]].getTau() == 2){
+          if (sigma[loc_x+1][loc_y] != -1 && (*cell)[sigma[loc_x+1][loc_y]].getTau() == 2){
             BoundaryLength++; //If the pixel we were facing belonged to celltype 2, increase boundary length
           }
           else{ //Else, reset boundary length, keep track of the longest one
@@ -3900,7 +3900,7 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
         else{// move to the left instead
           loc_x = loc_x;
           loc_y = loc_y+1;
-          if ((*cell)[sigma[loc_x+1][loc_y]].getTau() == 2){
+          if (sigma[loc_x+1][loc_y] != -1 && (*cell)[sigma[loc_x+1][loc_y]].getTau() == 2){
             BoundaryLength++; //If the new pixel we are facing belongs to celltype 2, increase boundary length
           }
           else{ //Else, reset boundary length, keep track of the longest one
@@ -3912,7 +3912,7 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
       }
       else{ // If pixel to the left does not belong to celltype 1
         orientation = 'N'; //Rotate counterclockwise
-        if ((*cell)[sigma[loc_x][loc_y+1]].getTau() == 2){ //If new cell we face belongs to celltype 2, increase boundary length
+        if (sigma[loc_x][loc_y+1] != -1 && (*cell)[sigma[loc_x][loc_y+1]].getTau() == 2){ //If new cell we face belongs to celltype 2, increase boundary length
           BoundaryLength++;
         }
         else{ //Else, reset boundary length, keep track of the longest one
@@ -3926,10 +3926,10 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
 
     //South
     else if (orientation == 'S'){
-      if ((*cell)[sigma[loc_x+1][loc_y]].getTau() == 1){ //if cell to the left belongs to celltype 1
-        if ((*cell)[sigma[loc_x+1][loc_y-1]].getTau() == 1){ //if cell left forward also belongs to celltype 1
+      if (sigma[loc_x+1][loc_y] != -1 && (*cell)[sigma[loc_x+1][loc_y]].getTau() == 1){ //if cell to the left belongs to celltype 1
+        if (sigma[loc_x+1][loc_y-1] != -1 && (*cell)[sigma[loc_x+1][loc_y-1]].getTau() == 1){ //if cell left forward also belongs to celltype 1
           orientation = 'W'; //Rotate clockwise
-          if ((*cell)[sigma[loc_x][loc_y-1]].getTau() == 2){
+          if (sigma[loc_x][loc_y-1] != -1 && (*cell)[sigma[loc_x][loc_y-1]].getTau() == 2){
             BoundaryLength++; //If the pixel we were facing belonged to celltype 2, increase boundary length
           }
           else{ //Else, reset boundary length, keep track of the longest one
@@ -3943,7 +3943,7 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
         else{// move to the left instead
           loc_x = loc_x+1;
           loc_y = loc_y;
-          if ((*cell)[sigma[loc_x][loc_y-1]].getTau() == 2){
+          if (sigma[loc_x][loc_y-1] != -1 && (*cell)[sigma[loc_x][loc_y-1]].getTau() == 2){
             BoundaryLength++; //If the new pixel we are facing belongs to celltype 2, increase boundary length
           }
           else{ //Else, reset boundary length, keep track of the longest one
@@ -3955,7 +3955,7 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
       }
       else{ // If pixel to the left does not belong to celltype 1
         orientation = 'E'; //Rotate counterclockwise
-        if ((*cell)[sigma[loc_x+1][loc_y]].getTau() == 2){ //If new cell we face belongs to celltype 2, increase boundary length
+        if (sigma[loc_x+1][loc_y] != -1 && (*cell)[sigma[loc_x+1][loc_y]].getTau() == 2){ //If new cell we face belongs to celltype 2, increase boundary length
           BoundaryLength++;
         }
         else{ //Else, reset boundary length, keep track of the longest one
@@ -3969,10 +3969,10 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
 
     //West
     else if (orientation == 'W'){
-      if ((*cell)[sigma[loc_x][loc_y-1]].getTau() == 1){ //if cell to the left belongs to celltype 1
-        if ((*cell)[sigma[loc_x-1][loc_y-1]].getTau() == 1){ //if cell left forward also belongs to celltype 1
+      if (sigma[loc_x][loc_y-1] != -1 && (*cell)[sigma[loc_x][loc_y-1]].getTau() == 1){ //if cell to the left belongs to celltype 1
+        if (sigma[loc_x-1][loc_y-1] != -1 && (*cell)[sigma[loc_x-1][loc_y-1]].getTau() == 1){ //if cell left forward also belongs to celltype 1
           orientation = 'N'; //Rotate clockwise
-          if ((*cell)[sigma[loc_x-1][loc_y]].getTau() == 2){
+          if (sigma[loc_x-1][loc_y] != -1 && (*cell)[sigma[loc_x-1][loc_y]].getTau() == 2){
             BoundaryLength++; //If the pixel we were facing belonged to celltype 2, increase boundary length
           }
           else{ //Else, reset boundary length, keep track of the longest one
@@ -3986,7 +3986,7 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
         else{// move to the left instead
           loc_x = loc_x;
           loc_y = loc_y-1;
-          if ((*cell)[sigma[loc_x-1][loc_y]].getTau() == 2){
+          if (sigma[loc_x-1][loc_y] != -1 && (*cell)[sigma[loc_x-1][loc_y]].getTau() == 2){
             BoundaryLength++; //If the new pixel we are facing belongs to celltype 2, increase boundary length
           }
           else{ //Else, reset boundary length, keep track of the longest one
@@ -3998,7 +3998,7 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
       }
       else{ // If pixel to the left does not belong to celltype 1
         orientation = 'S'; //Rotate counterclockwise
-        if ((*cell)[sigma[loc_x][loc_y-1]].getTau() == 2){ //If new cell we face belongs to celltype 2, increase boundary length
+        if (sigma[loc_x][loc_y-1] != -1 && (*cell)[sigma[loc_x][loc_y-1]].getTau() == 2){ //If new cell we face belongs to celltype 2, increase boundary length
           BoundaryLength++;
         }
         else{ //Else, reset boundary length, keep track of the longest one

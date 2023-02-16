@@ -109,7 +109,7 @@ TIMESTEP {
     }
 
      //uncomment for chemotaxis
-    if  (i > par.relaxation) {
+    if  (i >= par.relaxation) {
       if (par.useopencl){
         if(par.usecuda == true){
           dish->PDEfield->cuPDEsteps(dish->CPM, par.pde_its);
@@ -140,7 +140,7 @@ TIMESTEP {
       info->set_Paused();
     i++;}
 
-    if ((!info->IsPaused() && i  <= par.relaxation)){ //added second condition for test
+    if ((!info->IsPaused() && i  < par.relaxation)){ //added second condition for test
         PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
     }  
 

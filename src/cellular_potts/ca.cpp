@@ -537,8 +537,31 @@ void CellularPotts::InitializeCouplingCoefficient(void)
   }
 }
 
+void CellularPotts::InitializeCouplingCoefficientNoCellularDetail(void)
+{
+  AllocateCouplingCoefficient(par.sizex, par.sizey);
+  for (int x = 0; x < par.sizex; x++)
+  {
+    for (int y = 0; y < par.sizey; y++)
+    {
+      if (sigma[x][y] == -1)
+        couplingcoefficient[x][y] = par.couplingoffmask;
+      else if (sigma[x][y] == 0)
+        couplingcoefficient[x][y] = par.couplingmedium;
+      else if (sigma[x][y] > 0){
+        if (tau[x][y] == 1)
+          couplingcoefficient[x][y] = par.couplingAtrialAtrial;
+        else if (tau[x][y] == 2)
+          couplingcoefficient[x][y] = par.couplingPMPM;
+        if (numberofedges[x][y] > 0)
+          couplingcoefficient[x][y] = par.couplingAtrialPM;
+      }
+    }
+  }
+}
+
 void CellularPotts::InitializeCouplingCoefficient_Gradient(void)
-{ 
+{
   DetectSidesIsthmus();
   bool written = false;
   AllocateCouplingCoefficient_Gradient(par.sizex, par.sizey);

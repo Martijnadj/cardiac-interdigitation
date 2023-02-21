@@ -5288,11 +5288,11 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   cudaError_t errSync;
   cudaError_t errAsync;
   celltype = cpm->getTau();
-  sigmafield = cpm->getSigma();
-  cudaMemcpy(d_couplingcoefficient, couplingcoefficient[0], sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_celltype, celltype[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_sigmafield, sigmafield[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_PDEvars, PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
+  sigmafield = cpm->getSigma(); 
+  cudaMemcpy(d_couplingcoefficient, couplingcoefficient[0], sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice); 
+  cudaMemcpy(d_celltype, celltype[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice); 
+  cudaMemcpy(d_sigmafield, sigmafield[0], sizex*sizey*sizeof(int), cudaMemcpyHostToDevice); 
+  cudaMemcpy(d_PDEvars, PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice); 
 
   
   int nr_blocks = sizex*sizey/par.threads_per_core + 1;
@@ -5316,23 +5316,23 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
       printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
-    
 
     cuODEstep();
     afterdiffusion = false;
     cuCopyVoltageForSF(afterdiffusion);
   
-    
 
     cuHorizontalADIstep();
     afterdiffusion = true;
     cuCopyVoltageForSF(afterdiffusion);
+
 
     //increase time by dt/2
     thetime = thetime + dt/2;  
     cuODEstep();
     afterdiffusion = false;
     cuCopyVoltageForSF(afterdiffusion);
+
     
     
     cuVerticalADIstep();
@@ -5357,7 +5357,6 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   }
   cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
   cudaDeviceSynchronize();
-
   cuPDEVarsToFiles();
 
   
@@ -5458,7 +5457,7 @@ void PDE::cuPDEVarsToFiles(){
   char fname[200];
   int measurement = 1;
 
-  measure_loc = int ((0.5 + 418)*sizey);  
+  measure_loc = int ((0.5 + 343)*sizey);  
   sprintf(fname,"location_%03d.txt",measurement);
   myfile.open(fname, std::ios_base::app);
   myfile << thetime << ",";
@@ -5469,7 +5468,7 @@ void PDE::cuPDEVarsToFiles(){
 
   measurement++;
 
-  measure_loc = int ((0.5 + 543)*sizey);
+  measure_loc = int ((0.5 + 418)*sizey);
   sprintf(fname,"location_%03d.txt",measurement);
   myfile.open(fname, std::ios_base::app);
   myfile << thetime << ",";

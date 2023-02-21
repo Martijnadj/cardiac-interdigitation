@@ -49,7 +49,11 @@ INIT {
     //CPM->GrowInCellsInMicropattern(par.n_init_cells,par.size_init_cells);
     //CPM->ConstructInitCells(*this);
 
-    CPM->GrowCellGrid(*this);
+    //CPM->GrowCellGrid(*this);
+    if (par.second_layer)
+      CPM->GrowCellGridOnLayers(*this);
+    else
+      CPM->GrowCellGrid(*this);
     CPM->ConstructInitCellGrid(*this);
     
     // If we have only one big cell and divide it a few times
@@ -88,17 +92,12 @@ TIMESTEP {
         dish=new Dish();
 
     }
-    if (i % 1000 == 0 && i >= par.relaxation){
-      if (i == 5000)
-        par.couplingAtrialAtrial = 2.5e-8;
-      if (i == 6000)
-        par.couplingAtrialAtrial = 2.6e-8;
-      if (i == 7000)
-        par.couplingAtrialAtrial = 2.9e-7;
-      if (i == 8000)
-        par.couplingAtrialAtrial = 3.0e-7;
-      dish->CPM->InitializeCouplingCoefficient();
+    if (i == par.relaxation){
+      dish->CPM->InitializeCouplingCoefficientNoCellularDetail();
       dish->PDEfield->InitializePDEs(dish->CPM);
+    }
+    if (i % 1000 == 0 && i >= par.relaxation){
+      //dish->PDEfield->InitializePDEs(dish->CPM);
       dish->CPM->WriteData();
     }
     if (i % 2000 == 0 && false){

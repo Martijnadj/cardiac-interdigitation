@@ -12,13 +12,13 @@ pixel_size = 0.025
 #Left shape
 L_shape = "circle"
 #Choose either "circle" or "rectangle"
-L_radius = 2000
+L_radius = 200
 L_width = 1200
 L_height = 2500
 
 #Isthmus
-I_length = 1500
-I_width = 1200
+I_length = 200
+I_width = 200
 
 
 #Right shape
@@ -29,8 +29,8 @@ R_angle = 90
 #between 0 and 180
 R_max_protrusion_left = 150
 #smaller than I_length
-R_max_height = 6000
-R_width = 3000
+R_max_height = 600
+R_width = 300
 
 #Offset
 Offset_x = 5

@@ -117,6 +117,7 @@ public:
 
   void InitializeEdgeList(void); //Set the initial edgelist which are eligible to change
   void InitializeCouplingCoefficient(void); //Set the initial coupling coefficients
+  void InitializeCouplingCoefficientNoCellularDetail(void);
   void InitializeCouplingCoefficient_Gradient(void); //Set the initial coupling coefficients
 
   // Keyword virtual means, that derived classed (cppvmCellularPotts) can override

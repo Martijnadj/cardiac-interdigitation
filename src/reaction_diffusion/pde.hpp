@@ -352,7 +352,7 @@ private:
   
   static const int nx[9], ny[9];
   int PDEsteps;
-  float thetime;
+  double thetime;
 
   bool SF_start_one = false;
   bool SF_end_one = false;

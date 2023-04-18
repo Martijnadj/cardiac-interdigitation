@@ -73,7 +73,7 @@ INIT {
     //CPM->SetRandomTypes();
     CPM->SetUpTauMatrix(par.sizex,par.sizey);
     CPM->InitializeEdgeList();
-    CPM->InitializeCouplingCoefficient();
+    CPM->InitializeCouplingCoefficient_Gradient();
   } catch(const char* error) {
     cerr << "Caught exception\n";
     std::cerr << error << "\n";
@@ -90,16 +90,15 @@ TIMESTEP {
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
+        dish->CPM->InitializeCouplingCoefficientNoCellularDetail();
+        dish->PDEfield->InitializePDEs(dish->CPM);
 
     }
-    if (i == par.relaxation){
+    if (i % 2000 == 1000){
       dish->CPM->InitializeCouplingCoefficientNoCellularDetail();
       dish->PDEfield->InitializePDEs(dish->CPM);
     }
-    if (i % 1000 == 0 && i >= par.relaxation){
-      //dish->PDEfield->InitializePDEs(dish->CPM);
-      dish->CPM->WriteData();
-    }
+
     if (i % 2000 == 0 && false){
       ofstream myfile;
       myfile.open("Output_data.txt", std::ofstream::out | std::ofstream::app);
@@ -108,7 +107,7 @@ TIMESTEP {
     }
 
      //uncomment for chemotaxis
-    if  (i >= par.relaxation) {
+    if  (i%2000 >= 1000) {
       if (par.useopencl){
         if(par.usecuda == true){
           dish->PDEfield->cuPDEsteps(dish->CPM, par.pde_its);
@@ -139,15 +138,20 @@ TIMESTEP {
       info->set_Paused();
     i++;}
 
-    if ((!info->IsPaused() && i  < par.relaxation)){ //added second condition for test
+    if ((!info->IsPaused() && i%2000  < 1000)){ //added second condition for test
         PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
+    }
+
+    if (i % 2000 == 999){
+      //dish->PDEfield->InitializePDEs(dish->CPM);
+      dish->CPM->WriteData();
     }  
 
     if ( i == par.mcs){
       dish->ExportMultiCellDS(par.mcds_output);
     }
 
-    if (par.store && !(i%par.storage_stride) && i >= par.relaxation) {
+    if (par.store && !(i%par.storage_stride)) {
       char fname[200];
       sprintf(fname,"%s/image%07d.png",par.datadir,i);
       PROFILE(plotter_2, plotter->Plot();)

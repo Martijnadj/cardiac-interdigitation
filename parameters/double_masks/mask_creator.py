@@ -12,25 +12,25 @@ pixel_size = 0.025
 #Left shape
 L_shape = "circle"
 #Choose either "circle" or "rectangle"
-L_radius = 200
+L_radius = 100
 L_width = 1200
 L_height = 2500
 
 #Isthmus
-I_length = 200
-I_width = 200
+I_length = 150
+I_width = 120
 
 
 #Right shape
 R_shape = "wedge"
-R_radius = 125
+R_radius = 250
 #Choose either "circle" or "wedge"
 R_angle = 90
 #between 0 and 180
 R_max_protrusion_left = 150
 #smaller than I_length
-R_max_height = 600
-R_width = 300
+R_max_height = 400
+R_width = 250
 
 #Offset
 Offset_x = 5
@@ -40,15 +40,26 @@ Offset_y = 5
 #Do we want a second layer to indicate the cell shapes?
 Second_layer = True
 B_type = "rectangle_teeth"
-#Choose either "ellipse", "triangle", "rectangle", "triangle_teeth" or "rectangle_teeth" for the boundary type
-B_ellipse_width = 100 #x-direction
-B_ellipse_height = 4 #y-direction -> smaller than isthmus width
-B_triangle_width = 4 #x-direction
-B_triangle_height = 16 #y-direction -> smaller than isthmus width
-B_rectangle_width = 16 #x-direction
-B_rectangle_height = 4 #y-direction -> smaller than isthmus width
+#Choose either "ellipse", "triangule", "rectangle", "triangle_teeth" or "rectangle_teeth" for the boundary type
+B_ellipse_width = 150 #x-direction
+B_ellipse_height = 40 #y-direction -> smaller than isthmus width
+B_triangle_width = 190 #x-direction
+B_triangle_height = 120 #y-direction -> smaller than isthmus width
+B_rectangle_width = 95 #x-direction
+B_rectangle_height = 10 #y-direction -> smaller than isthmus width
+B_middle_convex = True
 B_convexity = "convex"
 #Convexity with respect to pacemaker cells, "convex" or "concave", only relevant for "ellipse", "triangle" and "rectangle"
+
+Islands = False
+
+Islands_distance_from_isthmus = 10
+Islands_size_x = 5
+Islands_size_y = 20
+Islands_distance_between_x = 5
+Islands_distance_between_y = 3
+Islands_total_x = 5 #This + Islands_distance_from_isthmus < R_width
+Islands_total_y = 80 #Smaller than R_max_height
 
 
 
@@ -149,14 +160,14 @@ def write_parameters_to_parameter_file():
 	f.write("pixel_size = " + str(pixel_size) + "\n")
 	
 	if (Second_layer):
-		f.write("B_type = " + str(B_type) + "\n")
+		f.write("B_type = '" + str(B_type) + "'\n")
 		f.write("B_ellipse_width = " + str(B_ellipse_width) + "\n")
 		f.write("B_ellipse_height = " + str(B_ellipse_height) + "\n")
 		f.write("B_triangle_width = " + str(B_triangle_width) + "\n")
 		f.write("B_triangle_height = " + str(B_triangle_height) + "\n")
 		f.write("B_rectangle_width = " + str(B_rectangle_width) + "\n")
 		f.write("B_rectangle_height = " + str(B_rectangle_height) + "\n")
-		f.write("B_convexity = " + str(B_convexity) + "\n")	
+		f.write("B_convexity = '" + str(B_convexity) + "'\n")	
 	f.close()
 
 
@@ -353,6 +364,20 @@ def construct_second_layer():
 					mask[x,y] = 1				
 				elif((y+mod_correction)%(2*B_triangle_height) == B_triangle_height and y <= y_max/2 + I_width/2 and y > y_max/2 - I_width/2 ):
 					mask[right_side_isthmus,y] = 2
+	
+	if Islands == True:
+		x_block_size = Islands_distance_between_x + Islands_size_x
+		y_block_size = Islands_distance_between_y + Islands_size_y
+		for x in range(right_side_isthmus +  Islands_distance_from_isthmus, right_side_isthmus + Islands_total_x + Islands_distance_from_isthmus):
+			for y in range(int(y_max/2 - Islands_total_y/2), int(y_max/2 + Islands_total_y/2)):
+				if((int(x-right_side_isthmus-Islands_distance_from_isthmus) % x_block_size < Islands_size_x) and (int(y-y_max/2+Islands_total_y/2) % y_block_size < Islands_size_y)):
+					if(mask[x,y]): 
+						mask[x,y] = 2
+						print("y = " + str(y))
+				
+
+	
+	
 	for x in range(x_max):
 		for y in range(y_max):
 			if mask[x,y] == 2:
@@ -360,8 +385,8 @@ def construct_second_layer():
 	f.close()	
 
 def create_image():
-	plt.xticks(np.arange(0,x_max,int(1/(pixel_size*0.5))), np.round(np.arange(0,pixel_size*(x_max+1),10*1/5),3))
-	plt.yticks(np.arange(0,y_max,int(1/(pixel_size*0.5))), np.round(np.arange(0,pixel_size*(y_max+1),10*1/5),3))
+	#plt.xticks(np.arange(0,x_max,int(1/(pixel_size*0.5))), np.round(np.arange(0,pixel_size*(x_max+1),10*1/5),3))
+	#plt.yticks(np.arange(0,y_max,int(1/(pixel_size*0.5))), np.round(np.arange(0,pixel_size*(y_max+1),10*1/5),3))
 	plt.xlabel('mm')
 	plt.ylabel('mm')
 	plt.imshow(mask.T, interpolation='nearest')

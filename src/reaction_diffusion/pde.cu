@@ -4757,7 +4757,7 @@ __device__ void derivsGrandi(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES, PDEFIELD_
   }
 }
 
-__device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers, PDEFIELD_TYPE thetime, PDEFIELD_TYPE stepsize, PDEFIELD_TYPE* yout, PDEFIELD_TYPE *yerr, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
+__device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers, double thetime, PDEFIELD_TYPE stepsize, PDEFIELD_TYPE* yout, PDEFIELD_TYPE *yerr, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
   /*
   //Given values for n variables y[1..n] and their derivatives dydx[1..n] known at x, use
   //the fifth-order Dormand-Prince Runge-Kutta method to advance the solution over an interval h
@@ -4830,7 +4830,7 @@ __device__ void RungeKuttaStep(PDEFIELD_TYPE* y, PDEFIELD_TYPE *dydt, int layers
   }*/
 }
 
-__device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layers, PDEFIELD_TYPE *thetime, PDEFIELD_TYPE stepsize_try, PDEFIELD_TYPE eps, PDEFIELD_TYPE* yscal, PDEFIELD_TYPE* stepsize_did, PDEFIELD_TYPE* stepsize_next, PDEFIELD_TYPE dt, PDEFIELD_TYPE stepsize_min, bool overshot, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
+__device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layers, double* thetime, PDEFIELD_TYPE stepsize_try, PDEFIELD_TYPE eps, PDEFIELD_TYPE* yscal, PDEFIELD_TYPE* stepsize_did, PDEFIELD_TYPE* stepsize_next, PDEFIELD_TYPE dt, PDEFIELD_TYPE stepsize_min, bool overshot, bool celltype2, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength, int id){
   /* Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
   at the starting value of the independent variable x. Also input are the stepsize to be attempted
@@ -4886,7 +4886,7 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
   }
 }
 
-__global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
+__global__ void ODEstepRKA(PDEFIELD_TYPE dt, double thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
   /* Ordinary Differential Equation step Runge Kutta Adaptive
   Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
@@ -4961,7 +4961,7 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, 
   }
 }
 
-__global__ void ODEstepGRL1_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength){
+__global__ void ODEstepGRL1_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, double thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength){
   /* Ordinary Differential Equation step Runge Kutta Adaptive
   Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
@@ -5043,7 +5043,7 @@ __global__ void ODEstepGRL1_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_T
   }
 }
 
-__global__ void ODEstepRL_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength){
+__global__ void ODEstepRL_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, double thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength){
   /* Ordinary Differential Equation step Runge Kutta Adaptive
   Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
@@ -5089,7 +5089,7 @@ __global__ void ODEstepRL_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_TYP
   }
 }
 
-__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
+__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, double thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
   //PDEFIELD_TYPE ddt = 2e-7; //for couplingcoefficient 1e-4 
   //PDEFIELD_TYPE ddt = 1e-6; //for couplingcoefficient 1e-5
   int nr_of_iterations = round(dt/ddt);
@@ -5150,7 +5150,7 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, PDEFIELD_TYPE the
   }
 }
 
-__global__ void ODEstepRL(PDEFIELD_TYPE dt, PDEFIELD_TYPE thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
+__global__ void ODEstepRL(PDEFIELD_TYPE dt, double thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
   PDEFIELD_TYPE ddt = 2e-5;
   int nr_of_iterations = round(dt/ddt);
   if (fabs(dt/ddt - nr_of_iterations) > 0.001)
@@ -5284,6 +5284,7 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   //copy current couplingcoefficient matrix and celltype matrix from host to device
   couplingcoefficient = cpm->getCouplingCoefficient();
   //couplingcoefficient = cpm->getCouplingCoefficient_Gradient();
+
   //int** cellnumber = cpm -> getSigma(); 
   cudaError_t errSync;
   cudaError_t errAsync;
@@ -5435,7 +5436,7 @@ void PDE::cuErrorChecker(cudaError_t errSync, cudaError_t errAsync){
 
 void PDE::cuPDEVarsToFiles(){
 
-  /*
+  
   int number_of_measurements = 10;
   int measure_loc;
   ofstream myfile;
@@ -5450,8 +5451,8 @@ void PDE::cuPDEVarsToFiles(){
         myfile << PDEvars[measure_loc+sizex*sizey*i] << ",";
     myfile << endl;
     myfile.close();  
-  }*/
-
+  }
+  /*
   int measure_loc;
   ofstream myfile;
   char fname[200];
@@ -5479,7 +5480,7 @@ void PDE::cuPDEVarsToFiles(){
   if (PDEvars[measure_loc] > 0){
     //cout << "We have all data and can safely stop the simulation now" << endl;
     //exit(0);
-  }
+  }*/
 
   cout << "PDEvars["<< int(sizey*10.5)<< "] = " << PDEvars[int(sizey*10.5)] << 
   ", PDEvars["<< sizex*sizey-int(sizey*10.5)<< "] = " << PDEvars[sizex*sizey-int(sizey*10.5)] << " and time = " << thetime << endl;

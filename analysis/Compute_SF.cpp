@@ -472,30 +472,55 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    bool Q_tot_max_achieved = false;
+
+    int Q_tot_max_loc = -1;
+    double Q_tot_max_val = -1;
+
+    for (int i = 0; i < Q_tot_length; i++){
+      if (Q_tot[i] > Q_tot_max_val){
+        Q_tot_max_val = Q_tot[i];
+        Q_tot_max_loc = i;
+      }
+    }
+
+    if (Q_tot_max_achieved != Q_tot_length-1 && Q_tot_length  > Q_tot_max_loc*5)
+      Q_tot_length = Q_tot_max_loc*5;
 
 
-    int stepper = Q_tot_length/4;
+    int loga = (int) (log((double)Q_tot_length)/log(2.0));
+    Q_tot_length = pow(2,loga);
+
+    int stepper = Q_tot_length/2;
     int current_loc = Q_tot_length/2;
     PDEFIELD_TYPE Q_thr;
     double SF_lower;
     double SF_upper;
     double SF;
     while (stepper != 0){
+    //for (int i = 100; i < 5000; i += 100){
+      stepper /= 2;
+      //cout << "stepper = " << stepper << "\n";
+      //cout << "current_loc = " << current_loc << "\n";
+      
       ComputeQthr(PDEvars, current_loc*ddt, ddt, Q_thr, array_length);
       SF_lower = Q_tot[current_loc]/Q_thr;
       ComputeQthr(PDEvars, (current_loc+1)*ddt, ddt, Q_thr,array_length);
-      SF_upper = Q_tot[current_loc+1]/Q_thr;
+      SF_upper = Q_tot[current_loc+1]/Q_thr; 
       if(SF_lower < SF_upper)
         current_loc += stepper;
       else 
         current_loc -= stepper;
-      stepper /= 2;
       if (stepper == 0){
         if (SF_lower < SF_upper)
           SF = SF_upper;
         else
           SF = SF_lower;
       }
+      
+      //ComputeQthr(PDEvars, i*ddt, ddt, Q_thr, array_length);
+      //SF = Q_tot[i]/Q_thr;
+      //cout << "i = " << i << " and SF = " << SF << "\n";
     }
 
     SF_file << argv[1] << ", " << argv[2] << ", " <<  SF << endl;

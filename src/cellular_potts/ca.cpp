@@ -26,6 +26,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 // This code derives from a Cellular Potts implementation written around 1995
 // by Nick Savill
 
+
 #include <stdio.h>
 #include <math.h>
 #include <cstdlib>
@@ -1630,9 +1631,10 @@ void CellularPotts::WriteData(void)
  // cout << "Yellow-yellow surface = " << YellowYellowSurface << endl;
 
   
-  //double convexity = Convexity();
+  double convexity = Convexity();
   ofstream myfile;
   myfile.open("Output_data.txt", std::ofstream::out | std::ofstream::app);
+  myfile << convexity << ", ";
   myfile << BoundaryLength(right_side_isthmus+1, par.sizey-10, right_side_isthmus+1, 10) << endl;
   //cout << "BoundaryLength = " << BoundaryLength(right_side_isthmus+1, par.sizey-10, right_side_isthmus+1, 10) << endl;
   //myfile << convexity << ", ";

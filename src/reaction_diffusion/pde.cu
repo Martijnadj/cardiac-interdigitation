@@ -748,8 +748,11 @@ void PDE::InitializeCuda(CellularPotts *cpm, int n_init_cells){
   pbuffersizeH = 0;
   pbufferH = NULL;
   statusH=cusparseCreate(&handleH);
-  cusparseSgtsvInterleavedBatch_bufferSizeExt(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, &pbuffersizeH); //Compute required buffersize for horizontal sweep
-
+  #ifdef PDEFIELD_DOUBLE
+    cusparseDgtsvInterleavedBatch_bufferSizeExt(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, &pbuffersizeH); //Compute required buffersize for horizontal sweep
+  #else
+    cusparseSgtsvInterleavedBatch_bufferSizeExt(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, &pbuffersizeH); //Compute required buffersize for horizontal sweep
+  #endif
   gpuErrchk(cudaMalloc( &pbufferH, sizeof(char)* pbuffersizeH));
   
 
@@ -757,7 +760,11 @@ void PDE::InitializeCuda(CellularPotts *cpm, int n_init_cells){
   pbuffersizeV = 0;
   pbufferV = NULL;
   statusV=cusparseCreate(&handleV);
-  cusparseSgtsvInterleavedBatch_bufferSizeExt(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, &pbuffersizeV); //Compute required buffersize for vertical sweep
+  #ifdef PDEFIELD_DOUBLE
+    cusparseDgtsvInterleavedBatch_bufferSizeExt(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, &pbuffersizeV); //Compute required buffersize for vertical sweep
+  #else
+    cusparseSgtsvInterleavedBatch_bufferSizeExt(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, &pbuffersizeV); //Compute required buffersize for vertical sweep
+  #endif
   gpuErrchk(cudaMalloc( &pbufferV, sizeof(char)* pbuffersizeV));
 
   
@@ -5383,7 +5390,11 @@ void PDE::cuHorizontalADIstep(){
   cudaError_t errAsync;
   InitializeHorizontalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BH, d_couplingcoefficient, d_alt_PDEvars);
   cuErrorChecker(errSync, errAsync);
-  statusH = cusparseSgtsvInterleavedBatch(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, pbufferH);
+  #ifdef PDEFIELD_DOUBLE
+    statusH = cusparseDgtsvInterleavedBatch(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, pbufferH);
+  #else
+    statusH = cusparseSgtsvInterleavedBatch(handleH, 0, sizex, lowerH, diagH, upperH, BH, sizey, pbufferH);
+  #endif
   if (statusH != CUSPARSE_STATUS_SUCCESS)
   {
     cout << statusH << endl;
@@ -5404,7 +5415,11 @@ void PDE::cuVerticalADIstep(){
   cudaError_t errAsync;
   InitializeVerticalVectors<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, 2/dt, dx2, BV, d_couplingcoefficient, d_alt_PDEvars);
   cuErrorChecker(errSync, errAsync);
-  statusV = cusparseSgtsvInterleavedBatch(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, pbufferV);
+  #ifdef PDEFIELD_DOUBLE
+    statusV = cusparseDgtsvInterleavedBatch(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, pbufferV);
+  #else
+    statusV = cusparseSgtsvInterleavedBatch(handleV, 0, sizey, lowerV, diagV, upperV, BV, sizex, pbufferV);
+  #endif
   if (statusV != CUSPARSE_STATUS_SUCCESS)
   {
     cout << statusV << endl;

@@ -88,7 +88,7 @@ TIMESTEP {
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
-        dish->CPM->InitializeCouplingCoefficientNoCellularDetail();
+        dish->CPM->InitializeCouplingCoefficient();
         dish->PDEfield->InitializePDEs(dish->CPM);
         //dish->CPM->WriteData();
     }

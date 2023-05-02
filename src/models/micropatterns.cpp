@@ -90,24 +90,27 @@ TIMESTEP {
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
-        dish->CPM->InitializeCouplingCoefficientNoCellularDetail();
+        dish->CPM->InitializeCouplingCoefficient();
         dish->PDEfield->InitializePDEs(dish->CPM);
 
     }
-    if (i % 2000 == 1000){
+    /*if (i % 2000 == 1000){
       dish->CPM->InitializeCouplingCoefficientNoCellularDetail();
       dish->PDEfield->InitializePDEs(dish->CPM);
-    }
+    }*/
 
-    if (i % 2000 == 0 && false){
+    /*if (i % 2000 == 0 && false){
       ofstream myfile;
       myfile.open("Output_data.txt", std::ofstream::out | std::ofstream::app);
       myfile << dish->PDEfield->Successful_activation << endl;
       myfile.close();
-    }
+    }*/
 
+
+    if (i == par.relaxation)
+      dish->CPM->WriteData();
      //uncomment for chemotaxis
-    if  (i%2000 >= 1000) {
+    if (i>=par.relaxation) {
       if (par.useopencl){
         if(par.usecuda == true){
           dish->PDEfield->cuPDEsteps(dish->CPM, par.pde_its);

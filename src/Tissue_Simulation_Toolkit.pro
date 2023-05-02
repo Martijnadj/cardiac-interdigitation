@@ -27,8 +27,8 @@ GRAPHICS = qt
 # Select the model to build by uncommenting it.
 # The actual sources of these models are in the
 # 'models' folder.
-#MODEL = micropatterns
-MODEL = double_pattern
+MODEL = micropatterns
+#MODEL = double_pattern
 #MODEL = vessel
 #MODEL = qPotts
 #MODEL = sorting

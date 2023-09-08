@@ -1,0 +1,26 @@
+*.bash
+parameters/*
+lib/
+bin/
+bin2/
+Figures_paper*
+Electrophysiological models/
+parameter_exploration*
+data/J2.dat
+data/diffusion_check.par
+images/
+*.svg
+results/
+analysis/SF/
+
+
+build_files/
+long_timelapse/
+plot_over_time.py
+plotter.py
+qt-opensource-linux-x64-5.7.0.run
+shapes/
+src/.qmake.stash
+src/Makefile
+src/models/micropatterns2.cpp
+tst_metadata.xml

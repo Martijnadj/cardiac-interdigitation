@@ -105,6 +105,7 @@ Parameter::Parameter() {
   SF_one_pixel = false;
   SF_x = 0;
   SF_y = 0;
+  activation_times = false;
 
 
   beats_per_minute = 60;
@@ -117,7 +118,7 @@ Parameter::Parameter() {
   couplingPMPM = 1e-8;
   couplingoffmask = 0;
 
-  
+  I_Na_factor = 1;
   I_f_factor = 1;
   I_Kr_factor = 1; 
 
@@ -251,7 +252,7 @@ void Parameter::Read(const char *filename) {
   SF_one_pixel = bgetpar(fp, "SF_one_pixel", false, true);
   SF_x = igetpar(fp, "SF_x",0, true);
   SF_y = igetpar(fp, "SF_y", 0, true);
-
+  activation_times = bgetpar(fp, "activation_times", false, true);
 
 
   beats_per_minute = fgetpar(fp, "beats_per_minute", 60, true);
@@ -264,7 +265,7 @@ void Parameter::Read(const char *filename) {
   couplingoffmask = fgetpar(fp, "couplingoffmask", 0, true);
   couplingPMPM = fgetpar(fp, "couplingPMPM", 1e-8, true);
 
-
+  I_Na_factor = fgetpar(fp, "I_Na_factor", 1, true);
   I_f_factor = fgetpar(fp, "I_f_factor", 1, true);
   I_Kr_factor = fgetpar(fp, "I_Kr_factor", 1, true);
   std::cout << std::endl;
@@ -368,6 +369,7 @@ void Parameter::Write(ostream &os) const {
   os << " SF_one_pixel = " << SF_one_pixel << endl;
   os << " SF_x = " << SF_x << endl;
   os << " SF_y = " << SF_y << endl;
+  os << " activation_times = 0 " << activation_times << endl;
 
   os << " beats_per_minute" << beats_per_minute << endl;
   os << " pacing_duration" << pacing_duration << endl;
@@ -380,7 +382,7 @@ void Parameter::Write(ostream &os) const {
   os << " couplingPMPM = " << couplingPMPM << endl;
   os << " couplingoffmask = " << couplingoffmask << endl;
 
-
+  os << " I_Na_factor" << I_Na_factor << endl;
   os << " I_f_factor" << I_f_factor << endl;
   os << " I_Kr_factor" << I_f_factor << endl;
 }

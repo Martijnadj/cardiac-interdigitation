@@ -73,7 +73,7 @@ INIT {
     //CPM->SetRandomTypes();
     CPM->SetUpTauMatrix(par.sizex,par.sizey);
     CPM->InitializeEdgeList();
-    CPM->InitializeCouplingCoefficient_Gradient();
+    //CPM->InitializeCouplingCoefficient_Gradient();
   } catch(const char* error) {
     cerr << "Caught exception\n";
     std::cerr << error << "\n";
@@ -141,7 +141,7 @@ TIMESTEP {
       info->set_Paused();
     i++;}
 
-    if ((!info->IsPaused() && i%2000  < 1000)){ //added second condition for test
+    if ((!info->IsPaused() && i < par.relaxation)){ //added second condition for test
         PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
     }
 

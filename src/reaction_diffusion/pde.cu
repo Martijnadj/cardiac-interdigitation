@@ -185,6 +185,9 @@ PDE::PDE(const int l, const int sx, const int sy) {
   pacing_interval = 1/(bpm/60);
   PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
   alt_PDEvars = new PDEFIELD_TYPE[layers*sizex*sizey];
+  if (par.activation_times)
+    Activation_times_array = new PDEFIELD_TYPE[sizex*sizey];
+    Activation_times_array_written = new bool[sizex*sizey];
   if (par.SF_one_pixel)
     copy_for_SF = new PDEFIELD_TYPE[ARRAY_SIZE]; //for SF computation
   if (par.SF_all){
@@ -790,6 +793,15 @@ __global__ void InitializeLastStepsize(PDEFIELD_TYPE min_stepsize, PDEFIELD_TYPE
 }
 
 
+void PDE::InitializeActivationTimes(void){
+  for (int i = 0; i < par.sizex*par.sizey; i++){
+    Activation_times_array[i] = 0;
+    Activation_times_array_written[i] = false;
+  }
+  cudaMalloc((void**) &d_Activation_times_array, sizex*sizey*sizeof(PDEFIELD_TYPE));
+  cudaMemcpy(d_Activation_times_array, Activation_times_array, sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyHostToDevice);
+}
+
 void PDE::InitializeSFComputation(CellularPotts *cpm){
   cout << "start init" << endl;
   int** celltypes = cpm->getTau();
@@ -817,6 +829,9 @@ void PDE::InitializePDEs(CellularPotts *cpm){
   //InitializePDEvars(cpm, par.FHN_start_0, par.FHN_start_1);
   InitializePDEvars(cpm, celltypes[0]);
   InitializeCuda(cpm, par.n_init_cells+1);
+  if (par.activation_times){
+    InitializeActivationTimes();
+  }
   if (par.SF_all){
     InitializeSFComputation(cpm);
   }
@@ -3020,7 +3035,7 @@ __device__ void RushLarsenFabbriSeveri(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES,
 
 }
 
-__device__ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES,PDEFIELD_TYPE* RATES, PDEFIELD_TYPE pacing_interval, int id, PDEFIELD_TYPE activation_strength){
+__device__ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES,PDEFIELD_TYPE* RATES, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_Na_factor, int id, PDEFIELD_TYPE activation_strength){
 
 
   /*
@@ -3341,6 +3356,7 @@ __device__ void derivsMaleckar(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES,PDEFIELD
   ALGEBRAIC[37] = ( (( CONSTANTS_M[8]*STATES[3]*STATES[3]*STATES[3]*( 0.900000*STATES[4]+ 0.100000*STATES[5])*STATES[1]*STATES[0]*CONSTANTS_M[2]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1]))*(exp(( (STATES[0] - ALGEBRAIC[35])*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1])) - 1.00000))/(exp(( STATES[0]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1])) - 1.00000);
   if(!isfinite(ALGEBRAIC[37]))
     ALGEBRAIC[37] = ( (( CONSTANTS_M[8]*STATES[3]*STATES[3]*STATES[3]*( 0.900000*STATES[4]+ 0.100000*STATES[5])*STATES[1]*CONSTANTS_M[2]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1]))*(exp((-ALGEBRAIC[35]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1])) - 1.00000))/(CONSTANTS_M[2]/(CONSTANTS_M[0]*CONSTANTS_M[1]) - 1.00000);
+  ALGEBRAIC[37] = ALGEBRAIC[37]*I_Na_factor;
   ALGEBRAIC[50] =  CONSTANTS_M[17]*(STATES[0] - ALGEBRAIC[35]);
   ALGEBRAIC[56] = ( CONSTANTS_M[24]*( STATES[2]*STATES[2]*STATES[2]*STATES[18]*exp(( CONSTANTS_M[2]*STATES[0]*CONSTANTS_M[26])/( CONSTANTS_M[0]*CONSTANTS_M[1])) -  STATES[1]*STATES[1]*STATES[1]*STATES[19]*exp(( (CONSTANTS_M[26] - 1.00000)*STATES[0]*CONSTANTS_M[2])/( CONSTANTS_M[0]*CONSTANTS_M[1]))))/(1.00000+ CONSTANTS_M[25]*( STATES[1]*STATES[1]*STATES[1]*STATES[19]+ STATES[2]*STATES[2]*STATES[2]*STATES[18]));
   ALGEBRAIC[39] = STATES[6]/(STATES[6]+CONSTANTS_M[11]);
@@ -4893,7 +4909,7 @@ __device__ void StepsizeControl(PDEFIELD_TYPE* y, PDEFIELD_TYPE* dydt, int layer
   }
 }
 
-__global__ void ODEstepRKA(PDEFIELD_TYPE dt, double thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
+__global__ void ODEstepRKA(PDEFIELD_TYPE dt, double thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_Na_factor, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
   /* Ordinary Differential Equation step Runge Kutta Adaptive
   Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and
   adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
@@ -4942,7 +4958,7 @@ __global__ void ODEstepRKA(PDEFIELD_TYPE dt, double thetime, int layers, int siz
         if(celltype2)
           derivsFabbriSeveri(current_time,y,dydt,pacing_interval, I_f_factor, I_Kr_factor, id);
         else 
-          derivsMaleckar(current_time,y,dydt,pacing_interval,id,0);
+          derivsMaleckar(current_time,y,dydt,pacing_interval,I_Na_factor, id,0);
         if (stepsize+current_time > end_time+MaxTimeError){
           stepsize_overshot = stepsize; 
           stepsize=end_time - current_time;// If stepsize can overshoot, decrease.
@@ -5096,7 +5112,7 @@ __global__ void ODEstepRL_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, double theti
   }
 }
 
-__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, double thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
+__global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, double thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, int* sigmafield, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE I_Na_factor, PDEFIELD_TYPE I_f_factor, PDEFIELD_TYPE I_Kr_factor){
   //PDEFIELD_TYPE ddt = 2e-7; //for couplingcoefficient 1e-4 
   //PDEFIELD_TYPE ddt = 1e-6; //for couplingcoefficient 1e-5
   int nr_of_iterations = round(dt/ddt);
@@ -5138,7 +5154,7 @@ __global__ void ODEstepFE(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, double thetime, i
         if (celltype2)
           derivsFabbriSeveri(current_time,y,dydt,pacing_interval, I_f_factor, I_Kr_factor, id);
         else{
-          derivsMaleckar(current_time,y,dydt,pacing_interval, id, 0);
+          derivsMaleckar(current_time,y,dydt,pacing_interval, I_Na_factor, id, 0);
         }
         //derivsFitzHughNagumo(current_time,y,dydt,celltype2, sigmafield, pacing_interval,pacing_duration,pacing_strength, id, FHN_interval_beats, FHN_pulse_duration, FHN_pulse_strength,  a, b, tau, FHN_a, FHN_b, FHN_tau);
         current_time += ddt;
@@ -5239,6 +5255,15 @@ __global__ void FlipSigns(int sizex, int sizey, int layers, PDEFIELD_TYPE* PDEva
   int stride = blockDim.x * gridDim.x;
   for (int id = index; id < layers*sizex*sizey; id += stride){
     alt_PDEvars[id] = -PDEvars[id]; 
+  }
+}
+
+__global__ void CheckActivationTimes(PDEFIELD_TYPE thetime, PDEFIELD_TYPE* activation_times, int* sigmafield,  PDEFIELD_TYPE* PDEvars, int sizex, int sizey){
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int stride = blockDim.x * gridDim.x;
+  for (int id = index; id < sizex*sizey; id += stride){
+    if (PDEvars[id] > 0 && activation_times[id] == 0 && sigmafield[id] > 0)
+      activation_times[id] = thetime;
   }
 }
 
@@ -5355,18 +5380,25 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     
     if (SF_in_progress && !SF_all_done && par.SF_all)
       cuWriteSFData();
+    
+    
 
 
     
     //increase time by dt/2
     thetime = thetime + dt/2; 
 
+    if (par.activation_times)    
+      CheckActivationTimes<<<par.number_of_cores, par.threads_per_core>>>(thetime, d_Activation_times_array, d_sigmafield,  d_PDEvars, sizex, sizey);
      
   }
   cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
   cudaDeviceSynchronize();
   cuPDEVarsToFiles();
-
+  if (par.activation_times){ 
+    cudaMemcpy(Activation_times_array, d_Activation_times_array, sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);   
+    cuWriteActivationTimes();
+  }
   
 }
 
@@ -5376,7 +5408,7 @@ void PDE::cuODEstep(){
   cudaError_t errAsync;
   //ODEstepRL_Paci<<<nr_blocks, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
   //ODEstepRKA<<<par.number_of_cores, par.threads_per_core>>>(dt/2, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, next_stepsize, min_stepsize, par.eps, pacing_interval, par.pacing_duration, par.pacing_strength);
-  ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, pacing_interval, par.I_f_factor, par.I_Kr_factor);
+  ODEstepFE<<<par.number_of_cores, par.threads_per_core>>>(dt/2, ddt, thetime, layers, sizex, sizey, d_PDEvars, d_alt_PDEvars, d_celltype, d_sigmafield, next_stepsize, min_stepsize, pacing_interval, par.I_f_factor, par.I_Kr_factor, par.I_Na_factor);
   //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_alt_PDEvars);
 
   //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
@@ -5452,7 +5484,7 @@ void PDE::cuErrorChecker(cudaError_t errSync, cudaError_t errAsync){
 void PDE::cuPDEVarsToFiles(){
 
   
-  int number_of_measurements = 10;
+  int number_of_measurements = 25;
   int measure_loc;
   ofstream myfile;
   char fname[200];
@@ -5607,6 +5639,19 @@ void PDE::cuComputeSFOne(){
       }
     }
   }
+}
+
+void PDE::cuWriteActivationTimes(){
+  ofstream Activation_times_file;
+  string file_loc = string(par.datadir) + "/Activation_times_file.txt";
+  Activation_times_file.open(file_loc, std::ios_base::app);
+  for (int i = 0; i < par.sizex*par.sizey; i++){
+    if (Activation_times_array[i] > 0 && !Activation_times_array_written[i]){ 
+      Activation_times_array_written[i] = true;  
+      Activation_times_file << i/par.sizey << ", " << i%par.sizey << ", " << Activation_times_array[i] << endl;
+    }
+  }
+  Activation_times_file.close();
 }
 
 void PDE::cuWriteSFData(){

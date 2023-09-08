@@ -177,6 +177,7 @@ class PDE {
   void InitializePDEs(CellularPotts * cpm);
   void InitializeCuda(CellularPotts * cpm, int n_init_cells);
   void InitializeSFComputation(CellularPotts *cpm);
+  void InitializeActivationTimes(void);
   //void InitializePDEvars(CellularPotts * cpm, PDEFIELD_TYPE FHN_0, PDEFIELD_TYPE FHN_1);
   void InitializePDEvars(CellularPotts * cpm, int* celltypes);
  /* Function for the Act model. All the lattice sites within cells are "aged"
@@ -236,6 +237,8 @@ class PDE {
   void cuCopyVoltageForSF(bool afterdiffusion);
   void cuComputeSFOne(void);
   void cuWriteSFData(void);
+  void cuWriteActivationTimes();
+
 
   /*! \brief Returns cumulative "simulated" time,
     i.e. number of time steps * dt. */
@@ -287,6 +290,9 @@ class PDE {
   bool* SF_start_array;
   bool* SF_end_array;
   PDEFIELD_TYPE* SF_Q_tot_array;
+  PDEFIELD_TYPE* Activation_times_array;
+  PDEFIELD_TYPE* d_Activation_times_array;
+  bool* Activation_times_array_written;
   bool SF_all_done = false;
   bool SF_in_progress = false;
   PDEFIELD_TYPE *PDEvars;

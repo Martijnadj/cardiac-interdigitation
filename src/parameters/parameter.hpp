@@ -113,6 +113,7 @@ class Parameter {
   bool SF_one_pixel;
   int SF_x;
   int SF_y;
+  bool activation_times;
 
   double beats_per_minute;
   double pacing_duration;
@@ -124,6 +125,7 @@ class Parameter {
   double couplingPMPM;
   double couplingoffmask;
 
+  double I_Na_factor;
   double I_f_factor;
   double I_Kr_factor;
 

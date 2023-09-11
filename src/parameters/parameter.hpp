@@ -1,137 +1,78 @@
-/* 
+#ifndef _PARAMETER_HPP_
+#define _PARAMETER_HPP_
 
-Copyright 1996-2006 Roeland Merks
+#ifdef _MOCK_PARAMETER_HPP_
+#include _MOCK_PARAMETER_HPP_
+#else
 
-This file is part of Tissue Simulation Toolkit.
+#include <ostream>
+#include <string>
+#include <vector>
 
-Tissue Simulation Toolkit is free software; you can redistribute
-it and/or modify it under the terms of the GNU General Public
-License as published by the Free Software Foundation; either
-version 2 of the License, or (at your option) any later version.
 
-Tissue Simulation Toolkit is distributed in the hope that it will
-be useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with Tissue Simulation Toolkit; if not, write to the Free
-Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-02110-1301 USA
-
-*/
-#ifndef _PARAMETER_H_
-#define _PARAMETER_H_
-
-#include <iostream>
-using namespace std;
+/** Collection of all TST parameters
+ *
+ * The individual parameters are public member variables of this class.
+ * See src/parameters/parameters.hpp for the definitions.
+ */
 class Parameter {
- public:
-  Parameter();
-  ~Parameter();
-  void CleanUp(void);
-  void Read(const char *filename);
-  void Write(ostream &os) const;
-  double T;
-  int target_area;
-  int target_length;
-  double lambda;
-  double lambda2;
-  char * Jtable;
-  int celltype1_length;
-  int celltype1_width;
-  int celltype2_length;
-  int celltype2_width;
-  int conn_diss;
-  int ref_adhesive_area;
-  int area_constraint_type;
-  bool cluster_connectivity;
-  bool vecadherinknockout;
-  bool extensiononly;
-  int chemotaxis;
-  int border_energy;
-  int neighbours;
-  bool periodic_boundaries;
-  bool gradient;
-  bool extended_neighbour_border;
-  int n_chem;
-  double * diff_coeff;
-  double * decay_rate;
-  double * secr_rate;
-  double saturation;
-  double dt;
-  double ddt;
-  double min_stepsize;
-  double dx;
-  int pde_its;
-  char * micropatternmask;
-  bool second_layer;
-  char * micropatternlayer2;
-  int n_init_cells;
-  int size_init_cells;
-  int sizex;
-  int sizey;
-  int divisions;
-  int mcs;
-  int rseed;
-  double subfield;
-  int relaxation;
-  int storage_stride;
-  bool graphics;
-  bool store;
-  char * datadir;
-  bool load_mcds;
-  char * mcds_output;
-  char * mcds_input;
-  int mcds_anneal_steps;
-  int mcds_denoise_steps;
-  bool pause_on_start; 
-  bool useopencl;
-  bool usecuda;
-  int number_of_cores;
-  int threads_per_core;
-  char * opencl_core_path;
-  int opencl_pref_platform;
-  int adhesion_storage_stride;
-  //Act model
-  double lambda_Act;
-  int max_Act;
-  int lambda_perimeter;
-  int target_perimeter;
-  //Lymphocyte matrix interaction
-  double lambda_matrix;
-  double spontaneous_p;
-  double decay_p;
-  double eden_p;
-  int J_pol;
-  double threshold;
-  double start_level;
-  char * colortable;
+    public:
+        /** Create a Parameter object
+         *
+         * All parameters will be initialised to their defaults.
+         */
+        Parameter();
 
-  //Compute SF for one pixel? And if so, what pixel.
-  bool SF_all;
-  bool SF_one_pixel;
-  int SF_x;
-  int SF_y;
-  bool activation_times;
+        /** Read parameters from a text file
+         *
+         * @param filename Name of the file to read
+         */
+        void Read(std::string const & filename);
 
-  double beats_per_minute;
-  double pacing_duration;
-  double pacing_strength;
-  double couplingmedium;
-  double couplingcell;
-  double couplingAtrialAtrial;
-  double couplingAtrialPM;
-  double couplingPMPM;
-  double couplingoffmask;
+        /** Write parameters to a stream
+         *
+         * @param stream Stream to write to, e.g. std::cout or a std::ofstream.
+         */
+        void Write(std::ostream & stream) const;
 
-  double I_Na_factor;
-  double I_f_factor;
-  double I_Kr_factor;
+        /** Validate parameters
+         *
+         * This evaluates the constraints and throws std::invalid_argument if
+         * any of them are not met.
+         */
+        void Validate() const;
 
- private:
+        // Generate member variables
+
+#define SECTION(TEXT)
+#define PARAMETER(TYPE, NAME, DEFAULT, DESC) TYPE NAME;
+#define CONSTRAINT(EXPR, MESSAGE)
+#include "parameters.hpp"
+#undef CONSTRAINT
+#undef PARAMETER
+#undef SECTION
+
+    private:
+        /** Write a single parameter to a stream
+         *
+         * @param stream Stream to write to
+         * @param name Name of the parameter
+         * @param value Its value
+         */
+        template <typename Value>
+        void WritePar(
+                std::ostream & stream, std::string const & name, Value const & value
+                ) const;
+
+        /** Write a comment to a stream
+         *
+         * @param text The text to write
+         */
+        void WriteComment(std::ostream & stream, std::string const & text) const;
 };
 
-ostream &operator<<(ostream &os, Parameter &p);
-const char *sbool(const bool &p);
+#include "parameter.tpp"
+
 #endif
+#endif
+

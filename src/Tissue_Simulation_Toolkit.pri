@@ -1,5 +1,5 @@
-TEMPLATE = app 
-CONFIG += console 
+TEMPLATE = app
+CONFIG += console
 CONFIG -= app_bundle
 
 CONFIG += release
@@ -10,7 +10,7 @@ CONFIG += release
 
 # Select the graphics backend by uncommenting it.
 # - GL graphics requires the GLUT and GLEW libraries.
-#     It should be the fastest but does not 
+#     It should be the fastest but does not
 #     implement image writing yet.
 # - Qt graphics requires Qt 5 or Qt 6.
 #     Use this for MacOS.
@@ -24,16 +24,7 @@ GRAPHICS = qt
 #GRAPHICS = gl
 #GRAPHICS = qtgl
 
-# Select the model to build by uncommenting it.
-# The actual sources of these models are in the
-# 'models' folder.
-#MODEL = micropatterns
-MODEL = double_pattern
-#MODEL = vessel
-#MODEL = qPotts
-#MODEL = sorting
-#MODEL = Act_model
-# Enable or disable the profiling macros 
+# Enable or disable the profiling macros
 # defined in util/profiler.h.
 #PROFILING = enabled
 PROFILING = disabled
@@ -47,16 +38,14 @@ LIBDIR = ../lib
 DESTDIR = ../bin
 OBJECTS_DIR = ../build_files
 MOC_DIR= ../build_files
-TARGET = $$MODEL
-MAINFILE = "models/"$$TARGET".cpp"
 
 MCDS_DIR  = $$LIBDIR/MultiCellDS/v1.0/v1.0.0/libMCDS
 XSDE_DIR  = $$MCDS_DIR/xsde/libxsde
 LIBCS_DIR = $$LIBDIR/libCellShape
 
-LIBS += -L$$LIBCS_DIR -lcellshape 
-LIBS += -L$$MCDS_DIR/mcds_api -lmcds 
-LIBS += -L$$XSDE_DIR/xsde/ -lxsde 
+LIBS += -L$$LIBCS_DIR -lcellshape
+LIBS += -L$$MCDS_DIR/mcds_api -lmcds
+LIBS += -L$$XSDE_DIR/xsde/ -lxsde
 
 macx {
   QMAKE_LFLAGS += -framework OpenCL
@@ -65,11 +54,11 @@ unix:!macx {
   LIBS += -lOpenCL
 }
 
-QMAKE_CXXFLAGS += -I$$LIBCS_DIR 
-QMAKE_CXXFLAGS += -I$$MCDS_DIR/mcds_api  
-QMAKE_CXXFLAGS += -I$$XSDE_DIR 
+QMAKE_CXXFLAGS += -I$$LIBCS_DIR
+QMAKE_CXXFLAGS += -I$$MCDS_DIR/mcds_api
+QMAKE_CXXFLAGS += -I$$XSDE_DIR
 QMAKE_LFLAGS += -m64 -std=c++11 -O3
-QMAKE_CXXFLAGS += -Wno-unused-parameter  
+QMAKE_CXXFLAGS += -Wno-unused-parameter
 
 contains( USECUDA, enabled ){
 
@@ -113,7 +102,6 @@ HEADERS += cellular_potts/*.hpp \
 	   compute/*.hpp
 
 
- 
 SOURCES += cellular_potts/*.cpp \
            parameters/*.cpp \
            plotting/*.cpp \

@@ -92,6 +92,7 @@ TIMESTEP {
     if (!info->IsPaused()){
       PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
     }  
+    cout << "Compactness = " << dish-> CPM -> Compactness() << endl;
 
     if ( i == par.mcs){
       dish->ExportMultiCellDS(par.mcds_output);
@@ -137,9 +138,6 @@ int main(int argc, char *argv[]) {
     start_graphics(argc, argv);
   } catch(const char* error) {
     std::cerr << error << std::endl;
-    return 1;
-  } catch(...) {
-    std::cerr << "An unknown exception was caught" << std::endl;
     return 1;
   }
   return 0;

@@ -70,7 +70,9 @@ INIT {
 TIMESTEP { 
   try {
 
+    
     static int i=0;
+    cout << "MCS: " << i << endl;
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
@@ -91,8 +93,7 @@ TIMESTEP {
 
     if (!info->IsPaused()){
       PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
-    }  
-    cout << "Compactness = " << dish-> CPM -> Compactness() << endl;
+    } 
 
     if ( i == par.mcs){
       dish->ExportMultiCellDS(par.mcds_output);

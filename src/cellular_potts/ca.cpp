@@ -100,10 +100,11 @@ CellularPotts::CellularPotts(vector<Cell> *cells,
   AllocateSigma(sx, sy);
   AllocateTau(sx, sy);
 
-  StoreMask();
 
-  if (par.micropatternmask != string("None"))
+
+  if (par.micropatternmask != "None")
   {
+    StoreMask();
     for (int x = 0; x < sizex; x++)
     {
       for (int y = 0; y < sizey; y++)
@@ -1364,7 +1365,7 @@ void CellularPotts::ExchangeSpin(int x, int y, int xp, int yp)
 /** PUBLIC **/
 int CellularPotts::CopyvProb(int DH, double stiff, bool anneal)
 {
-  if (stiff == par.conn_diss){
+  if (stiff == par.conn_diss && par.conn_diss > 0){
     return 0;
   }
   double dd;
@@ -1462,11 +1463,14 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
 
 
     D_H = DeltaH(x, y, xp, yp, PDEfield);
-
+    cout << "D_H = " << D_H << endl;
+    cout << "p = " << CopyvProb(D_H, H_diss, anneal) << endl;
     if ((p = CopyvProb(D_H, H_diss, anneal)) > 0 && LocalConnectedness(x,y,sigma[x][y]) && LocalConnectedness(x,y,sigma[xp][yp]))
     {
       ConvertSpin(x, y, xp, yp); // sigma(x,y) will get the same value as sigma(xp,yp)
-      CopyPDEvars(x, y, xp, yp, PDEfield);
+      cout << "Spins copied" << endl;
+      if (par.n_chem > 0)
+        CopyPDEvars(x, y, xp, yp, PDEfield);
       for (int j = 1; j <= n_nb; j++)
       {
         xn = nx[j] + x; //Update the edgelist for all neighbours of x,y
@@ -1655,7 +1659,7 @@ void CellularPotts::WriteData(void)
   ofstream myfile;
   myfile.open("Output_data.txt", std::ofstream::out | std::ofstream::app);
   myfile << convexity << ", ";
-  myfile << BoundaryLength(right_side_isthmus+1, par.sizey-10, right_side_isthmus+1, 10) << endl;
+  //myfile << BoundaryLength(right_side_isthmus+1, par.sizey-10, right_side_isthmus+1, 10) << endl;
   //cout << "BoundaryLength = " << BoundaryLength(right_side_isthmus+1, par.sizey-10, right_side_isthmus+1, 10) << endl;
   //myfile << convexity << ", ";
   myfile.close();
@@ -1715,20 +1719,14 @@ int CellularPotts::CounterEdge(int edge){
     if (yp >= sizey - 1)
       yp = yp - sizey + 2;
   }
-<<<<<<< HEAD
 
 
-  int neighbourlocation = xp-1 + (yp-1)*(par.sizex-2);
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/TST2.0
-=======
+
   // lattice site corresponding to other site of the edge
   int neighbourlocation = xp-1 + (yp-1)*(par.sizex-2);
   
   // find the neighbour pointing the other direction
->>>>>>> origin/TST2.0
   const int counterneighbourlist[20] = {3, 4, 1, 2, 7, 8, 5, 6, 11, 12, 9, 10, 17, 18, 19, 20, 13, 14, 15, 16};
   counterneighbour = counterneighbourlist[ which_neighbour - 1 ];
   // compute the final counteredge
@@ -3667,7 +3665,6 @@ double CellularPotts::DrawConvexHull(Graphics *g, int color)
   delete[] hull;
   return hull_area;
 }
-<<<<<<< HEAD
 
 void CellularPotts::CropSurface(int* bounds){
   DetectSidesIsthmus();
@@ -3714,16 +3711,6 @@ double CellularPotts::Convexity(void){
 
 double CellularPotts::Compactness(int *bounds, int celltype)
 {
-=======
- 
-double CellularPotts::Compactness(void)
-{
-  int bounds[4];
-  bounds[0] = 1;
-  bounds[1] = sizey-2;
-  bounds[2] = 1;
-  bounds[3] = sizex-2;
->>>>>>> origin/TST2.0
   // Calculate compactness using the convex hull of the cells, including the corner points of pixels
   // We use Andrew's Monotone Chain Algorithm (see hull.cpp)
 
@@ -3733,11 +3720,7 @@ double CellularPotts::Compactness(void)
   for (int x = bounds[2]; x < bounds[3]+1; x++) //count only within the box
     for (int y = bounds[0]; y < bounds[1]+1; y++)
     {
-<<<<<<< HEAD
       if (tau[x][y] == celltype) //Only consider one celltype
-=======
-      if (sigma[x][y]) //Only consider one celltype
->>>>>>> origin/TST2.0
       {
        cell_area++;
       }
@@ -3749,80 +3732,46 @@ double CellularPotts::Compactness(void)
   // Step 2a. Count number of corner points to determine size of array
   
   //First consider the left-most column, a corner point if there is a pixel (or to the bottom of it)
-<<<<<<< HEAD
   if (tau[bounds[2]][bounds[0]] == celltype) //bottom row separately
     np++;
   for (int y = bounds[0]+1; y < bounds[1]+1; y++)
     if (tau[bounds[2]][y] == celltype || tau[bounds[2]][y-1] == celltype) //Only consider one celltype
-=======
-  if (sigma[bounds[2]][bounds[0]]) //bottom row separately
-    np++;
-  for (int y = bounds[0]+1; y < bounds[1]+1; y++)
-    if (sigma[bounds[2]][y] || sigma[bounds[2]][y-1]) //Only consider one celltype
->>>>>>> origin/TST2.0
       //add corner point only if a pixel is present at this location or below it.
       {
         np++;
       }
-<<<<<<< HEAD
   if (tau[bounds[2]][bounds[1]] == celltype) //add top-left most corner points if there is a pixel there
-=======
-  if (sigma[bounds[2]][bounds[1]]) //add top-left most corner points if there is a pixel there
->>>>>>> origin/TST2.0
     np++;
 
 
   //Add all 'inner' corner points
   for (int x = bounds[2]+1; x < bounds[3]+1; x++)
   {
-<<<<<<< HEAD
     if (tau[x][bounds[0]] == celltype || tau[x-1][bounds[0]] == celltype)
       np++; //special case for bottom row is required
     for (int y = bounds[0]+1; y < bounds[1]+1; y++) //loop over all other rows
     {
       if (tau[x][y] == celltype || tau[x-1][y] == celltype || tau[x][y-1] == celltype ||tau[x-1][y-1] == celltype) //Only consider one celltype
-=======
-    if (sigma[x][bounds[0]] || sigma[x-1][bounds[0]])
-      np++; //special case for bottom row is required
-    for (int y = bounds[0]+1; y < bounds[1]+1; y++) //loop over all other rows
-    {
-      if (sigma[x][y] || sigma[x-1][y] || sigma[x][y-1] ||sigma[x-1][y-1]) //Only consider one celltype
->>>>>>> origin/TST2.0
       //and add a corner point on the bottom left of the current pixel if one of the adjacent pixels is present
       {
         np++;
       }
     }
-<<<<<<< HEAD
     if (tau[x][bounds[1]] == celltype || tau[x-1][bounds[1]] == celltype)
-=======
-    if (sigma[x][bounds[1]] || sigma[x-1][bounds[1]])
->>>>>>> origin/TST2.0
       np++;
     //add the top-most corner point only if there is a pixel on the top row (or to the left of this pixel)
   }
 
   //Consider the right-most column separately, only add a corner point if there is a pixel in this column (or to the bottom of it)
-<<<<<<< HEAD
   if (tau[bounds[3]][bounds[0]] == celltype) //bottom row separately
     np++;
   for (int y = bounds[0]+1; y < bounds[1]+1; y++)
     if (tau[bounds[3]][y] == celltype || tau[bounds[3]][y-1] == celltype) //Only consider one celltype
-=======
-  if (sigma[bounds[3]][bounds[0]]) //bottom row separately
-    np++;
-  for (int y = bounds[0]+1; y < bounds[1]+1; y++)
-    if (sigma[bounds[3]][y] || sigma[bounds[3]][y-1]) //Only consider one celltype
->>>>>>> origin/TST2.0
       //add corner point only if a pixel is present at this location or below it.
       {
         np++;
       }
-<<<<<<< HEAD
   if (tau[bounds[3]][bounds[1]] == celltype)
-=======
-  if (sigma[bounds[3]][bounds[1]])
->>>>>>> origin/TST2.0
     np++;
 
   // Step 2b. Create array which will contain all corner points
@@ -3834,80 +3783,46 @@ double CellularPotts::Compactness(void)
   int pc = 0;
 
   //First consider the left-most column, a corner point if there is a pixel (or to the bottom of it)
-<<<<<<< HEAD
   if (tau[bounds[2]][bounds[0]] == celltype) //bottom row separately
     p[pc++] = Point(bounds[2]-0.5, bounds[0]-0.5); 
   for (int y = bounds[0]+1; y < bounds[1]+1; y++)
     if (tau[bounds[2]][y] == celltype || tau[bounds[2]][y-1] == celltype) //Only consider one celltype
-=======
-  if (sigma[bounds[2]][bounds[0]]) //bottom row separately
-    p[pc++] = Point(bounds[2]-0.5, bounds[0]-0.5); 
-  for (int y = bounds[0]+1; y < bounds[1]+1; y++)
-    if (sigma[bounds[2]][y]|| sigma[bounds[2]][y-1]) //Only consider one celltype
->>>>>>> origin/TST2.0
       //add corner point only if a pixel is present at this location or below it.
       {
         p[pc++] = Point(bounds[2]-0.5, y-0.5);
       }
-<<<<<<< HEAD
   if (tau[bounds[2]][bounds[1]] == celltype) //add top-left most corner points if there is a pixel there
-=======
-  if (sigma[bounds[2]][bounds[1]]) //add top-left most corner points if there is a pixel there
->>>>>>> origin/TST2.0
     p[pc++] = Point(bounds[2]-0.5, bounds[1]+0.5); 
 
 
   //Add all 'inner' corner points
   for (int x = bounds[2]+1; x < bounds[3]+1; x++)
   {
-<<<<<<< HEAD
     if (tau[x][bounds[0]] == celltype || tau[x-1][bounds[0]] == celltype)
       p[pc++] = Point(x-0.5, bounds[0]-0.5); //special case for bottom row is required 
     for (int y = bounds[0]+1; y < bounds[1]+1; y++) //loop over all other rows
     {
       if (tau[x][y] == celltype || tau[x-1][y] == celltype || tau[x][y-1] == celltype ||tau[x-1][y-1] == celltype) //Only consider one celltype
-=======
-    if (sigma[x][bounds[0]] || sigma[x-1][bounds[0]])
-      p[pc++] = Point(x-0.5, bounds[0]-0.5); //special case for bottom row is required 
-    for (int y = bounds[0]+1; y < bounds[1]+1; y++) //loop over all other rows
-    {
-      if (sigma[x][y] || sigma[x-1][y] || sigma[x][y-1] ||sigma[x-1][y-1]) //Only consider one celltype
->>>>>>> origin/TST2.0
       //and add a corner point on the bottom left of the current pixel if one of the adjacent pixels is present
       {
         p[pc++] = Point(x-0.5, y-0.5); 
       }
     }
-<<<<<<< HEAD
     if (tau[x][bounds[1]] == celltype || tau[x-1][bounds[1]] == celltype)
-=======
-    if (sigma[x][bounds[1]] || sigma[x-1][bounds[1]])
->>>>>>> origin/TST2.0
       p[pc++] = Point(x-0.5, bounds[1]+0.5);
     //add the top-most corner point only if there is a pixel on the top row (or to the left of this pixel)
   }
 
   //Consider the right-most column separately, only add a corner point if there is a pixel in this column (or to the bottom of it)
-<<<<<<< HEAD
   if (tau[bounds[3]][bounds[0]] == celltype) //bottom row separately
     p[pc++] = Point(bounds[3]+0.5, bounds[0]-0.5);
   for (int y = bounds[0]+1; y < bounds[1]+1; y++)
     if (tau[bounds[3]][y] == celltype || tau[bounds[3]][y-1] == celltype) //Only consider one celltype
-=======
-  if (sigma[bounds[3]][bounds[0]]) //bottom row separately
-    p[pc++] = Point(bounds[3]+0.5, bounds[0]-0.5);
-  for (int y = bounds[0]+1; y < bounds[1]+1; y++)
-    if (sigma[bounds[3]][y] || sigma[bounds[3]][y-1]) //Only consider one celltype
->>>>>>> origin/TST2.0
       //add corner point only if a pixel is present at this location or below it.
       {
         p[pc++] = Point(bounds[3]+0.5, y-0.5);
       }
-<<<<<<< HEAD
   if (tau[bounds[3]][bounds[1]] == celltype)
-=======
-  if (sigma[bounds[3]][bounds[1]])
->>>>>>> origin/TST2.0
     p[pc++] = Point(bounds[3]+0.5, bounds[1]+0.5);
 
   // Step 3: call 2D Hull code

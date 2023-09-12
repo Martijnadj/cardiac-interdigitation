@@ -122,8 +122,8 @@ TIMESTEP {
 
       else{
         for (int r=0;r<par.pde_its;r++) {
-	  dish->PDEfield->Secrete(dish->CPM);
-	  dish->PDEfield->Diffuse(1);
+          dish->PDEfield->Secrete(dish->CPM);
+          dish->PDEfield->Diffuse(1);
         }
       }
     }

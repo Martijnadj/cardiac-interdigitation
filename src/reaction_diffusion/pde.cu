@@ -599,8 +599,8 @@ void PDE::SetupOpenCL(){
   //Secretion and diffusion variables
   PDEFIELD_TYPE dt = (PDEFIELD_TYPE) par.dt;
   PDEFIELD_TYPE dx2 = (PDEFIELD_TYPE) par.dx*par.dx;
-  PDEFIELD_TYPE decay_rate = (PDEFIELD_TYPE) * par.decay_rate;
-  PDEFIELD_TYPE secr_rate = (PDEFIELD_TYPE) * par.secr_rate;
+  PDEFIELD_TYPE decay_rate = par.decay_rate[0];
+  PDEFIELD_TYPE secr_rate = par.secr_rate[0];
   
   
   int btype = 1;

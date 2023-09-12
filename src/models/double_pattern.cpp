@@ -111,8 +111,8 @@ TIMESTEP {
 
       else{
         for (int r=0;r<par.pde_its;r++) {
-	  dish->PDEfield->Secrete(dish->CPM);
-	  dish->PDEfield->Diffuse(1);
+          dish->PDEfield->Secrete(dish->CPM);
+          dish->PDEfield->Diffuse(1);
         }
       }
     }
@@ -141,7 +141,7 @@ TIMESTEP {
 
     if (par.store && !(i%par.storage_stride)) {
       char fname[200];
-      sprintf(fname,"%s/image%07d.png",par.datadir,i);
+      sprintf(fname,"%s/image%07d.png",par.datadir.c_str(),i);
       PROFILE(plotter_2, plotter->Plot();)
       Write(fname);
     }

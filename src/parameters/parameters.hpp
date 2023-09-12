@@ -72,6 +72,8 @@ SECTION("MultiCellDS input/output")
     "x-coordiante where to compute the Safety Factor")
     PARAMETER(int, SF_y, 0, \
     "y-coordiante where to compute the Safety Factor")
+    PARAMETER(bool, activation_times, false, \
+    "Whether to write the activation times")
 
 
 SECTION("Cellular Potts Model - Grid")
@@ -145,7 +147,7 @@ SECTION("Electrophysiology")
     PARAMETER(double, couplingAtrialAtrial, 1e-8, "Coupling coefficient between two atrial cells")
     PARAMETER(double, couplingAtrialPM, 1e-8, "Coupling coefficient between an atrial and pacemaker maker cell")
     PARAMETER(double, couplingPMPM, 1e-8, "Coupling coefficient between two pacemaker cells")
-    PARAMETER(double, couplingmedium, 0, "Coupling coefficient outside of the cellular mask")
+    PARAMETER(double, couplingoffmask, 0, "Coupling coefficient outside of the cellular mask")
 
     PARAMETER(double, I_f_factor, 1, "Mutiplication factor if I_f in Fabbri-Severi model")
     PARAMETER(double, I_Kr_factor, 1, "Mutiplication factor if I_Kr in Fabbri-Severi model")
@@ -180,7 +182,9 @@ SECTION("Chemotaxis - reaction-diffusion")
 
     PARAMETER(double, dt, 2.0, "Reaction-diffusion timestep in between diffusion step")
 
-    PARAMETER(double, dtt, 1e-6, "Time steps within an ODE step")
+    PARAMETER(double, min_stepsize, 1e-6, "Minimal required stepsize for adaptive integration")
+
+    PARAMETER(double, ddt, 1e-6, "Time steps within an ODE step")
 
     PARAMETER(int, relaxation, 0, "Timestep from which to enable reaction-diffusion")
 
@@ -192,19 +196,19 @@ SECTION("Chemotaxis - reaction-diffusion")
     PARAMETER(std::vector<double>, diff_coeff, {1e-13}, \
             "List of diffusion coefficients, one for each chemical")
 
-    CONSTRAINT(diff_coeff.size() == n_chem, \
+    //CONSTRAINT(diff_coeff.size() == n_chem, \
             "Number of diff_coeff values does not match n_chem")
 
     PARAMETER(std::vector<double>, decay_rate, {1.8e-4}, \
             "List of decay rates, one for each chemical")
 
-    CONSTRAINT(decay_rate.size() == n_chem, \
+    //CONSTRAINT(decay_rate.size() == n_chem, \
             "Number of decay_rate values does not match n_chem")
 
     PARAMETER(std::vector<double>, secr_rate, {1.8e-4}, \
             "List of secretion rates, one for each chemical")
 
-    CONSTRAINT(secr_rate.size() == n_chem, \
+    //CONSTRAINT(secr_rate.size() == n_chem, \
             "Number of secr_rate values does not match n_chem")
 
 

@@ -7,7 +7,7 @@ QMAKE     = qmake
 # Edit the above line as necessary, e.g., as follows:
 #QMAKE 	  = /Applications/Qt5/6.4.0/macos/bin/qmake
 
-MODELS = bin/vessel bin/qPotts bin/sorting bin/Act_model
+MODELS = bin/vessel bin/qPotts bin/sorting bin/Act_model bin/micropatterns bin/double_pattern
 
 .PHONY: all XSDE MCDS LIBCS Catch2 TST test clean
 

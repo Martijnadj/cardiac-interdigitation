@@ -43,21 +43,27 @@ using namespace std;
 
 INIT {
   try {
-    // Define initial distribution of cells
-    CPM->GrowInCells(par.n_init_cells,par.size_init_cells,par.subfield);
-    CPM->ConstructInitCells(*this);
-    
-    // If we have only one big cell and divide it a few times
-    // we start with a nice initial clump of cells. 
-    // 
-    // The behavior can be changed in the parameter file using 
-    // parameters n_init_cells, size_init_cells and divisions
-    for (int i=0;i<par.divisions;i++) {
-      CPM->DivideCells();
+    if (par.initial_configuration_file == string("None")){ // If no configuration file is provided
+      // Define initial distribution of cells
+      CPM->GrowInCells(par.n_init_cells,par.size_init_cells,par.subfield);
+      CPM->ConstructInitCells(*this);
+      
+      // If we have only one big cell and divide it a few times
+      // we start with a nice initial clump of cells. 
+      // 
+      // The behavior can be changed in the parameter file using 
+      // parameters n_init_cells, size_init_cells and divisions
+      for (int i=0;i<par.divisions;i++) {
+        CPM->DivideCells();
+      }
+      
+      // Assign a random type to each of the cells
+      CPM->SetRandomTypes();
+    }
+    else{ //If a configuration file is provided
+      CPM->ReadConfiguration(*this);
     }
     
-    // Assign a random type to each of the cells
-    CPM->SetRandomTypes();
     CPM->InitializeEdgeList();
     
   } catch(const char* error) {
@@ -100,10 +106,12 @@ TIMESTEP {
     }
 
     if (par.store && !(i%par.storage_stride)) {
-      char fname[200];
-      sprintf(fname,"%s/extend%07d.png",par.datadir,i);
-      PROFILE(plotter_2, plotter->Plot();)
+      char fname[200],fname_mcds[200];
+      snprintf(fname,199,"%s/extend%05d.png",par.datadir,i);
+      snprintf(fname_mcds,199,"%s/extend%05d.xml",par.datadir,i);
       Write(fname);
+      if (!(i%(par.storage_stride*10)))
+        dish->ExportMultiCellDS(fname_mcds);
     }
 
     if (!info->IsPaused()){

@@ -113,6 +113,8 @@ SECTION("Cellular Potts Model - Initialisation")
 
     PARAMETER(std::string, micropatternlayer2, "None", \
     "Mask to indicate the location of the second cell type")
+    PARAMETER(std::string, initial_configuration_file, "None", \
+            "json file may be provided to import a cpm configuration")
 
 SECTION("Cellular Potts Model - Dynamics")
 

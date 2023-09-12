@@ -1923,31 +1923,6 @@ void CellularPotts::PlotIsing(Graphics *g, int mag)
     }
 }
 
-<<<<<<< HEAD
-/** A simple method to count all sigma's and write the output to an ostream */
-void CellularPotts::CountSigma(std::ostream &os)
-{
-  int *sum_sigma = new int[Cell::MaxSigma()];
-  for (int i = 0; i < Cell::MaxSigma(); i++)
-  {
-    sum_sigma[i] = 0;
-  }
-  for (int x = 1; x < sizex - 1; x++)
-  {
-    for (int y = 1; y < sizey - 1; y++)
-    {
-      sum_sigma[sigma[x][y]]++;
-    }
-  }
-  for (int i = 0; i < Cell::MaxSigma(); i++)
-  {
-    os << i << " " << sum_sigma[i] << endl;
-  }
-  delete[] sum_sigma;
-}
-
-=======
->>>>>>> origin/TST2.0-bugfix-datadir
 int **CellularPotts::SearchNandPlot(Graphics *g, bool get_neighbours)
 {
   int i, j, q;

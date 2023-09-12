@@ -388,27 +388,31 @@ void PDE::Diffuse(int repeat) {
   
   const PDEFIELD_TYPE dt=par.dt;
   const PDEFIELD_TYPE dx2=par.dx*par.dx;
-
+  cout << "a" << endl;
   for (int r=0;r<repeat;r++) {
     //NoFluxBoundaries();
+    cout << "b" << endl;
     if (par.periodic_boundaries) {
       PeriodicBoundaries();
     } else {
       AbsorbingBoundaries();
       //NoFluxBoundaries();
     }
+    cout << "c" << endl;
     for (int l=0;l<layers;l++) {
       for (int x=1;x<sizex-1;x++)
-	for (int y=1;y<sizey-1;y++) {
-	  PDEFIELD_TYPE sum=0.;
-	  sum+=PDEvars[l][x+1][y];
-	  sum+=PDEvars[l][x-1][y];
-	  sum+=PDEvars[l][x][y+1];
-	  sum+=PDEvars[l][x][y-1];
-	  sum-=4*PDEvars[l][x][y];
-	  alt_PDEvars[l][x][y]=PDEvars[l][x][y]+sum*dt*par.diff_coeff[l]/dx2;
-      }
+        for (int y=1;y<sizey-1;y++) {
+          
+          PDEFIELD_TYPE sum=0.;
+          sum+=PDEvars[l][x+1][y];
+          sum+=PDEvars[l][x-1][y];
+          sum+=PDEvars[l][x][y+1];
+          sum+=PDEvars[l][x][y-1];
+          sum-=4*PDEvars[l][x][y];
+          alt_PDEvars[l][x][y]=PDEvars[l][x][y]+sum*dt*par.diff_coeff[l]/dx2;
+        }
     }
+    cout << "d" << endl;
     PDEFIELD_TYPE ***tmp;
     tmp=PDEvars;
     PDEvars=alt_PDEvars;

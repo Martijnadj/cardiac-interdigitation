@@ -108,7 +108,7 @@ TIMESTEP {
 
 
     if (i == par.relaxation)
-      dish->CPM->WriteData();
+      dish->io->WriteContactInterfaces();
      //uncomment for chemotaxis
     if (i>=par.relaxation) {
       if (par.useopencl){
@@ -147,7 +147,7 @@ TIMESTEP {
 
     if (i % 2000 == 999){
       //dish->PDEfield->InitializePDEs(dish->CPM);
-      dish->CPM->WriteData();
+      dish->io->WriteContactInterfaces();
     }  
 
     if ( i == par.mcs){

@@ -90,13 +90,13 @@ TIMESTEP {
         dish=new Dish();
         dish->CPM->InitializeCouplingCoefficient();
         dish->PDEfield->InitializePDEs(dish->CPM);
-        //dish->CPM->WriteData();
+        dish->io->WriteContactInterfaces();
     }
     
 
      //uncomment for chemotaxis
     if (i == par.relaxation)
-      dish->CPM->WriteData();
+      dish->io->WriteContactInterfaces();
 
     
     if (i>=par.relaxation) {

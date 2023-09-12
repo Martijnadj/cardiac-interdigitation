@@ -469,6 +469,7 @@ private:
   bool LocalConnectedness(int x, int y, int s);
   bool ConnectivityPreservedP(int x, int y);
   bool ConnectivityPreservedPCluster(int x, int y);
+  
 
   // little debugging function to print the site and its neighbourhood
   inline void PrintSite(int x,int y) {
@@ -486,6 +487,7 @@ protected:
   int **tau;
   int **numberofedges;
   PDEFIELD_TYPE **couplingcoefficient;
+  bool couplingcoeffcient_allocated = false;
   PDEFIELD_TYPE **couplingcoefficient_gradient;
   int **mask; //stores both primary and secondary mask (indicating which cell type can go where)
   int sizex;

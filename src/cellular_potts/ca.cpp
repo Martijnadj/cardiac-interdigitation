@@ -1500,7 +1500,6 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
                   loop += (double)2 / n_nb;
                   numberofedges[x][y]++;
                   numberofedges[xn][yn]++;
-                  cout << "B" << endl;
                   if ((tau[xn][yn] == 1 && tau[x][y] == 2) || (tau[xn][yn] == 2 && tau[x][y] == 1)){
                     couplingcoefficient[x][y] = par.couplingAtrialPM;
                     couplingcoefficient[xn][yn] = par.couplingAtrialPM;

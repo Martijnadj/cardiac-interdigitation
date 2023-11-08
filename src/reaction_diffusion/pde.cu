@@ -5484,7 +5484,7 @@ void PDE::cuErrorChecker(cudaError_t errSync, cudaError_t errAsync){
 void PDE::cuPDEVarsToFiles(){
 
   
-  int number_of_measurements = 25;
+  int number_of_measurements = 10;
   int measure_loc;
   ofstream myfile;
   char fname[200];

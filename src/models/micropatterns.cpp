@@ -156,7 +156,7 @@ TIMESTEP {
 
     if (par.store && !(i%par.storage_stride)) {
       char fname[200];
-      sprintf(fname,"%s/image%07d.png",par.datadir,i);
+      sprintf(fname,"%s/image%07d.png",par.datadir.c_str(),i);
       PROFILE(plotter_2, plotter->Plot();)
       Write(fname);
     }

@@ -5333,11 +5333,11 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   PDEFIELD_TYPE I_m;
   bool afterdiffusion;
 
-  
-
-  
   for (int iteration = 0; iteration < repeat; iteration++){
+    if (par.SF_all){
       cuSFChecker();
+      cout << "This shouldn't happen!";
+    }
       //cout << "Iteration = " << iteration << endl;
 
       //setup matrices for upperdiagonal, diagonal and lower diagonal for both the horizontal and vertical direction, since these remain the same during once MCS
@@ -5350,47 +5350,57 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     if (errAsync != cudaSuccess)
       printf("Async kernel error: %s\n", cudaGetErrorString(errAsync));
 
+
     cuODEstep();
     afterdiffusion = false;
-    cuCopyVoltageForSF(afterdiffusion);
+    if (par.SF_all){
+      cuCopyVoltageForSF(afterdiffusion);
+      cout << "This shouldn't happen!";
+    }
   
-
     cuHorizontalADIstep();
     afterdiffusion = true;
-    cuCopyVoltageForSF(afterdiffusion);
-
+    if (par.SF_all){
+      cuCopyVoltageForSF(afterdiffusion);
+      cout << "This shouldn't happen!";
+    }
 
     //increase time by dt/2
     thetime = thetime + dt/2;  
     cuODEstep();
     afterdiffusion = false;
-    cuCopyVoltageForSF(afterdiffusion);
+    if (par.SF_all){
+      cuCopyVoltageForSF(afterdiffusion);
+      cout << "This shouldn't happen!";
+    }
 
-    
-    
+
     cuVerticalADIstep();
     afterdiffusion = true;
-    cuCopyVoltageForSF(afterdiffusion);
+    if (par.SF_all){
+      cuCopyVoltageForSF(afterdiffusion);
+      cout << "This shouldn't happen!";
+    }
       
     //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     //cout << "After second FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
+    if (par.SF_all){
+      cout << "This shouldn't happen!";
+      if (SF_start_one && !SF_end_one && par.SF_one_pixel)
+        cuComputeSFOne();
+      
+      if (SF_in_progress && !SF_all_done && par.SF_all)
+        cuWriteSFData();
+    }
     
-    if (SF_start_one && !SF_end_one && par.SF_one_pixel)
-      cuComputeSFOne();
-    
-    if (SF_in_progress && !SF_all_done && par.SF_all)
-      cuWriteSFData();
-    
-    
-
 
     
     //increase time by dt/2
     thetime = thetime + dt/2; 
 
-    if (par.activation_times)    
+    if (par.activation_times){    
       CheckActivationTimes<<<par.number_of_cores, par.threads_per_core>>>(thetime, d_Activation_times_array, d_sigmafield,  d_PDEvars, sizex, sizey);
-     
+    }   
   }
   cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
   cudaDeviceSynchronize();
@@ -5399,7 +5409,6 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     cudaMemcpy(Activation_times_array, d_Activation_times_array, sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);   
     cuWriteActivationTimes();
   }
-  
 }
 
 void PDE::cuODEstep(){

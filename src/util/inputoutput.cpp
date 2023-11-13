@@ -286,12 +286,12 @@ void IO::WriteContactInterfaces(void){
     for (int i = 1; i<=4; i++){
       int x2,y2;
       x2=x+dish->CPM->getNbhx(i); y2=y+dish->CPM->getNbhy(i);
-      if (dish->CPM->getSigma()[x][y] != dish->CPM->getSigma()[x2][y2]){
+      if (dish->CPM->getSigma()[x][y] != dish->CPM->getSigma()[x2][y2]){ //&& dish->CPM->getSigma()[x][y] != -1 && dish->CPM->getSigma()[x2][y2] != -1){
         //dish->CPM->getCell())[dish->CPM->getSigma()[x][y]] returns the cell corresponding to the sigma found on position (x,y)
-        if ((dish->CPM->getCell(dish->CPM->getSigma()[x][y])).getTau() == 1 && (dish->CPM->getCell(dish->CPM->getSigma()[x2][y2])).getTau() == 1) RedRedSurface ++;
-        if ((dish->CPM->getCell(dish->CPM->getSigma()[x][y])).getTau() == 2 && (dish->CPM->getCell(dish->CPM->getSigma()[x2][y2])).getTau() == 1) RedYellowSurface ++;
-        if ((dish->CPM->getCell(dish->CPM->getSigma()[x][y])).getTau() == 1 && (dish->CPM->getCell(dish->CPM->getSigma()[x2][y2])).getTau() == 2) RedYellowSurface ++;
-        if ((dish->CPM->getCell(dish->CPM->getSigma()[x][y])).getTau() == 2 && (dish->CPM->getCell(dish->CPM->getSigma()[x2][y2])).getTau() == 2) YellowYellowSurface ++;
+        if (dish->CPM->getTau()[x][y] == 1 && dish->CPM->getTau()[x2][y2] == 1) RedRedSurface ++;
+        if (dish->CPM->getTau()[x][y] == 1 && dish->CPM->getTau()[x2][y2] == 2) RedYellowSurface ++;
+        if (dish->CPM->getTau()[x][y] == 2 && dish->CPM->getTau()[x2][y2] == 1) RedYellowSurface ++;
+        if (dish->CPM->getTau()[x][y] == 2 && dish->CPM->getTau()[x2][y2] == 2) YellowYellowSurface ++;
       
       }
     }

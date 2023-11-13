@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 import os
 import math
 from os import path
@@ -7,18 +8,25 @@ from os import path
 pixel_size = 0.025
 #in millimeters
 
+def mm_to_pixels(variable):
+	return int(variable / pixel_size)
+
 #paramaters for mask, see sketch.jpg for clarification
 
 #Left shape
-L_shape = "circle"
+L_shape = "rectangle"
 #Choose either "circle" or "rectangle"
 L_radius = 100
-L_width = 1200
-L_height = 2500
+L_width = mm_to_pixels(1.5)
+L_height = mm_to_pixels(1.5)
+L_corner_radius = mm_to_pixels(0.24) #smoother transisiton, only implemented for "rectangle"
+if (L_corner_radius != 0 and L_shape != "rectangle"):
+	print("L_corner_radius is only implemented for rectangle, aborted")
+	sys.exit(1)
 
 #Isthmus
-I_length = 150
-I_width = 120
+I_length = mm_to_pixels(1.5)
+I_width = mm_to_pixels(0.4)
 
 
 #Right shape
@@ -29,8 +37,12 @@ R_angle = 90
 #between 0 and 180
 R_max_protrusion_left = 150
 #smaller than I_length
-R_max_height = 400
-R_width = 250
+R_max_height = mm_to_pixels(3)
+R_width = mm_to_pixels(1.5)
+R_corner_radius = mm_to_pixels(0.3) #smoother transisiton, only implemented for wedge with R_angle = 90 and straight boundary
+if (R_corner_radius != 0 and (R_shape != "wedge" or R_angle != 90)):
+	print("R_corner_radius is only implemented for wedge with an angle of 90, aborted")
+	sys.exit(1)
 
 #Offset
 Offset_x = 5
@@ -39,17 +51,21 @@ Offset_y = 5
 #Boundary type
 #Do we want a second layer to indicate the cell shapes?
 Second_layer = True
-B_type = "rectangle_teeth"
-#Choose either "ellipse", "triangule", "rectangle", "triangle_teeth" or "rectangle_teeth" for the boundary type
+B_type = "straight"
+#Choose either "straight", "ellipse", "triangule", "rectangle", "triangle_teeth" or "rectangle_teeth" for the boundary type
 B_ellipse_width = 150 #x-direction
 B_ellipse_height = 40 #y-direction -> smaller than isthmus width
 B_triangle_width = 190 #x-direction
 B_triangle_height = 120 #y-direction -> smaller than isthmus width
-B_rectangle_width = 95 #x-direction
+B_rectangle_width = 0 #x-direction
 B_rectangle_height = 10 #y-direction -> smaller than isthmus width
 B_middle_convex = True
 B_convexity = "convex"
 #Convexity with respect to pacemaker cells, "convex" or "concave", only relevant for "ellipse", "triangle" and "rectangle"
+
+if (B_type != "straight" and R_corner_radius != 0):
+	print("R_corner_radius is only implemented for a straight boundary, abort")
+	sys.exit(1)
 
 Islands = False
 
@@ -63,6 +79,7 @@ Islands_total_y = 80 #Smaller than R_max_height
 
 
 
+
 mask_file_name = "files/mask1.dat"
 mask_layer2_file_name = "empty"
 
@@ -72,6 +89,9 @@ global x_max
 global y_max
 global total_area
 total_area = 0
+
+
+	
 
 def create_mask_filename():
 	global mask_file_name
@@ -95,6 +115,7 @@ def write_parameters_to_database():
 	if (L_shape == "rectangle"):
 		f.write("L_width = " + str(L_width) + " pixels or " + str(L_width*pixel_size) + " mm \n")
 		f.write("L_height = " + str(L_height) + " pixels or " + str(L_height*pixel_size) + " mm \n")
+	f.write("L_corner_radius = " + str(L_corner_radius) + " pixels or " + str(L_corner_radius*pixel_size) + "mm \n")
 	f.write("\n")
 
 	f.write("Isthmus: \n")
@@ -110,6 +131,7 @@ def write_parameters_to_database():
 		f.write("R_max_protrusion_left = " + str(R_max_protrusion_left) + " pixels or " + str(R_max_protrusion_left*pixel_size) + " mm \n")
 		f.write("R_max_height = " + str(R_max_height) + " pixels or " + str(R_max_height*pixel_size) + " mm \n")
 		f.write("R_width = " + str(R_width) + " pixels or " + str(R_width*pixel_size) + " mm \n\n")
+	f.write("R_corner_radius = " + str(L_corner_radius) + " pixels or " + str(R_corner_radius*pixel_size) + "mm \n")
 
 	f.write("Offset: \n")
 	f.write("Offset_x = " + str(Offset_x) + " pixels or " + str(Offset_x*pixel_size) + " mm \n")
@@ -141,6 +163,7 @@ def write_parameters_to_parameter_file():
 	if (L_shape == "rectangle"):
 		f.write("L_width = " + str(L_width) + "\n")
 		f.write("L_height = " + str(L_height) + "\n")
+	f.write("L_corner_radius = " + str(L_corner_radius) + "\n")
 	
 	f.write("I_length = " + str(I_length) + "\n")
 	f.write("I_width = " + str(I_width) + "\n")
@@ -149,6 +172,8 @@ def write_parameters_to_parameter_file():
 	f.write("R_max_protrusion_left = " + str(R_max_protrusion_left) + "\n")
 	f.write("R_max_height = " + str(R_max_height) + "\n")
 	f.write("R_width = " + str(R_width) + "\n")
+	f.write("R_corner_radius = " + str(R_corner_radius) + "\n")
+	
 
 	f.write("Offset_x = " + str(Offset_x) + "\n")
 	f.write("Offset_y = " + str(Offset_y) + "\n")
@@ -227,7 +252,7 @@ def construct_base_shape():
 							total_area = total_area + 1
 		elif (L_shape == "rectangle"):
 				if R_angle < 90:
-					centre_wedge_x = Offset_x + L_width + I_length - (I_width/2)/math.tan(math.radians(R_angle))
+					centre_wedge_x = Offset_x + L_width + I_length  - (I_width/2)/math.tan(math.radians(R_angle))
 					for x in range(x_max):
 						for y in range(y_max):
 							if ((x > Offset_x and x <= Offset_x + L_width and y > y_max/2 - L_height/2 and y <= y_max/2 + L_height/2) or #if within left rectangle
@@ -239,12 +264,20 @@ def construct_base_shape():
 								total_area = total_area + 1
 
 				elif R_angle >= 90:
-					centre_wedge_x = Offset_x + L_width + I_length + (I_width/2)/math.tan(math.radians(180-R_angle))
+					#If there is no cut corner, set the radius to 0, which will ignore all further computations
+					centre_wedge_x = Offset_x + L_corner_radius + L_width + I_length + R_corner_radius + (I_width/2)/math.tan(math.radians(180-R_angle))
 					for x in range(x_max):
 						for y in range(y_max):
 							if ((x > Offset_x and x <= Offset_x + L_width and y > y_max/2 - L_height/2 and y <= y_max/2 + L_height/2) or #if within left rectangle
-								(((x > L_width + Offset_x) and x <= (Offset_x + L_width + I_length)) and ((y > y_max/2 - I_width/2) and (y <= y_max/2 + I_width/2))) or #if within isthmus
-								((x > Offset_x + L_width + I_length) and (x <= x_max - Offset_x) and (y > y_max/2 - R_max_height/2) and (y <= y_max/2 + R_max_height/2)) or #if within right rectangle
+	   							(((x > Offset_x + L_width) and (x <= Offset_x + L_width + L_corner_radius)) and ((y > y_max/2 - I_width/2 - L_corner_radius) and (y <= y_max/2 + I_width/2 + L_corner_radius)) 
+	    						and (math.sqrt((x-(Offset_x + L_width + L_corner_radius))**2 + (y-(y_max/2 - I_width/2 - L_corner_radius+1))**2) >= L_corner_radius)
+								and (math.sqrt((x-(Offset_x + L_width + L_corner_radius))**2 + (y-(y_max/2 + I_width/2 + L_corner_radius))**2) >= L_corner_radius)) or #if within left cut corner 
+								(((x > L_width + Offset_x + L_corner_radius) and x <= (Offset_x + L_width + I_length + L_corner_radius)) and ((y > y_max/2 - I_width/2) and (y <= y_max/2 + I_width/2))) or #if within isthmus
+								(((x > Offset_x + L_width + L_corner_radius + I_length) and (x <= Offset_x + L_width + L_corner_radius + I_length + R_corner_radius)) 
+	 							and ((y > y_max/2 - I_width/2 - R_corner_radius) and (y <= y_max/2 + I_width/2 + R_corner_radius)) 
+	    						and (math.sqrt((x-(Offset_x + L_width + L_corner_radius + I_length))**2 + (y-(y_max/2 - I_width/2 - R_corner_radius+1))**2) >= R_corner_radius)
+								and (math.sqrt((x-(Offset_x + L_width + L_corner_radius + I_length))**2 + (y-(y_max/2 + I_width/2 + R_corner_radius))**2) >= R_corner_radius)) or #if within right cut corner 
+								((x > Offset_x + L_width + L_corner_radius + I_length + R_corner_radius) and (x <= x_max - Offset_x) and (y > y_max/2 - R_max_height/2) and (y <= y_max/2 + R_max_height/2)) or #if within right rectangle
 								((x > (Offset_x + L_width + I_length - R_max_protrusion_left)) and (x <=(Offset_x + L_width + I_length)) and #if within backward wedge
 								((y > y_max/2 + (centre_wedge_x-x)*math.tan(math.radians(180-R_angle))) or (y < y_max/2 - (centre_wedge_x-x)*math.tan(math.radians(180-R_angle)))) and (y > Offset_y) and (y <= y_max - Offset_y))):
 								f.write(str(x) + "," + str(y) + "\n")
@@ -299,13 +332,17 @@ def construct_second_layer():
 	f = open(mask_layer2_file_name, "w")
 	global mask
 	if (L_shape == "rectangle"):
-		right_side_isthmus = Offset_x + L_width + I_length
+		right_side_isthmus = Offset_x + L_width + I_length + L_corner_radius
 	elif (L_shape == "circle"):
 		right_side_isthmus = Offset_x + 2*L_radius + I_length
 	for x in range(x_max):
 		for y in range(y_max):
 			if (mask[x,y] and x < right_side_isthmus):
 				mask[x,y] = 2
+
+	if B_type == "straight":
+		print(B_type)
+
 	if B_type == "ellipse":
 		print(B_type)
 		ellipse_centre_x = right_side_isthmus
@@ -385,8 +422,8 @@ def construct_second_layer():
 	f.close()	
 
 def create_image():
-	#plt.xticks(np.arange(0,x_max,int(1/(pixel_size*0.5))), np.round(np.arange(0,pixel_size*(x_max+1),10*1/5),3))
-	#plt.yticks(np.arange(0,y_max,int(1/(pixel_size*0.5))), np.round(np.arange(0,pixel_size*(y_max+1),10*1/5),3))
+	plt.xticks(np.arange(0,x_max,int(1/(pixel_size))), np.round(np.arange(0,pixel_size*(x_max+1)),3))
+	plt.yticks(np.arange(0,y_max,int(1/(pixel_size))), np.round(np.arange(0,pixel_size*(y_max+1)),3))
 	plt.xlabel('mm')
 	plt.ylabel('mm')
 	plt.imshow(mask.T, interpolation='nearest')

@@ -5336,7 +5336,6 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
   for (int iteration = 0; iteration < repeat; iteration++){
     if (par.SF_all){
       cuSFChecker();
-      cout << "This shouldn't happen!";
     }
       //cout << "Iteration = " << iteration << endl;
 
@@ -5355,14 +5354,12 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     afterdiffusion = false;
     if (par.SF_all){
       cuCopyVoltageForSF(afterdiffusion);
-      cout << "This shouldn't happen!";
     }
   
     cuHorizontalADIstep();
     afterdiffusion = true;
     if (par.SF_all){
       cuCopyVoltageForSF(afterdiffusion);
-      cout << "This shouldn't happen!";
     }
 
     //increase time by dt/2

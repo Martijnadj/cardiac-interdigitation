@@ -111,16 +111,16 @@ TIMESTEP {
       dish->io->WriteContactInterfaces();
      //uncomment for chemotaxis
     if (i>=par.relaxation) {
-      if (par.useopencl){
-        if(par.usecuda == true){
+      if(par.usecuda == true){
           dish->PDEfield->cuPDEsteps(dish->CPM, par.pde_its);
-        }
-        else{
-          PROFILE(opencl_diff, dish->PDEfield->ODEstepCL(dish->CPM, par.pde_its);)
-        }
+      }
+      else if(par.useopencl == true){
+        throw std::runtime_error("You are using openCL! This is probably an error.");
+        PROFILE(opencl_diff, dish->PDEfield->ODEstepCL(dish->CPM, par.pde_its);)
       }
 
       else{
+        throw std::runtime_error("You are computing secrete / diffuse! This is probably an error.");
         for (int r=0;r<par.pde_its;r++) {
           dish->PDEfield->Secrete(dish->CPM);
           dish->PDEfield->Diffuse(1);
@@ -142,7 +142,7 @@ TIMESTEP {
     i++;}
 
     if ((!info->IsPaused() && i < par.relaxation)){ //added second condition for test
-        PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
+      PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
     }
 
     if (i % 2000 == 999){

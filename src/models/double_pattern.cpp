@@ -99,17 +99,17 @@ TIMESTEP {
       dish->io->WriteContactInterfaces();
 
     
-    if (i>=par.relaxation) {
-      if (par.useopencl){
-        if(par.usecuda == true){
+        if (i>=par.relaxation) {
+      if(par.usecuda == true){
           dish->PDEfield->cuPDEsteps(dish->CPM, par.pde_its);
-        }
-        else{
-          PROFILE(opencl_diff, dish->PDEfield->ODEstepCL(dish->CPM, par.pde_its);)
-        }
+      }
+      else if(par.useopencl == true){
+        throw std::runtime_error("You are using openCL! This is probably an error.");
+        PROFILE(opencl_diff, dish->PDEfield->ODEstepCL(dish->CPM, par.pde_its);)
       }
 
       else{
+        throw std::runtime_error("You are computing secrete / diffuse! This is probably an error.");
         for (int r=0;r<par.pde_its;r++) {
           dish->PDEfield->Secrete(dish->CPM);
           dish->PDEfield->Diffuse(1);

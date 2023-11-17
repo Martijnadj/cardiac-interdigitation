@@ -336,20 +336,29 @@ void IO::WriteConfiguration(char* write_loc){
 
 void IO::ReadConfiguration(void){
   ifstream f(par.initial_configuration_file);
+  if (!f.good())
+    throw std::runtime_error("json file does not exist");
   json Configuration = json::parse(f);
   
+  cout << "A\n";
   /* Fill CA plane with imported configuration */
   { for (int i=0;i<par.sizex*par.sizey;i++) 
     dish->CPM->getSigma()[0][i]=Configuration["sigma"][i];
   }
-
+  cout << "B\n";
   // Construct the cells
   dish->CPM->ConstructInitCells(*dish);
-
+  cout << "C\n";
   // Assign celltypes
+  
+  for (int i = 0; i < 6734; i++)
+    cout << "cell " << i+1 << " has celltype " << Configuration["tau"][i] << "\n";
+  
   vector<Cell>::iterator c=dish->CPM->getCellArray()->begin(); ++c;
   for (; c!=dish->CPM->getCellArray()->end(); c++) {
+    cout << "cell " << c->sigma << " has celltype " << Configuration["tau"][c->sigma-1] << "\n";
     c->setTau(Configuration["tau"][c->sigma-1]);
   }
+  cout << "D\n";
 
 }

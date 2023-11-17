@@ -43,6 +43,8 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 
 using namespace std;
 
+
+
 INIT {
   try {
     // Define initial distribution of cells
@@ -54,7 +56,9 @@ INIT {
       CPM->GrowCellGridOnLayers(*this);
     else
       CPM->GrowCellGrid(*this);
-    CPM->ConstructInitCellGrid(*this);
+    
+    io->ReadConfiguration();
+    //CPM->ConstructInitCellGrid(*this);
     
     // If we have only one big cell and divide it a few times
     // we start with a nice initial clump of cells. 
@@ -64,7 +68,8 @@ INIT {
     for (int i=0;i<par.divisions;i++) {
       CPM->DivideCells();
     }
-
+    cout << "test \n";
+    cout << par.initial_configuration_file << endl;
     
     
     // Assign a random type to each of the cells
@@ -94,21 +99,15 @@ TIMESTEP {
         dish->PDEfield->InitializePDEs(dish->CPM);
 
     }
-    /*if (i % 2000 == 1000){
-      dish->CPM->InitializeCouplingCoefficientNoCellularDetail();
-      dish->PDEfield->InitializePDEs(dish->CPM);
-    }*/
-
-    /*if (i % 2000 == 0 && false){
-      ofstream myfile;
-      myfile.open("Output_data.txt", std::ofstream::out | std::ofstream::app);
-      myfile << dish->PDEfield->Successful_activation << endl;
-      myfile.close();
-    }*/
 
 
-    if (i == par.relaxation)
-      dish->io->WriteContactInterfaces();
+    if (i == par.relaxation){
+      string configuration_output_file = par.datadir + "/output_config_" + to_string(par.run_number) + ".json";
+      cout << configuration_output_file << endl;
+      dish->io->WriteConfiguration(&configuration_output_file[0]);
+
+    }
+
      //uncomment for chemotaxis
     if (i>=par.relaxation) {
       if(par.usecuda == true){
@@ -145,10 +144,6 @@ TIMESTEP {
       PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
     }
 
-    if (i % 2000 == 999){
-      //dish->PDEfield->InitializePDEs(dish->CPM);
-      dish->io->WriteContactInterfaces();
-    }  
 
     if ( i == par.mcs){
       dish->ExportMultiCellDS(par.mcds_output);
@@ -225,9 +220,8 @@ int PDE::MapColour(double val) {
 }
 
 
-
-
 int main(int argc, char *argv[]) {
+  
   extern Parameter par;
   try {  
     par.Read(argv[1]);

@@ -49,6 +49,8 @@ SECTION("General settings")
 
     PARAMETER(int, rseed, -1, "Random seed for the simulation")
 
+    PARAMETER(int, run_number, -1, "Number of simulation")
+
 
 SECTION("MultiCellDS input/output")
 

@@ -3750,8 +3750,6 @@ void derivsMaleckar_host(PDEFIELD_TYPE VOI, PDEFIELD_TYPE* STATES,PDEFIELD_TYPE*
 
 
 
-
-_
 __global__ void ODEstepRL_Paci(PDEFIELD_TYPE dt, PDEFIELD_TYPE ddt, double thetime, int layers, int sizex, int sizey, PDEFIELD_TYPE* PDEvars, PDEFIELD_TYPE* alt_PDEvars, int* celltype, PDEFIELD_TYPE* next_stepsize, PDEFIELD_TYPE stepsize_min, PDEFIELD_TYPE eps, PDEFIELD_TYPE pacing_interval, PDEFIELD_TYPE pacing_duration, PDEFIELD_TYPE pacing_strength){
   /* Ordinary Differential Equation step Runge Kutta Adaptive
   Fifth-order Runge-Kutta step with monitoring of local truncation error to ensure accuracy and

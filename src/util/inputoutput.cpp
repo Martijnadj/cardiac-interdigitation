@@ -340,15 +340,12 @@ void IO::ReadConfiguration(void){
     throw std::runtime_error("json file does not exist");
   json Configuration = json::parse(f);
   
-  cout << "A\n";
   /* Fill CA plane with imported configuration */
   { for (int i=0;i<par.sizex*par.sizey;i++) 
     dish->CPM->getSigma()[0][i]=Configuration["sigma"][i];
   }
-  cout << "B\n";
   // Construct the cells
   dish->CPM->ConstructInitCells(*dish);
-  cout << "C\n";
   // Assign celltypes
   
   for (int i = 0; i < 6734; i++)
@@ -356,9 +353,7 @@ void IO::ReadConfiguration(void){
   
   vector<Cell>::iterator c=dish->CPM->getCellArray()->begin(); ++c;
   for (; c!=dish->CPM->getCellArray()->end(); c++) {
-    cout << "cell " << c->sigma << " has celltype " << Configuration["tau"][c->sigma-1] << "\n";
     c->setTau(Configuration["tau"][c->sigma-1]);
   }
-  cout << "D\n";
 
 }

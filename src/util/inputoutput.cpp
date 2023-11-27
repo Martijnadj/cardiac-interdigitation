@@ -348,12 +348,46 @@ void IO::ReadConfiguration(void){
   dish->CPM->ConstructInitCells(*dish);
   // Assign celltypes
   
-  for (int i = 0; i < 6734; i++)
-    cout << "cell " << i+1 << " has celltype " << Configuration["tau"][i] << "\n";
   
   vector<Cell>::iterator c=dish->CPM->getCellArray()->begin(); ++c;
   for (; c!=dish->CPM->getCellArray()->end(); c++) {
     c->setTau(Configuration["tau"][c->sigma-1]);
   }
+
+  
+  //The same target area and target length as the previous simulation should be used
+  //to continue with the previous simulation
+  int cells1 = 0;
+  int cells2 = 0;
+  int mean_area_1 = 0;
+  int mean_area_2 = 0;
+  for (vector<Cell>::iterator c = dish->CPM->getCellArray()->begin(); c != dish->CPM->getCellArray()->end(); c++)
+  {
+    if (c->getTau() == 1){
+      mean_area_1 += c->Area();
+      cells1++;
+    }
+    else if (c->getTau() == 2){
+      mean_area_2 += c->Area();
+      cells2++;
+      
+    }
+  }
+  if (cells1 != 0)
+    mean_area_1 /= cells1;
+  if (cells2 != 0) 
+    mean_area_2 /= cells2;
+  // set all cell areas to the mean area
+
+  for (vector<Cell>::iterator c = dish->CPM->getCellArray()->begin(); c != dish->CPM->getCellArray()->end(); c++)
+  {
+    if (c->getTau() == 1)
+      c->SetTargetArea(mean_area_1);
+    if (c->getTau() == 2)
+      c->SetTargetArea(mean_area_2);    
+  }
+  
+
+  dish->CPM->ResetTargetLengths();
 
 }

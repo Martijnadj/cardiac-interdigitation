@@ -68,7 +68,6 @@ INIT {
     for (int i=0;i<par.divisions;i++) {
       CPM->DivideCells();
     }
-    cout << "test \n";
     cout << par.initial_configuration_file << endl;
     
     
@@ -99,12 +98,17 @@ TIMESTEP {
         dish->PDEfield->InitializePDEs(dish->CPM);
 
     }
-
+    static Info *info=new Info(*dish, *this);
+    static Plotter * plotter = new Plotter(dish, this);
 
     if (i == par.relaxation){
       string configuration_output_file = par.datadir + "/output_config_" + to_string(par.run_number) + ".json";
       cout << configuration_output_file << endl;
       dish->io->WriteConfiguration(&configuration_output_file[0]);
+      char fname[200];
+      sprintf(fname,"%s/output_config_%i.png",par.datadir.c_str(),par.run_number);
+      PROFILE(plotter_2, plotter->Plot();)
+      Write(fname);
 
     }
 
@@ -127,8 +131,7 @@ TIMESTEP {
       }
     }
 
-    static Info *info=new Info(*dish, *this);
-    static Plotter * plotter = new Plotter(dish, this);
+
     
     if (par.graphics && !(i%par.storage_stride)) {
       PROFILE(all_plots, plotter->Plot();)

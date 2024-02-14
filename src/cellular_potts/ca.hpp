@@ -385,7 +385,7 @@ public:
   int BoundaryLength(int start_x, int start_y, int end_x, int end_y);
 
   void RandomSigma(int n_cells);
-  
+  void RefreshLinks(void);
   void MeasureCellSizes(void);
   void MeasureCellPerimeters();  
 

@@ -31,6 +31,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "sticky.hpp"
 #include "parameter.hpp"
 #include "dish.hpp"
+#define PI 3.14159265
 
 #define HASHCOLNUM 255
 
@@ -86,6 +87,8 @@ void Cell::CellBirth(Cell &mother_cell) {
   tau=mother_cell.tau;
   target_length = mother_cell.target_length;
   
+  polarization = RANDOM()*2*PI; //Every new cell gets a random polarization
+
   for (int ch=0;ch<par.n_chem;ch++)
     chem[ch]=mother_cell.chem[ch];
   
@@ -140,6 +143,7 @@ void Cell::ConstructorBody(int settau) {
   v[0]=0.; v[1]=0.;
   n_copies=0;
 
+  polarization = 2*RANDOM()*PI;
   chem = new double[par.n_chem];
 
 }
@@ -186,6 +190,10 @@ int Cell::EnergyDifference(const Cell &cell2) const {
   return J[tau][cell2.tau];
 }
 
+void Cell::RemoveLinks(void){ //Remove all links that a cell possesses
+  for (int c = 0;c < par.n_init_cells;c++) 
+	  Links[c] = false;
+}
 
 
 void Cell::ClearJ(void) {

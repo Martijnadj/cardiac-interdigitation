@@ -141,6 +141,28 @@ SECTION("Cellular Potts Model - Dynamics")
             " energy. 0: no neighbours, 1: 4 orthogonal neighbours (von Neumann),"
             "  2: 8 direct neighbours (Moore), 3: 5x5 block minus the corners.")
 
+SECTION("Filopodial tension")
+    PARAMETER(bool, conv_ext, false, "Indicate whether convergent extension is active")
+    PARAMETER(int, max_links, 3, \
+            "Maximal number of links a cell can have with neighbours in the"
+            "filopodia tension model")
+    PARAMETER(double, theta_max, 45, \
+            "Maximal angle from polarization axis cells can attach filopodia to"
+            "filopodia tension model")
+    PARAMETER(double, r_max, 10, \
+            "Maximal distance along which cells can attach filopodia to in"
+            "filopodia tension model")     
+    PARAMETER(double, lambda_force, 10, "Force for filopodial tension")
+    PARAMETER(int, t_interval, 10, "Filopodia refresh time in filopodia tension model")
+    PARAMETER(double, memory, 0.99, "Memory parameter for polarization alignment in filopodia tension model")
+    PARAMETER(int, pulling_method, 2,\
+    "Indicates which submodel of filopodia tension is used: "
+    "1: Cell only pull cells of the same type." 
+    "2: All cells pull all other cells."
+    "3: All cells pull cells of cell type 2"
+    "4: Only cells of type 2 can pull cells of type 2")
+
+
 SECTION("Electrophysiology")
     PARAMETER(double, beats_per_minute, 60, "Activating pulses per minute")
     PARAMETER(double, pacing_duration, 1e-3, "Duration of activating pulses")
@@ -156,6 +178,7 @@ SECTION("Electrophysiology")
     PARAMETER(double, I_f_factor, 1, "Mutiplication factor if I_f in Fabbri-Severi model")
     PARAMETER(double, I_Kr_factor, 1, "Mutiplication factor if I_Kr in Fabbri-Severi model")
     PARAMETER(double, I_Na_factor, 1, "Mutiplication factor if I_f in Maleckar model")
+
 SECTION("Actin model")
 
     PARAMETER(int, ref_adhesive_area, 100, \

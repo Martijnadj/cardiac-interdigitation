@@ -48,6 +48,8 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define XPM(Z) Z##_xpm
 #define ZYGXPM(Z) XPM(Z)
 
+#define PI 3.14159265
+
 
 /* define default zygote */
 /* NOTE: ZYGOTE is normally defined in Makefile!!!!!! */
@@ -2046,6 +2048,27 @@ int **CellularPotts::SearchNandPlot(Graphics *g, bool get_neighbours)
         g->Point(colour, i + 1, j + 1);
     }
 
+  bool plotLinks = false;
+	if (plotLinks)
+	{
+		vector<Cell>::iterator c = cell->begin();
+		++c;
+		for (; c != cell->end(); c++)
+		{
+			if (!(c->sigma % 10))
+			{
+				vector<Cell>::iterator z = cell->begin();
+				++z;
+				for (; z != cell->end(); z++)
+				{
+					if (c->Links[z->sigma])
+						g->Line(2 * c->getCenterX(), 2 * c->getCenterY(), 2 * z->getCenterX(), 2 * z->getCenterY(), 7);
+				}
+			}
+		}
+	}
+
+
   if (get_neighbours)
     return neighbours;
   else
@@ -2491,6 +2514,8 @@ void CellularPotts::GrowCellGrid(Dish &beast){
     }
 }
 
+
+
 void CellularPotts::GrowCellGridOnLayers(Dish &beast){
   int delta_x1 = par.celltype1_length;
   int delta_y1 = par.celltype1_width;
@@ -2532,6 +2557,222 @@ void CellularPotts::GrowCellGridOnLayers(Dish &beast){
         cell_number++;
       added_cell = false;
     }  
+}
+
+void CellularPotts::RefreshLinks(void)
+{
+	vector<Cell>::iterator c = cell->begin();
+	++c;
+	vector<Cell>::iterator z;
+	int p;
+	int number_of_links;
+	int number_of_cells = 0;
+	double centX_1, centY_1, centX_2, centY_2, deltaX, deltaY;
+	double polX, polY;
+	c = cell->begin();
+	++c;
+	for (; c != cell->end(); c++)
+		number_of_cells++;
+	c = cell->begin();
+	++c;
+	for (; c != cell->end(); c++)
+	{
+		z = cell->begin();
+		++z;
+		number_of_links = 0;
+
+		centX_1 = c->getCenterX();
+		centY_1 = c->getCenterY();
+		polX = cos(c->polarization);
+		polY = sin(c->polarization);
+
+		for (; z != cell->end(); z++)
+		{
+			switch (par.pulling_method)
+			{
+			case 1:
+				if (z->tau == 1)
+				{
+					centX_2 = z->getCenterX();
+					centY_2 = z->getCenterY();
+					deltaX = centX_2 - centX_1;
+					deltaY = centY_2 - centY_1;
+					c->Links[z->Sigma()] = false;
+					if ((sqrt(deltaX * deltaX + deltaY * deltaY) < par.r_max) && (c->tau == 1) &&
+						((acos((deltaX * polX + deltaY * polY) / (sqrt(deltaX * deltaX + deltaY * deltaY) * sqrt(polX * polX + polY * polY))) < par.theta_max * PI / 180) ||
+						 (PI - acos((deltaX * polX + deltaY * polY) / (sqrt(deltaX * deltaX + deltaY * deltaY) * sqrt(polX * polX + polY * polY))) < par.theta_max * PI / 180)))
+					{
+						number_of_links++;
+						c->Links[z->Sigma()] = true;
+					}
+				}
+				if (z->tau == 2)
+				{
+					centX_2 = z->getCenterX();
+					centY_2 = z->getCenterY();
+					deltaX = centX_2 - centX_1;
+					deltaY = centY_2 - centY_1;
+					c->Links[z->Sigma()] = false;
+					if ((sqrt(deltaX * deltaX + deltaY * deltaY) < par.r_max) && (c->tau == 2) &&
+						((acos((deltaX * polX + deltaY * polY) / (sqrt(deltaX * deltaX + deltaY * deltaY) * sqrt(polX * polX + polY * polY))) < par.theta_max * PI / 180) ||
+						 (PI - acos((deltaX * polX + deltaY * polY) / (sqrt(deltaX * deltaX + deltaY * deltaY) * sqrt(polX * polX + polY * polY))) < par.theta_max * PI / 180)))
+					{
+						number_of_links++;
+						c->Links[z->Sigma()] = true;
+					}
+				}
+				break;
+			case 2:
+				centX_2 = z->getCenterX();
+				centY_2 = z->getCenterY();
+				deltaX = centX_2 - centX_1;
+				deltaY = centY_2 - centY_1;
+				c->Links[z->Sigma()] = false;
+				if ((sqrt(deltaX * deltaX + deltaY * deltaY) < par.r_max) &&
+					((acos((deltaX * polX + deltaY * polY) / (sqrt(deltaX * deltaX + deltaY * deltaY) * sqrt(polX * polX + polY * polY))) < par.theta_max * PI / 180) ||
+					 (PI - acos((deltaX * polX + deltaY * polY) / (sqrt(deltaX * deltaX + deltaY * deltaY) * sqrt(polX * polX + polY * polY))) < par.theta_max * PI / 180)))
+				{
+					if (!c->sigma || !z->sigma)
+						cout << "c->Sigma() = " << c->sigma << ", z-Sigma() = " << z->sigma << " and  sqrt(deltaX * deltaX + deltaY * deltaY) = " << sqrt(deltaX * deltaX + deltaY * deltaY) << endl;
+					number_of_links++;
+					c->Links[z->Sigma()] = true;
+				}
+				break;
+			case 3:
+				centX_2 = z->getCenterX();
+				centY_2 = z->getCenterY();
+				deltaX = centX_2 - centX_1;
+				deltaY = centY_2 - centY_1;
+				c->Links[z->Sigma()] = false;
+				if ((sqrt(deltaX * deltaX + deltaY * deltaY) < par.r_max) && (c->tau == 2) &&
+					((acos((deltaX * polX + deltaY * polY) / (sqrt(deltaX * deltaX + deltaY * deltaY) * sqrt(polX * polX + polY * polY))) < par.theta_max * PI / 180) ||
+					 (PI - acos((deltaX * polX + deltaY * polY) / (sqrt(deltaX * deltaX + deltaY * deltaY) * sqrt(polX * polX + polY * polY))) < par.theta_max * PI / 180)))
+				{
+					number_of_links++;
+					c->Links[z->Sigma()] = true;
+				}
+				break;
+			case 4:
+				if (z->tau == 2)
+				{
+					centX_2 = z->getCenterX();
+					centY_2 = z->getCenterY();
+					deltaX = centX_2 - centX_1;
+					deltaY = centY_2 - centY_1;
+					c->Links[z->Sigma()] = false;
+					if ((sqrt(deltaX * deltaX + deltaY * deltaY) < par.r_max) && (c->tau == 2) &&
+						((acos((deltaX * polX + deltaY * polY) / (sqrt(deltaX * deltaX + deltaY * deltaY) * sqrt(polX * polX + polY * polY))) < par.theta_max * PI / 180) ||
+						 (PI - acos((deltaX * polX + deltaY * polY) / (sqrt(deltaX * deltaX + deltaY * deltaY) * sqrt(polX * polX + polY * polY))) < par.theta_max * PI / 180)))
+					{
+						number_of_links++;
+						c->Links[z->Sigma()] = true;
+					}
+				}
+			}
+		}
+		while (number_of_links > par.max_links)
+		{
+			p = rand() % number_of_cells + 1;
+			if (c->Links[p])
+			{
+				number_of_links--;
+				c->Links[p] = false;
+			}
+			// randomly remove links until you only have n_max left
+		}
+		// Adjust polarizations according to your neighbours.
+		if (number_of_links)
+		{
+			bool belmonte = false; //Use the repolarization method from Belmonte et al.?
+
+
+			
+			z = cell->begin();
+			++z;
+			double Avgpolarization = 0;
+			double AvgX = 0;
+			double AvgY = 0;
+			double distance = 0;
+			if (belmonte){
+
+				for (; z != cell->end(); z++){	
+					if (c->Links[z->Sigma()]){
+						distance = sqrt(pow(c->getCenterX() - z->getCenterX(),2) + pow(c->getCenterY() - z->getCenterY(),2));
+						if (c->tau == 1 && z->tau == 1)
+						{
+							AvgX += (z->getCenterX()-c->getCenterX()) / distance;
+							AvgY += (z->getCenterY()-c->getCenterY()) / distance;
+						}
+						else if (c->tau == 1 && z->tau == 2)
+						{
+							AvgX += (z->getCenterX()-c->getCenterX()) / distance;
+							AvgY += (z->getCenterY()-c->getCenterY()) / distance;
+						}
+						else if (c->tau == 2 && z->tau == 1)
+						{
+							AvgX += (z->getCenterX()-c->getCenterX()) / distance;
+							AvgY += (z->getCenterY()-c->getCenterY()) / distance;
+						}
+						else if (c->tau == 2 && z->tau == 2)
+						{
+							AvgX += (z->getCenterX()-c->getCenterX()) / distance;
+							AvgY += (z->getCenterY()-c->getCenterY()) / distance;
+						}
+					}
+				}
+			}
+
+			else{
+				for (; z != cell->end(); z++)
+				{
+					if (c->Links[z->Sigma()] && c->tau == 1 && z->tau == 1)
+					{
+						AvgX += cos(z->polarization);
+						AvgY += sin(z->polarization);
+					}
+					else if (c->Links[z->Sigma()] && c->tau == 1 && z->tau == 2)
+					{
+						AvgX += cos(z->polarization);
+						AvgY += sin(z->polarization);
+					}
+					else if (c->Links[z->Sigma()] && c->tau == 2 && z->tau == 1)
+					{
+						AvgX += cos(z->polarization);
+						AvgY += sin(z->polarization);
+					}
+					else if (c->Links[z->Sigma()] && c->tau == 2 && z->tau == 2)
+					{
+						AvgX += cos(z->polarization);
+						AvgY += sin(z->polarization);
+					}
+				}
+			}
+
+				if (AvgX > 0 && AvgY > 0)
+					Avgpolarization = atan(AvgY / AvgX);
+				else if (AvgX < 0 && AvgY > 0)
+					Avgpolarization = atan(-AvgX / AvgY) + PI / 2;
+				else if (AvgX < 0 && AvgY < 0)
+					Avgpolarization = atan(AvgY / AvgX) + PI;
+				else
+					Avgpolarization = atan(-AvgX / AvgY) + 3 * PI / 2;
+
+				double NewX, NewY;
+				NewX = par.memory * cos(c->polarization) + (1 - par.memory) * cos(Avgpolarization);
+				NewY = par.memory * sin(c->polarization) + (1 - par.memory) * sin(Avgpolarization);
+
+				if (NewX > 0 && NewY > 0)
+					c->polarization = atan(NewY / NewX);
+				else if (NewX < 0 && NewY > 0)
+					c->polarization = atan(-NewX / NewY) + PI / 2;
+				else if (NewX < 0 && NewY < 0)
+					c->polarization = atan(NewY / NewX) + PI;
+				else
+					c->polarization = atan(-NewX / NewY) + 3 * PI / 2;
+
+			
+		}
+	}
 }
 
 void CellularPotts::MeasureCellSizes(void)

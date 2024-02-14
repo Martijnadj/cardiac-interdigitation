@@ -49,6 +49,7 @@ public:
 
   Cell(void) {
     chem = new double[par.n_chem];
+    Links = new bool[10000];
   };
   
   ~Cell(void);
@@ -84,7 +85,12 @@ public:
     sum_yy=src.sum_yy;
     sum_xy=src.sum_xy;
     owner=src.owner;
-    
+    polarization=src.polarization;
+
+
+    Links = new bool[10000];
+		for (int i=0; i<10000; i++)
+			Links[i]=false;
     chem = new double[par.n_chem];
     for (int ch=0;ch<par.n_chem;ch++)
       chem[ch]=src.chem[ch];
@@ -128,6 +134,13 @@ public:
     length=src.length;
     target_length=src.target_length;
     amount++;
+
+    polarization=src.polarization;
+
+		Links = new bool[10000];
+		for (int i=0; i<10000; i++)
+			Links[i]=false;
+
     owner=src.owner;
     
     chem = new double[par.n_chem];
@@ -139,6 +152,9 @@ public:
     return *this;
 
   }
+
+  /* \brief Remove all links between cells. */
+  void RemoveLinks(void);
 
   /*! \brief Returns false if Cell has apoptosed (vanished). */
   inline bool AliveP(void) const {
@@ -617,6 +633,8 @@ protected:
   bool alive;
   int sigma; // cell identity, 0 if medium
   int tau; // Cell type, when dynamicJ's are not used
+  double polarization; //This gives the polarization of the cell as a value between 0 and 2pi
+	// used for undirected convergent extension.
 
   // Two dimensional (square) array of ints, containing the J's.
   double length; // length of the cell;
@@ -662,6 +680,7 @@ protected:
   // are locally adjusted, so axes are easily
   // and quickly calculated!
   // N.B: N is area!
+  bool *Links;
 
   long int sum_x;
   long int sum_y;

@@ -57,8 +57,8 @@ INIT {
     else
       CPM->GrowCellGrid(*this);
     
-    io->ReadConfiguration();
-    //CPM->ConstructInitCellGrid(*this);
+    //io->ReadConfiguration();
+    CPM->ConstructInitCellGrid(*this);
     
     // If we have only one big cell and divide it a few times
     // we start with a nice initial clump of cells. 

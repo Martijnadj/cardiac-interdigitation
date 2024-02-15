@@ -928,7 +928,178 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield)
                            (DSQR((*cell)[sxy].Length() - (*cell)[sxy].TargetLength()) - DSQR((*cell)[sxy].GetNewLengthIfXYWereRemoved(x, y) -
                                                                                              (*cell)[sxy].TargetLength()))));
   }
+
+
+  if (par.conv_ext){
+    vector<Cell>::iterator c = cell->begin();
+	  ++c;
+    double pulling_addition = 0;
+    bool cell1_increase; // Indicate whether the first / second cells increase / decrease from this copy attempt
+    bool cell2_increase;
+    bool cell1_decrease;
+    bool cell2_decrease;
+    
+    if (sxyp == MEDIUM) // source pixel belongs to medium
+    {
+      for (; c != cell->end(); c++)
+      {
+        if (c->Links[(*cell)[sxy].sigma] && c->area != 0 && (*cell)[sxy].area != 0) // link from c to cell with sxy
+        {																			// cells do not always get apoptosed correctly. Do not try to pull non-exsistent cells.
+          cell1_increase = false;
+          cell2_increase = false;
+          cell1_decrease = true;
+          cell2_decrease = false;
+          pulling_addition -= (int)(par.lambda_force * LengthDifference(&(*cell)[sxy], &(*c), x, y, cell1_increase, cell2_increase, cell1_decrease, cell2_decrease));
+        }
+        if ((*cell)[sxy].Links[c->sigma] && c->area != 0 && (*cell)[sxy].area != 0) // link from cell with sxy to c
+        {																			// cells do not always get apoptosed correctly. Do not try to pull non-exsistent cells.
+          cell1_increase = false;
+          cell2_increase = false;
+          cell1_decrease = true;
+          cell2_decrease = false;
+          pulling_addition -= (int)(par.lambda_force * LengthDifference(&(*cell)[sxy], &(*c), x, y, cell1_increase, cell2_increase, cell1_decrease, cell2_decrease));
+        }
+      }
+    }
+    else if (sxy == MEDIUM) // target pixel belongs to medium
+    {
+      for (; c != cell->end(); c++)
+      {
+        if (c->Links[(*cell)[sxyp].sigma] && c->area != 0 && (*cell)[sxyp].area != 0) // link from c to cell with sxyp
+        {																			  // cells do not always get apoptosed correctly. Do not try to pull non-exsistent cells.
+          cell1_increase = true;
+          cell2_increase = false;
+          cell1_decrease = false;
+          cell2_decrease = false;
+          pulling_addition -= (int)(par.lambda_force * LengthDifference(&(*cell)[sxyp], &(*c), x, y, cell1_increase, cell2_increase, cell1_decrease, cell2_decrease));
+        }
+        if ((*cell)[sxyp].Links[c->sigma] && c->area != 0 && (*cell)[sxyp].area != 0) // link from cell with sxyp to c
+        {																			  // cells do not always get apoptosed correctly. Do not try to pull non-exsistent cells.
+          cell1_increase = true;
+          cell2_increase = false;
+          cell1_decrease = false;
+          cell2_decrease = false;
+          pulling_addition -= (int)(par.lambda_force * LengthDifference(&(*cell)[sxyp], &(*c), x, y, cell1_increase, cell2_increase, cell1_decrease, cell2_decrease));
+        }
+      }
+    }
+    else // neither pixel belongs to medium
+    {
+      for (; c != cell->end(); c++)
+      {
+        if (c->Links[(*cell)[sxy].sigma] && c->area != 0 && (*cell)[sxy].area != 0 && c->sigma != (*cell)[sxyp].sigma) // link from c to cell with sxy
+        {																											   // cells do not always get apoptosed correctly. Do not try to pull non-exsistent cells.
+          cell1_increase = false;
+          cell2_increase = false;
+          cell1_decrease = true;
+          cell2_decrease = false;
+          pulling_addition -= (int)(par.lambda_force * LengthDifference(&(*cell)[sxy], &(*c), x, y, cell1_increase, cell2_increase, cell1_decrease, cell2_decrease));
+        }
+
+        if ((*cell)[sxy].Links[c->sigma] && c->area != 0 && (*cell)[sxy].area != 0 && c->sigma != (*cell)[sxyp].sigma) // link from cell with sxy to c
+        {																											   // cells do not always get apoptosed correctly. Do not try to pull non-exsistent cells.
+          cell1_increase = false;
+          cell2_increase = false;
+          cell1_decrease = true;
+          cell2_decrease = false;
+          pulling_addition -= (int)(par.lambda_force * LengthDifference(&(*cell)[sxy], &(*c), x, y, cell1_increase, cell2_increase, cell1_decrease, cell2_decrease));
+        }
+
+        if (c->Links[(*cell)[sxyp].sigma] && c->area != 0 && (*cell)[sxyp].area != 0 && c->sigma != (*cell)[sxy].sigma) // link from c to cell with sxyp
+        {																												// cells do not always get apoptosed correctly. Do not try to pull non-exsistent cells.
+          cell1_increase = true;
+          cell2_increase = false;
+          cell1_decrease = false;
+          cell2_decrease = false;
+          pulling_addition -= (int)(par.lambda_force * LengthDifference(&(*cell)[sxyp], &(*c), x, y, cell1_increase, cell2_increase, cell1_decrease, cell2_decrease));
+        }
+        if ((*cell)[sxyp].Links[c->sigma] && c->area != 0 && (*cell)[sxyp].area != 0 && c->sigma != (*cell)[sxy].sigma) // link from cell with sxyp to c
+        {																												// cells do not always get apoptosed correctly. Do not try to pull non-exsistent cells.
+          cell1_increase = true;
+          cell2_increase = false;
+          cell1_decrease = false;
+          cell2_decrease = false;
+          pulling_addition -= (int)(par.lambda_force * LengthDifference(&(*cell)[sxyp], &(*c), x, y, cell1_increase, cell2_increase, cell1_decrease, cell2_decrease));
+        }
+      }
+      if ((*cell)[sxy].Links[(*cell)[sxyp].sigma]) // link from cell with sxy to cell with sxy
+      {											 // cells do not always get apoptosed correctly. Do not try to pull non-exsistent cells.
+        cell1_increase = true;
+        cell2_increase = false;
+        cell1_decrease = false;
+        cell2_decrease = true;
+        pulling_addition -= (int)(par.lambda_force * LengthDifference(&(*cell)[sxy], &(*cell)[sxyp], x, y, cell1_increase, cell2_increase, cell1_decrease, cell2_decrease));
+      }
+      if ((*cell)[sxyp].Links[(*cell)[sxy].sigma]) // link from cell with sxyp to cell with sxy
+      {											 // cells do not always get apoptosed correctly. Do not try to pull non-exsistent cells.
+        cell1_increase = true;
+        cell2_increase = false;
+        cell1_decrease = false;
+        cell2_decrease = true;
+        pulling_addition -= (int)(par.lambda_force * LengthDifference(&(*cell)[sxy], &(*cell)[sxyp], x, y, cell1_increase, cell2_increase, cell1_decrease, cell2_decrease));
+      }
+    }
+    DH += int(pulling_addition);
+  }
   return DH;
+}
+
+double CellularPotts::LengthDifference(Cell *cell1, Cell *cell2, int x, int y, bool cell1_increase, bool cell2_increase, bool cell1_decrease, bool cell2_decrease)
+{
+
+	if ((cell1_increase && cell2_increase) || (cell1_decrease && cell2_decrease) || (cell1_decrease && cell1_increase) || (cell2_decrease && cell2_increase))
+	{
+		cout << "Something went wrong in function LengthDifference, impossible situation" << endl;
+		exit(1);
+	}
+
+	double length_before; // length before a copy attempt
+	double length_after;  // length after a copy attempt
+
+	double x1_before, x2_before, y1_before, y2_before, x1_after, x2_after, y1_after, y2_after;
+
+	x1_before = cell1->getCenterX();
+	x2_before = cell2->getCenterX();
+	y1_before = cell1->getCenterY();
+	y2_before = cell2->getCenterY();
+
+	length_before = sqrt(pow(x1_before - x2_before, 2) + pow(y1_before - y2_before, 2));
+
+	if (cell1_increase)
+	{
+		x1_after = cell1->getCenterXIfXYWereAdded(x, y);
+		y1_after = cell1->getCenterYIfXYWereAdded(x, y);
+	}
+	else if (cell1_decrease)
+	{
+		x1_after = cell1->getCenterXIfXYWereRemoved(x, y);
+		y1_after = cell1->getCenterYIfXYWereRemoved(x, y);
+	}
+	else
+	{
+		x1_after = x1_before;
+		y1_after = y1_before;
+	}
+
+	if (cell2_increase)
+	{
+		x2_after = cell2->getCenterXIfXYWereAdded(x, y);
+		y2_after = cell2->getCenterYIfXYWereAdded(x, y);
+	}
+	else if (cell2_decrease)
+	{
+		x2_after = cell2->getCenterXIfXYWereRemoved(x, y);
+		y2_after = cell2->getCenterYIfXYWereRemoved(x, y);
+	}
+	else
+	{
+		x2_after = x2_before;
+		y2_after = y2_before;
+	}
+
+	length_after = sqrt(pow(x1_after - x2_after, 2) + pow(y1_after - y2_after, 2));
+
+	return length_before - length_after;
 }
 
 int CellularPotts::Act_AmoebaeMove(PDE *PDEfield)

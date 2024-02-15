@@ -386,6 +386,7 @@ public:
 
   void RandomSigma(int n_cells);
   void RefreshLinks(void);
+  double LengthDifference(Cell* cell1, Cell* cell2, int x, int y, bool cell1_increase, bool cell2_increase, bool cell1_decrease, bool cell2_decrease);
   void MeasureCellSizes(void);
   void MeasureCellPerimeters();  
 

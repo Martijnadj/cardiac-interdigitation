@@ -203,6 +203,23 @@ public:
   inline double getCenterX(void) {
     return (double)sum_x/(double) area;
   }
+  inline double getCenterY(void) {
+    return (double)sum_y/(double) area;
+  }
+  inline double getCenterXIfXYWereRemoved(int x, int y) {
+     return (sum_x - x)/((double) area - 1);
+  }
+  inline double getCenterYIfXYWereRemoved(int x, int y) {
+     return (sum_y - y)/((double) area - 1);
+	}
+	inline double getCenterXIfXYWereAdded(int x, int y) {
+     return (sum_x + x)/((double) area + 1);
+  }
+  inline double getCenterYIfXYWereAdded(int x, int y) {
+     return(sum_y + y)/((double) area + 1);
+	}
+
+  
 
   inline double getSumX(void){return sum_x;}
   inline double getSumY(void){return sum_y;}
@@ -217,9 +234,7 @@ public:
   //   return center_y;
   // }
   //
-  inline double getCenterY(void) {
-      return (double)sum_y/(double) area;
-    }
+
   // inline void setCenterX(double newX){
   //   center_x=newX;
   // }
@@ -566,8 +581,9 @@ private:
 
         return Length(sum_x-x,sum_y-y,
 			       sum_xx-x*x,sum_yy-y*y,sum_xy-x*y,area-1);
-
   }
+
+
 
   inline void setSigma(int nsigma){
     sigma = nsigma;

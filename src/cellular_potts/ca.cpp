@@ -930,7 +930,7 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield)
   }
 
 
-  if (par.conv_ext){
+  if (par.conv_ext && x > 305 && x < 405 && y > 95 && y < 315){
     vector<Cell>::iterator c = cell->begin();
 	  ++c;
     double pulling_addition = 0;

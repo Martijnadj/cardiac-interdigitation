@@ -56,9 +56,10 @@ INIT {
       CPM->GrowCellGridOnLayers(*this);
     else
       CPM->GrowCellGrid(*this);
-    
-    //io->ReadConfiguration();
-    CPM->ConstructInitCellGrid(*this);
+    if (par.initial_configuration_file != "None")
+      io->ReadConfiguration();
+    else 
+      CPM->ConstructInitCellGrid(*this);
     
     // If we have only one big cell and divide it a few times
     // we start with a nice initial clump of cells. 
@@ -68,7 +69,7 @@ INIT {
     for (int i=0;i<par.divisions;i++) {
       CPM->DivideCells();
     }
-    cout << par.initial_configuration_file << endl;
+    
     
     
     // Assign a random type to each of the cells
@@ -101,7 +102,12 @@ TIMESTEP {
     static Info *info=new Info(*dish, *this);
     static Plotter * plotter = new Plotter(dish, this);
 
-    if (i == par.relaxation){
+    if (!(i%par.t_interval) && par.conv_ext){
+		  //refresh links each par.t_interval time steps
+		  dish->CPM->RefreshLinks();
+	  }
+
+    if (i == par.relaxation && i > 0){
       string configuration_output_file = par.datadir + "/output_config_" + to_string(par.run_number) + ".json";
       cout << configuration_output_file << endl;
       dish->io->WriteConfiguration(&configuration_output_file[0]);

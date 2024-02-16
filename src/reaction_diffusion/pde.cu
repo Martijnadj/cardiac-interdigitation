@@ -4043,7 +4043,7 @@ void PDE::cuODEstep(){
   //CopyOriginalToAltPDEvars<<<par.number_of_cores, par.threads_per_core>>>(sizex, sizey, layers, d_PDEvars, d_alt_PDEvars);
 
   //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-  //cout << "After second FE step, alt_PDEvars[147780] = " << alt_PDEvars[147780] << endl;
+  //cout << "After second FE step, alt_PDEvars[4305] = " << alt_PDEvars[4305] << endl;
   cuErrorChecker(errSync, errAsync);
 }
 
@@ -4068,7 +4068,7 @@ void PDE::cuHorizontalADIstep(){
   cuErrorChecker(errSync, errAsync);
 
   //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-  //cout << "After second FE step, PDEvars[147780] = " << PDEvars[147780] << endl;
+  //cout << "After second FE step, PDEvars[4305] = " << PDEvars[4305] << endl;
 
 }
 
@@ -4099,7 +4099,7 @@ void PDE::cuVerticalADIstep(){
   cuErrorChecker(errSync, errAsync);
 
   //cudaMemcpy(PDEvars, d_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
-  //cout << "After second FE step, PDEvars[147780] = " << PDEvars[147780] << endl;
+  //cout << "After second FE step, PDEvars[4305] = " << PDEvars[4305] << endl;
 
 }
 

@@ -107,7 +107,7 @@ TIMESTEP {
 		  dish->CPM->RefreshLinks();
 	  }
 
-    if (i == par.relaxation && i > 0){
+    if (i == par.relaxation-1 && i > 0){
       string configuration_output_file = par.datadir + "/output_config_" + to_string(par.run_number) + ".json";
       cout << configuration_output_file << endl;
       dish->io->WriteConfiguration(&configuration_output_file[0]);

@@ -62,7 +62,7 @@ QMAKE_CXXFLAGS += -Wno-unused-parameter
 
 contains( USECUDA, enabled ){
 
-   # File(s) containing my CUDA code
+   # File(s) containing CUDA code
    CUDA_SOURCES = reaction_diffusion/pde.cu
 
    # Location of CUDA on my system
@@ -92,7 +92,6 @@ contains( USECUDA, enabled ){
 
 
 message("Building model:" $$MODEL )
-contains( USECUDA, disabled )
 HEADERS += cellular_potts/*.hpp \
            parameters/*.hpp \
            plotting/*.hpp \

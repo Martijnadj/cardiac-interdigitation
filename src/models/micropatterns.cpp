@@ -234,6 +234,7 @@ int main(int argc, char *argv[]) {
   extern Parameter par;
   try {  
     par.Read(argv[1]);
+    par.Write(cout);
     long seed = Seed(par.rseed);
     ofstream metadatafile;
     metadatafile.open("metadata.txt", std::ofstream::out | std::ofstream::app);

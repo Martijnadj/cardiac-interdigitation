@@ -497,6 +497,7 @@ void CellularPotts::InitializeEdgeList(void)
         //also add a unique integer to the end of orderedgelist, making a bijection between the lists
         orderedgelist[sizeedgelist] = k;
         sizeedgelist ++;
+        numberofedges[x][y]++;
       }
     }
   }
@@ -505,6 +506,7 @@ void CellularPotts::InitializeEdgeList(void)
 
 void CellularPotts::InitializeCouplingCoefficient(void)
 {
+  cout << "Initialize Coupling coeff\n";
   AllocateCouplingCoefficient(par.sizex, par.sizey);
   for (int x = 0; x < par.sizex; x++)
   {

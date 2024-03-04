@@ -1640,6 +1640,8 @@ int CellularPotts::AmoebaeMove(PDE *PDEfield, bool anneal)
     if ((p = CopyvProb(D_H, H_diss, anneal)) > 0 && LocalConnectedness(x,y,sigma[x][y]) && LocalConnectedness(x,y,sigma[xp][yp]))
     {
       ConvertSpin(x, y, xp, yp); // sigma(x,y) will get the same value as sigma(xp,yp)
+      if (par.n_chem > 0)
+        CopyPDEvars(x, y, xp, yp, PDEfield);
       for (int j = 1; j <= n_nb; j++)
       {
         xn = nx[j] + x; //Update the edgelist for all neighbours of x,y

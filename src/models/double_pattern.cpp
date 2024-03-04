@@ -89,6 +89,7 @@ TIMESTEP {
     if (i == 0 ){
         dish=new Dish();
         dish->io->WriteContactInterfaces();
+        dish->PDEfield->InitializePDEs(dish->CPM);
     }
     
 

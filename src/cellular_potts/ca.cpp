@@ -508,16 +508,21 @@ void CellularPotts::InitializeCouplingCoefficient(void)
 {
   cout << "Initialize Coupling coeff\n";
   AllocateCouplingCoefficient(par.sizex, par.sizey);
+
+
   for (int x = 0; x < par.sizex; x++)
   {
     for (int y = 0; y < par.sizey; y++)
     {
-      if (sigma[x][y] == -1)
+      if (sigma[x][y] == -1){
         couplingcoefficient[x][y] = par.couplingoffmask;
-      else if (sigma[x][y] == 0)
+      }
+      else if (sigma[x][y] == 0){
         couplingcoefficient[x][y] = par.couplingmedium;
-      else if (sigma[x][y] > 0)
+      }
+      else if (sigma[x][y] > 0){
         couplingcoefficient[x][y] = par.couplingcell;
+      }
       if (numberofedges[x][y] > 0){
         if (tau[x][y] == 1){
           couplingcoefficient[x][y] = par.couplingAtrialAtrial;
@@ -537,16 +542,15 @@ void CellularPotts::InitializeCouplingCoefficient(void)
             }
           }
         }
-        if(par.second_layer){
-          for (int i = 1; i < n_nb; i++){
-            if ((tau[x][y] == 1 && tau[x+nx[i]][y+ny[i]] == 2) || (tau[x][y] == 2 && tau[x+nx[i]][y+ny[i]] == 1)){
-              couplingcoefficient[x][y] = par.couplingAtrialPM;
-              couplingcoefficient[x+nx[i]][y+ny[i]]= par.couplingAtrialPM;
-            } 
-          }
+      }
+      if(par.second_layer){
+        for (int i = 1; i < n_nb; i++){
+          if ((tau[x][y] == 1 && tau[x+nx[i]][y+ny[i]] == 2) || (tau[x][y] == 2 && tau[x+nx[i]][y+ny[i]] == 1)){
+            couplingcoefficient[x][y] = par.couplingAtrialPM;
+            couplingcoefficient[x+nx[i]][y+ny[i]]= par.couplingAtrialPM;
+          } 
         }
       }
-
     }
   }
 }

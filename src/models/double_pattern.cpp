@@ -69,7 +69,6 @@ INIT {
     //CPM->SetRandomTypes();
     CPM->SetUpTauMatrix(par.sizex,par.sizey);
     CPM->InitializeEdgeList();
-    CPM->InitializeCouplingCoefficient();
     //CPM->InitializeCouplingCoefficient_Gradient();
   } catch(const char* error) {
     cerr << "Caught exception\n";

@@ -95,10 +95,14 @@ TIMESTEP {
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
-        dish->CPM->InitializeCouplingCoefficient();
-        dish->PDEfield->InitializePDEs(dish->CPM);
-
     }
+
+    if ( i == par.relaxation ){
+      dish->CPM->InitializeEdgeList();
+      dish->CPM->InitializeCouplingCoefficient();
+      dish->PDEfield->InitializePDEs(dish->CPM);
+    }
+
     static Info *info=new Info(*dish, *this);
     static Plotter * plotter = new Plotter(dish, this);
 

@@ -88,18 +88,20 @@ TIMESTEP {
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
-        dish->CPM->InitializeCouplingCoefficient();
-        dish->PDEfield->InitializePDEs(dish->CPM);
         dish->io->WriteContactInterfaces();
     }
     
 
      //uncomment for chemotaxis
-    if (i == par.relaxation)
+    if (i == par.relaxation){
       dish->io->WriteContactInterfaces();
+      dish->CPM->InitializeEdgeList();
+      dish->CPM->InitializeCouplingCoefficient();
+      dish->PDEfield->InitializePDEs(dish->CPM);
+    }
 
     
-        if (i>=par.relaxation) {
+    if (i>=par.relaxation) {
       if(par.usecuda == true){
           dish->PDEfield->cuPDEsteps(dish->CPM, par.pde_its);
       }

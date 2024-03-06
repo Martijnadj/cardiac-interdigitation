@@ -3993,7 +3993,6 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     afterdiffusion = false;
     if (par.SF_all){
       cuCopyVoltageForSF(afterdiffusion);
-      cout << "This shouldn't happen!";
     }
 
 
@@ -4001,13 +4000,11 @@ void PDE::cuPDEsteps(CellularPotts * cpm, int repeat){
     afterdiffusion = true;
     if (par.SF_all){
       cuCopyVoltageForSF(afterdiffusion);
-      cout << "This shouldn't happen!";
     }
       
     //cudaMemcpy(alt_PDEvars, d_alt_PDEvars, layers*sizex*sizey*sizeof(PDEFIELD_TYPE), cudaMemcpyDeviceToHost);
     //cout << "After second FE step, alt_PDEvars[23885] = " << alt_PDEvars[23885] << endl;
     if (par.SF_all){
-      cout << "This shouldn't happen!";
       if (SF_start_one && !SF_end_one && par.SF_one_pixel)
         cuComputeSFOne();
       

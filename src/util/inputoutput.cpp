@@ -302,7 +302,7 @@ void IO::WriteContactInterfaces(void){
 
   ofstream myfile;
   myfile.open("Data_original.txt", std::ofstream::out | std::ofstream::app);
-  myfile << RedYellowSurface <<endl;
+  myfile << dish->CPM->BoundaryLength(dish->CPM->right_side_isthmus+1, par.sizey-10, dish->CPM->right_side_isthmus+1, 10) << ", " << RedYellowSurface << endl;
   myfile.close();
 
 }

@@ -479,7 +479,8 @@ private:
 	  std::cerr << "[" << sigma[x-1][y] << " " << sigma[x][y] << " " << sigma[x+1][y] << "]\n";
 	  std::cerr << "[" << sigma[x-1][y+1] << " " << sigma[x][y+1] << " " << sigma[x+1][y+1] << "]\n";
   }
-
+public:
+  int right_side_isthmus;
 protected:
 	void BaseInitialisation(std::vector<Cell> *cell);
 
@@ -496,7 +497,6 @@ protected:
 
 private:
   int left_side_isthmus;
-  int right_side_isthmus;
   bool frozen;
   static const int nx[21], ny[21];
   static const int nbh_level[4];

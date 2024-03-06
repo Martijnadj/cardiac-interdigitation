@@ -48,10 +48,8 @@ INIT {
     // Define initial distribution of cells
     //CPM->GrowInCellsInMicropattern(par.n_init_cells,par.size_init_cells);
     //CPM->ConstructInitCells(*this);
-    if (par.second_layer)
-      CPM->GrowCellGridOnLayers(*this);
-    else
-      CPM->GrowCellGrid(*this);
+
+    CPM->GrowCellGrid(*this);
     CPM->ConstructInitCellGrid(*this);
     
     // If we have only one big cell and divide it a few times
@@ -63,13 +61,16 @@ INIT {
       CPM->DivideCells();
     }
 
+    
+    
     // Assign a random type to each of the cells
 
     //CPM->SetTypesWithMask();
     //CPM->SetRandomTypes();
     CPM->SetUpTauMatrix(par.sizex,par.sizey);
     CPM->InitializeEdgeList();
-    //CPM->InitializeCouplingCoefficient_Gradient();
+    CPM->InitializeCouplingCoefficient();
+    PDEfield->InitializePDEs(CPM);
   } catch(const char* error) {
     cerr << "Caught exception\n";
     std::cerr << error << "\n";
@@ -83,38 +84,39 @@ TIMESTEP {
   try {
     static int i=0;
     cout <<"MCS: " << i << endl;
-    
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
-        dish->io->WriteContactInterfaces();
-        dish->PDEfield->InitializePDEs(dish->CPM);
-    }
-    
 
-     //uncomment for chemotaxis
-    if (i == par.relaxation){
-      dish->io->WriteContactInterfaces();
+    }
+    if (i % 2000 == 1000){
+      dish->PDEfield->InitializePDEs(dish->CPM);
       dish->CPM->InitializeEdgeList();
       dish->CPM->InitializeCouplingCoefficient();
-      dish->PDEfield->InitializePDEs(dish->CPM);
+      dish->io->WriteContactInterfaces();
+    }
+    if (i % 2000 == 0 && i > 0){
+      ofstream myfile;
+      myfile.open("Output_data.txt", std::ofstream::out | std::ofstream::app);
+      myfile << dish->PDEfield->Successful_activation << endl;
+      myfile.close();
     }
 
-    
-    if (i>=par.relaxation) {
-      if(par.usecuda == true){
+     //uncomment for chemotaxis
+    if  (i % 2000 >= 1000) {
+      if (par.useopencl){
+        if(par.usecuda == true){
           dish->PDEfield->cuPDEsteps(dish->CPM, par.pde_its);
-      }
-      else if(par.useopencl == true){
-        throw std::runtime_error("You are using openCL! This is probably an error.");
-        PROFILE(opencl_diff, dish->PDEfield->ODEstepCL(dish->CPM, par.pde_its);)
+        }
+        else{
+          PROFILE(opencl_diff, dish->PDEfield->ODEstepCL(dish->CPM, par.pde_its);)
+        }
       }
 
       else{
-        throw std::runtime_error("You are computing secrete / diffuse! This is probably an error.");
         for (int r=0;r<par.pde_its;r++) {
-          dish->PDEfield->Secrete(dish->CPM);
-          dish->PDEfield->Diffuse(1);
+	  dish->PDEfield->Secrete(dish->CPM);
+	  dish->PDEfield->Diffuse(1);
         }
       }
     }
@@ -132,8 +134,7 @@ TIMESTEP {
       info->set_Paused();
     i++;}
 
-    if (!info->IsPaused()){ //added second condition for test
-      if (i < par.relaxation)
+    if (!info->IsPaused() && i % 2000 < 1000){ //added second condition for test
         PROFILE(amoebamove, dish->CPM->AmoebaeMove(dish->PDEfield);)
     }  
 
@@ -186,7 +187,6 @@ void Plotter::Plot()  {
   plotPDEContourLines();
   graphics->EndScene();
 }
-
 
 
 

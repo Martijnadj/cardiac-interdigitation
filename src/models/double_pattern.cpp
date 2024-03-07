@@ -87,14 +87,12 @@ TIMESTEP {
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
-        dish->io->WriteContactInterfaces();
         dish->PDEfield->InitializePDEs(dish->CPM);
     }
     
 
      //uncomment for chemotaxis
     if (i == par.relaxation){
-      dish->io->WriteContactInterfaces();
       dish->CPM->InitializeEdgeList();
       dish->CPM->InitializeCouplingCoefficient();
       dish->PDEfield->InitializePDEs(dish->CPM);

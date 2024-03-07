@@ -123,6 +123,7 @@ public:
   // (necessary for derivation)
   CellularPotts(void);
 
+  void DetectSidesIsthmus(void);
   void InitializeEdgeList(void); //Set the initial edgelist which are eligible to change
   void InitializeCouplingCoefficient(void); //Set the initial coupling coefficients
   void InitializeCouplingCoefficientNoCellularDetail(void);
@@ -458,7 +459,7 @@ private:
   void ConvertSpin(int x,int y,int xp,int yp);
   void ExchangeSpin(int x,int y,int xp,int yp);
     
-  void DetectSidesIsthmus(void);
+  
   void SprayMedium(void);
   int CopyvProb(int DH,  double stiff, bool anneal);
   void FreezeAmoebae(void);

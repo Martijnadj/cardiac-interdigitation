@@ -87,6 +87,7 @@ TIMESTEP {
     static Dish *dish;
     if (i == 0 ){
         dish=new Dish();
+        dish->io->WriteContactInterfaces();
 
     }
     if (i % 2000 == 1000){

@@ -4174,9 +4174,15 @@ int CellularPotts::BoundaryLength(int start_x, int start_y, int end_x, int end_y
   int loc_x = start_x;
   int loc_y = start_y;
   int MaxBoundaryLength = 0;
+  int counter = 0;
   int BoundaryLength = 0;
   char orientation = 'W';
   while (!(loc_x == end_x && loc_y == end_y)){
+    counter++;
+    if (counter > 1000000){
+      throw std::runtime_error("The boundary length seems to be initialized incorrectly, exit the program");
+    }
+
     
     /*
     cout << "BL = " << BoundaryLength << endl;

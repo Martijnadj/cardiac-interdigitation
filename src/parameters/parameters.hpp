@@ -169,7 +169,7 @@ SECTION("Electrophysiology")
     PARAMETER(double, pacing_strength, 100, "Strength of activating pulses")
 
     PARAMETER(double, couplingmedium, 1e-5, "Coupling coefficient within the medium")
-    PARAMETER(double, couplingcell, 1e-5, "Coupling coefficient within cells")
+    PARAMETER(double, couplingInterior, 1e-5, "Coupling coefficient within cells")
     PARAMETER(double, couplingAtrialAtrial, 1e-8, "Coupling coefficient between two atrial cells")
     PARAMETER(double, couplingAtrialPM, 1e-8, "Coupling coefficient between an atrial and pacemaker maker cell")
     PARAMETER(double, couplingPMPM, 1e-8, "Coupling coefficient between two pacemaker cells")

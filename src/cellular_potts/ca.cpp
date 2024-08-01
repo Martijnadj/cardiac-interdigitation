@@ -521,7 +521,7 @@ void CellularPotts::InitializeCouplingCoefficient(void)
         couplingcoefficient[x][y] = par.couplingmedium;
       }
       else if (sigma[x][y] > 0){
-        couplingcoefficient[x][y] = par.couplingcell;
+        couplingcoefficient[x][y] = par.couplingInterior;
       }
       if (numberofedges[x][y] > 0){
         if (tau[x][y] == 1){

@@ -53,7 +53,7 @@ initial_m = 0.25
 initial_h = 0.08
 
 couplingmedium = 0
-couplingcell = 5e-10
+couplingInterior = 5e-10
 couplingboundary = 1e-11
 couplingoffmask = 0
 

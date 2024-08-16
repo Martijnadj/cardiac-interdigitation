@@ -4193,7 +4193,7 @@ void PDE::cuSFChecker(){
   if (par.SF_all && SF_in_progress && !SF_all_done){
     SF_all_done = true;
     for (int i = 0; i < sizex*sizey; i++){
-      if ((PDEvars[i] < -70 || SF_Q_tot_array[i] < 0) &&  SF_start_array[i] && celltype[0][i] == 1 && !SF_end_array[i]){
+      if ((PDEvars[i] < -70) &&  SF_start_array[i] && celltype[0][i] == 1 && !SF_end_array[i]){
         SF_in_progress = true;
         SF_end_array[i] = true;
       }
